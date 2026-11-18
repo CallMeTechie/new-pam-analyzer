@@ -141,9 +141,21 @@ describe('parsePamFile – Prüfdatum', () => {
     expect(parsed.header.dateSource).toBe('unknown');
   });
 
-  it('nutzt zuletzt ein Datum im Dateinamen', () => {
-    const parsed = parsePamFile(`${nxtHeader('V12')}\n`, 'PAM_2026-07-14_V12.dat', { now: NOW });
-    expect(parsed.header).toMatchObject({ testDate: '2026-07-14 00:00:00', dateSource: 'filename' });
+  it('nutzt zuletzt den Upload-Zeitpunkt, nicht den Dateinamen', () => {
+    const parsed = parsePamFile(`${nxtHeader('V12')}\n`, 'PAM_2026-07-14_V12.dat', {
+      now: NOW,
+      uploadedAt: new Date('2026-08-01T08:00:00Z'),
+    });
+    expect(parsed.header).toMatchObject({ testDate: '2026-08-01 10:00:00', dateSource: 'upload' });
+  });
+
+  it('bevorzugt das Änderungsdatum vor dem Upload-Zeitpunkt', () => {
+    const parsed = parsePamFile(`${nxtHeader('V12')}\n`, 'x.dat', {
+      now: NOW,
+      lastModified: new Date('2026-07-14T11:26:00Z'),
+      uploadedAt: new Date('2026-08-01T08:00:00Z'),
+    });
+    expect(parsed.header.dateSource).toBe('file_modified');
   });
 });
 

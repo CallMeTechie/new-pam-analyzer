@@ -64,7 +64,9 @@ Ist 3σ = 0, sind Cp und Cpk `null` (Alt-System: Text `'N/A'`).
 Messungen Holder A zugeordnet.
 
 **Prüfdatum**, in dieser Reihenfolge: Zeitstempel in der Kopfzeile (nur NXT-R) → Änderungsdatum der
-Originaldatei → Datum im Dateinamen → unbekannt.
+Originaldatei (im Browser `File.lastModified`, in ZIP-Archiven das Datum des Eintrags) →
+Upload-Zeitpunkt → unbekannt. Ein Datum im Dateinamen wird nicht ausgewertet. Die Web-Oberfläche
+kennzeichnet Ergebnisse, deren Datum nicht aus der Datei stammt.
 
 ## Bewertung
 

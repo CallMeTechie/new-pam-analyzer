@@ -102,10 +102,11 @@ function dateFromHeader(lastField: string | undefined, now: Date): string | null
   return `${y}-${pad(mo)}-${pad(d)} ${pad(h)}:${pad(mi)}:${pad(s)}`;
 }
 
-function dateFromLastModified(lastModified: Date | undefined, timeZone: string, now: Date): string | null {
-  if (!lastModified) return null;
-  const t = lastModified.getTime();
-  if (Number.isNaN(t) || t <= MIN_DATE || t > now.getTime()) return null;
+/** Lokale Zeit eines Zeitpunkts; `null` für ungültige, sehr alte oder zukünftige Zeitpunkte. */
+function localDate(instant: Date | undefined, timeZone: string, now: Date): string | null {
+  if (!instant) return null;
+  const t = instant.getTime();
+  if (Number.isNaN(t) || t <= MIN_DATE || t > now.getTime() + 60_000) return null;
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone,
     year: 'numeric',
@@ -115,17 +116,9 @@ function dateFromLastModified(lastModified: Date | undefined, timeZone: string, 
     minute: '2-digit',
     second: '2-digit',
     hourCycle: 'h23',
-  }).formatToParts(lastModified);
+  }).formatToParts(instant);
   const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
   return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')}`;
-}
-
-function dateFromFileName(fileName: string): string | null {
-  const m =
-    fileName.match(/(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])/) ??
-    fileName.match(/(20\d{2})[-_](0[1-9]|1[0-2])[-_](0[1-9]|[12]\d|3[01])/);
-  if (!m) return null;
-  return `${m[1]}-${m[2]}-${m[3]} 00:00:00`;
 }
 
 interface LogicalLine {
@@ -231,12 +224,12 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
   let testDate = dateFromHeader(lastField, now);
   let dateSource: DateSource = testDate ? 'header' : 'unknown';
   if (!testDate) {
-    testDate = dateFromLastModified(options.lastModified, timeZone, now);
+    testDate = localDate(options.lastModified, timeZone, now);
     if (testDate) dateSource = 'file_modified';
   }
   if (!testDate) {
-    testDate = dateFromFileName(fileName);
-    if (testDate) dateSource = 'filename';
+    testDate = localDate(options.uploadedAt, timeZone, now);
+    if (testDate) dateSource = 'upload';
   }
 
   // H08M: Variante bevorzugt aus dem Dateinamen (HBCC/HBCG), sonst aus der Anzahl Datenzeilen.

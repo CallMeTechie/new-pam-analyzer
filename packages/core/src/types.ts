@@ -4,8 +4,11 @@ export type MachineFamily = 'nxt' | 'nxtr' | 'aimex' | 'unknown';
 /** Bestückwinkel, die in PAM-Dateien vorkommen. */
 export type Angle = 0 | 90 | 180 | 270;
 
-/** Herkunft des Prüfdatums. */
-export type DateSource = 'header' | 'file_modified' | 'filename' | 'unknown';
+/**
+ * Herkunft des Prüfdatums. Reihenfolge: Zeitstempel in der Kopfzeile, Änderungsdatum der Datei,
+ * Upload-Zeitpunkt; ohne alle drei `unknown`.
+ */
+export type DateSource = 'header' | 'file_modified' | 'upload' | 'unknown';
 
 export type H08mVariant = 'ceramic' | 'glass';
 
@@ -96,7 +99,9 @@ export interface ParsedPamFile {
 export interface ParseOptions {
   /** Änderungsdatum der Originaldatei (z. B. `File.lastModified` im Browser). */
   lastModified?: Date;
-  /** Zeitzone für die Umrechnung von `lastModified` in lokale Zeit. Standard: Europe/Berlin. */
+  /** Upload-Zeitpunkt; letzte Quelle für das Prüfdatum (nur auf dem Server bekannt). */
+  uploadedAt?: Date;
+  /** Zeitzone für die Umrechnung von `lastModified`/`uploadedAt` in lokale Zeit. Standard: Europe/Berlin. */
   timeZone?: string;
   /** Referenzzeitpunkt für Plausibilitätsprüfungen (Tests). Standard: jetzt. */
   now?: Date;
