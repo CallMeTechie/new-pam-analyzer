@@ -11,6 +11,20 @@ import type {
   ParseWarning,
 } from './types.js';
 
+/**
+ * Fehler beim Lesen einer Datei. `code` ist sprachneutral; die Oberfläche übersetzt ihn.
+ * `message` ist englisch und nur für Protokolle gedacht.
+ */
+export class PamParseError extends Error {
+  constructor(
+    readonly code: 'empty_file',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'PamParseError';
+  }
+}
+
 /** Höchste unterstützte Schaftnummer (RH28 plus Reserve). */
 export const MAX_SHAFT = 30;
 const VALID_ANGLES = new Set(['0', '90', '180', '270']);
@@ -140,7 +154,8 @@ function logicalLines(content: string, warnings: ParseWarning[]): LogicalLine[] 
   if (continuations > 0) {
     warnings.push({
       code: 'continuation_line',
-      message: `${continuations} Zeile(n) wurden als Fortsetzung der vorherigen Zeile gelesen.`,
+      message: `${continuations} line(s) were read as a continuation of the previous line.`,
+      params: { count: continuations },
     });
   }
   return result;
@@ -168,7 +183,7 @@ function parseHeader(
   if (!tabSeparated) {
     warnings.push({
       code: 'header_not_tab_separated',
-      message: 'Kopfzeile ist nicht tabulatorgetrennt; Feldpositionen können abweichen.',
+      message: 'The header line is not tab-separated; field positions may differ.',
     });
   }
   const machineModel = fields[0] ?? '';
@@ -208,7 +223,7 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
   const lines = logicalLines(content, warnings);
   const headerLine = lines.shift();
   if (!headerLine) {
-    throw new Error('Datei ist leer.');
+    throw new PamParseError('empty_file', 'The file is empty.');
   }
 
   const { lastField, ...headerBase } = parseHeader(headerLine.text, warnings);
@@ -237,7 +252,8 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
       if (fromData && fromData !== fromName) {
         warnings.push({
           code: 'h08m_variant_mismatch',
-          message: `Dateiname nennt ${fromName === 'glass' ? 'Glas' : 'Keramik'}, die Anzahl Datenzeilen (${lines.length}) passt zu ${fromData === 'glass' ? 'Glas' : 'Keramik'}.`,
+          message: `File name indicates ${fromName}, but the number of data lines (${lines.length}) indicates ${fromData}.`,
+          params: { fromFileName: fromName, fromData, dataLines: lines.length },
         });
       }
     } else if (fromData) {
@@ -285,10 +301,11 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
       header.toolType = 'S1';
       warnings.push({
         code: 'tool_inferred',
-        message: 'Kein Werkzeug in der Kopfzeile; S1 wurde aus den Messdaten (nur ein Schaft) abgeleitet.',
+        message: 'No tool in the header line; S1 was derived from the data (single holder).',
+        params: { tool: 'S1' },
       });
     } else {
-      warnings.push({ code: 'tool_missing', message: 'DX-Kopf ohne Werkzeugangabe in der Kopfzeile.' });
+      warnings.push({ code: 'tool_missing', message: 'DX head without tool information in the header line.' });
     }
   }
 

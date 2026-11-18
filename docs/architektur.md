@@ -29,6 +29,19 @@
 | Apps | Tauri 2 (Windows, Android, iOS) | Gemeinsame Web-Oberfläche, kleine Installer; mobil notfalls Capacitor |
 | Gespeichert wird | Originaldatei (komprimiert) + Kennzahlen als Spalten | Diagramme werden bei Bedarf berechnet; Neuberechnung jederzeit möglich |
 
+## Sprachen
+
+- **Englisch ist die Hauptsprache**, Deutsch die zweite Sprache; umschaltbar in Web und Apps.
+- Weitere Sprachen kommen später dazu. Deshalb steht jeder sichtbare Text in einem
+  **Sprachkatalog** (ein Katalog je Sprache, Schlüssel → Text); Englisch ist der Rückfall, wenn
+  ein Text in einer Sprache fehlt. Eine neue Sprache ist ein weiterer Katalog, kein Umbau.
+- Einzahl/Mehrzahl über `Intl.PluralRules`, Zahlen über `Intl.NumberFormat` (0.718 bzw. 0,718),
+  Datum über `Intl.DateTimeFormat`, jeweils passend zur gewählten Sprache.
+- Der **Rechenkern liefert keine Anzeigetexte**, sondern Codes (`ParseWarning.code`,
+  `InvalidLine.reason`, `PamParseError.code`, Bewertungen) mit Parametern. Seine `message`-Felder
+  sind englisch und nur für Protokolle gedacht.
+- Fachbegriffe aus der FUJI-Welt (Head, Total, CPK, Holder) bleiben in allen Sprachen erkennbar.
+
 ## Upload von den Apps
 
 - Die App sendet die **Original-`.dat`-Datei** und Metadaten, nicht ihr Ergebnis. Der Server rechnet

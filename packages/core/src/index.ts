@@ -17,6 +17,7 @@ export {
   H08M_CERAMIC_ROWS,
   H08M_GLASS_ROWS,
   MAX_SHAFT,
+  PamParseError,
   parsePamFile,
   shaftCountFromType,
 } from './parse.js';

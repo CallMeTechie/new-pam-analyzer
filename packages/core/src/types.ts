@@ -73,9 +73,14 @@ export type ParseWarningCode =
   | 'continuation_line'
   | 'h08m_variant_mismatch';
 
+/**
+ * Hinweis zur Datei. Die Oberfläche übersetzt anhand von `code` (und `params`);
+ * `message` ist englisch und nur für Protokolle und Entwickler gedacht.
+ */
 export interface ParseWarning {
   code: ParseWarningCode;
   message: string;
+  params?: Record<string, string | number>;
 }
 
 export interface ParsedPamFile {

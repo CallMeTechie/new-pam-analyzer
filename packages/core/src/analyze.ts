@@ -166,7 +166,7 @@ export function analyzePamFile(parsed: ParsedPamFile, options: AnalyzeOptions = 
   let coefficientSource: CoefficientSource = detected.source;
   if (options.coefficient !== undefined) {
     if (!Number.isFinite(options.coefficient) || options.coefficient < 1 || options.coefficient > 1000) {
-      throw new RangeError('Koeffizient muss zwischen 1 und 1000 µm liegen.');
+      throw new RangeError('Coefficient must be between 1 and 1000 µm.');
     }
     coefficient = options.coefficient;
     coefficientSource = 'manual';

@@ -110,7 +110,7 @@ describe('parsePamFile – Kopfzeile', () => {
   });
 
   it('weist eine leere Datei zurück', () => {
-    expect(() => parsePamFile('', 'leer.dat')).toThrow();
+    expect(() => parsePamFile('', 'leer.dat')).toThrow(expect.objectContaining({ code: 'empty_file' }));
   });
 });
 
