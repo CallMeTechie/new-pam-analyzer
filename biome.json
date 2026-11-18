@@ -1,8 +1,12 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
   "files": {
-    "includes": ["**", "!**/*.md", "!**/test/fixtures", "!**/test/legacy", "!**/dist"]
+    "includes": ["**", "!**/*.md", "!**/test/fixtures", "!**/test/legacy", "!**/dist", "!apps/server/drizzle/meta"]
   },
   "formatter": {
     "indentStyle": "space",
@@ -10,9 +14,26 @@
     "lineWidth": 120
   },
   "javascript": {
-    "formatter": { "quoteStyle": "single" }
+    "formatter": {
+      "quoteStyle": "single"
+    }
   },
   "linter": {
     "enabled": true
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["**/test/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "style": {
+            "noNonNullAssertion": "off"
+          }
+        }
+      }
+    }
+  ]
 }

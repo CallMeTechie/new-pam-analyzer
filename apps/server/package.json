@@ -1,0 +1,34 @@
+{
+  "name": "@pam/server",
+  "version": "0.1.0",
+  "description": "PAM Analyzer server: API, storage and web delivery",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "dev": "tsx watch src/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.19",
+    "@pam/core": "workspace:*",
+    "better-sqlite3": "^12.11.1",
+    "drizzle-orm": "~0.44.7",
+    "fflate": "~0.8.3",
+    "hono": "^4.13.19",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "drizzle-kit": "~0.31.11",
+    "tsx": "^4.23.15"
+  },
+  "files": [
+    "dist",
+    "drizzle"
+  ]
+}

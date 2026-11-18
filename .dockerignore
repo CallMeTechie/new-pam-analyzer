@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/coverage
+.git
+data
+*.sqlite*
+packages/core/test
+apps/server/test
+tools
+docs

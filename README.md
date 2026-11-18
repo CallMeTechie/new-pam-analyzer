@@ -9,10 +9,11 @@ FUJI-Bestückautomaten NXT, NXT-R (APAM) und AIMEX.
 |---|---|---|
 | `packages/core` | Rechenkern: Parser und Cpk-Berechnung, ohne Abhängigkeiten | ✅ fertig, gegen das Alt-System abgesichert |
 | `packages/ui` | Gemeinsame Oberfläche für Web und Apps | geplant |
-| `apps/server` | Server als Docker-Container mit Web-Oberfläche und Upload-API | geplant |
+| `apps/server` | Server als Docker-Container: REST-API, Firmen, Benutzer, API-Keys, Upload | ✅ API fertig, Web-Oberfläche folgt |
 | `apps/client` | Apps für Windows, Android und iOS (Tauri) | geplant |
 
-Details: [Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md)
+Details: [Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md) ·
+[Server, API und Betrieb](docs/server.md)
 
 ## Entwicklung
 
@@ -25,6 +26,15 @@ pnpm typecheck
 pnpm lint
 pnpm build
 ```
+
+## Server starten
+
+```bash
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='ein-langes-passwort' docker compose up -d --build
+```
+
+Beim ersten Start entstehen die Firma „FUJI Service“ und der erste Administrator. Weitere
+Einstellungen: [Server](docs/server.md).
 
 ## Rechenkern verwenden
 

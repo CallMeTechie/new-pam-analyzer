@@ -2,8 +2,8 @@
 
 ## Ziel
 
-- **Server** als eigenständiger Docker-Container: Web-Oberfläche, Benutzer und Rollen, Kunden,
-  Historie je Kopf, Suche, Upload-API.
+- **Server** als eigenständiger Docker-Container: Web-Oberfläche, Firmen mit Benutzern und
+  API-Keys, Historie je Kopf, Suche, Upload-API. Details: [Server](server.md).
 - **Apps** für Windows, Android und iOS, die PAM-Dateien **eigenständig und offline** auswerten und
   die Daten optional per API-Key zum Server hochladen.
 - Alle rechnen mit **demselben Rechenkern** (`packages/core`) und kommen daher zu identischen Ergebnissen.
@@ -12,7 +12,7 @@
   Windows / Android / iOS (Tauri)                Docker-Container
  ┌──────────────────────────────┐           ┌──────────────────────────┐
  │ UI (packages/ui)             │           │ Web-UI (packages/ui)     │
- │ core  → rechnet offline      │  HTTPS    │ REST-API  (API-Key)      │
+ │ core  → rechnet offline      │  HTTPS    │ REST-API (Geräte-Token)  │
  │ lokale SQLite (Historie)     │ ────────► │ core  → rechnet erneut   │
  │ Upload-Warteschlange         │  .dat +   │ SQLite  (Volume /data)   │
  └──────────────────────────────┘  Metadaten└──────────────────────────┘
@@ -25,7 +25,8 @@
 | Sprache | TypeScript in allen Teilen | Ein Rechenkern für Server, Browser und Apps |
 | Rechenkern | Reines TypeScript ohne Abhängigkeiten | Läuft in Node, Browser und App-WebViews |
 | Datenbank | SQLite (Drizzle ORM) | ca. 100.000 Datensätze, wenige Schreibzugriffe; eine Datei, einfache Backups |
-| Server | Node.js (Hono oder Fastify) im Docker-Container | Ein Image, Daten auf Volume `/data` |
+| Server | Node.js mit Hono im Docker-Container | Ein Image, Daten auf Volume `/data` |
+| Mandanten | Firmen; Benutzer, API-Keys, Maschinen und Ergebnisse gehören zu einer Firma | FUJI Service sieht alle Firmen, Firmen nur sich selbst |
 | Apps | Tauri 2 (Windows, Android, iOS) | Gemeinsame Web-Oberfläche, kleine Installer; mobil notfalls Capacitor |
 | Gespeichert wird | Originaldatei (komprimiert) + Kennzahlen als Spalten | Diagramme werden bei Bedarf berechnet; Neuberechnung jederzeit möglich |
 
@@ -46,9 +47,11 @@
 
 - Die App sendet die **Original-`.dat`-Datei** und Metadaten, nicht ihr Ergebnis. Der Server rechnet
   mit seinem Rechenkern und seinen Koeffizienten neu und ist maßgeblich.
-- **API-Keys** werden je Benutzer oder Gerät in der Web-Oberfläche erzeugt, nur als Hash gespeichert,
-  sind widerrufbar und auf das Hochladen beschränkt.
-- Doppelte Dateien werden über den SHA-256-Hash des Inhalts erkannt; ein erneuter Upload ist folgenlos.
+- **API-Keys gehören einer Firma.** Der Firmen-Admin (oder FUJI Service) legt sie an und legt fest,
+  wie viele Geräte gleichzeitig verbunden sein dürfen. Jeder Benutzer der Firma kann sich mit jedem
+  Key der Firma verbinden: Die App meldet sich einmal mit Key, E-Mail und Passwort an und erhält ein
+  Geräte-Token. Keys und Tokens werden nur als Hash gespeichert und sind widerrufbar.
+- Doppelte Dateien werden je Firma über den SHA-256-Hash des Inhalts erkannt; ein erneuter Upload ist folgenlos.
 - Die Apps sammeln Uploads offline in einer Warteschlange.
 - Die Apps bringen die Standard-Koeffizienten mit und holen den aktuellen Stand vom Server.
 - Jedes Ergebnis speichert die Version der Berechnung (`ALGORITHM_VERSION`) und den verwendeten Koeffizienten.
