@@ -8,6 +8,8 @@ import type {
   CapabilityAxisStatistics,
   CoefficientConfig,
   CoefficientSource,
+  ComponentStatus,
+  CpkRating,
   Measurement,
   ParsedPamFile,
   ShaftResult,
@@ -74,15 +76,34 @@ function minOrNull(a: number | null, b: number | null): number | null {
   return Math.min(a, b);
 }
 
+/** Grenzen der Cpk-Bewertung (einheitlich für Tabellen, Holder und Kopf). */
+export const CPK_THRESHOLDS = { warning: 1.0, good: 1.33, excellent: 1.67 } as const;
+
+export function rateCpk(value: number | null): CpkRating | null {
+  if (value === null || Number.isNaN(value)) return null;
+  if (value < CPK_THRESHOLDS.warning) return 'critical';
+  if (value < CPK_THRESHOLDS.good) return 'warning';
+  if (value < CPK_THRESHOLDS.excellent) return 'good';
+  return 'excellent';
+}
+
+/** Vollständigkeit wie im Alt-System; als Toleranz gilt die Schaftanzahl (mindestens 1). */
+export function componentStatus(measured: number, expected: number | null, shaftCount: number): ComponentStatus {
+  if (expected === null || expected <= 0) return 'unknown';
+  if (expected - measured <= Math.max(shaftCount, 1)) return 'complete';
+  return measured / expected >= 0.95 ? 'warning' : 'incomplete';
+}
+
 function summarize(points: Measurement[], coefficient: number): StatisticsSummary {
-  const withCapability = (stats: AxisStatistics): CapabilityAxisStatistics => ({
-    ...stats,
-    ...capability(stats.mean, stats.sigma3, coefficient),
-  });
+  const withCapability = (stats: AxisStatistics): CapabilityAxisStatistics => {
+    const values = capability(stats.mean, stats.sigma3, coefficient);
+    return { ...stats, ...values, rating: rateCpk(values.cpk) };
+  };
   const x = withCapability(axisStatistics(points.map((p) => p.x)));
   const y = withCapability(axisStatistics(points.map((p) => p.y)));
   const q = axisStatistics(points.map((p) => p.q));
-  return { count: points.length, x, y, q, cpkXY: minOrNull(x.cpk, y.cpk) };
+  const cpkXY = minOrNull(x.cpk, y.cpk);
+  return { count: points.length, x, y, q, cpkXY, rating: rateCpk(cpkXY) };
 }
 
 function lookup(table: Record<string, number>, key: string | null): number | undefined {
@@ -176,17 +197,26 @@ export function analyzePamFile(parsed: ParsedPamFile, options: AnalyzeOptions = 
     });
 
   const head = summarize(parsed.measurements, coefficient);
+  const rated = shafts.filter((s) => s.cpkXY !== null);
+  const pick = (better: (a: number, b: number) => boolean) =>
+    rated.length < 2
+      ? null
+      : rated.reduce((best, s) => (better(s.cpkXY as number, best.cpkXY as number) ? s : best)).shaft;
+  const expected = expectedComponents(header.headType, header.toolType, header.h08mVariant, config);
 
   return {
     algorithmVersion: ALGORITHM_VERSION,
     coefficient,
     detectedCoefficient: detected.coefficient,
     coefficientSource,
-    expectedComponents: expectedComponents(header.headType, header.toolType, header.h08mVariant, config),
+    expectedComponents: expected,
     measuredComponents: parsed.measurements.length,
     failedMeasurements: parsed.invalidLines.filter((l) => l.reason !== 'placeholder').length,
+    componentStatus: componentStatus(parsed.measurements.length, expected, parsed.shaftCount),
     head,
     shafts,
+    bestShaft: pick((a, b) => a > b),
+    worstShaft: pick((a, b) => a < b),
     axisLimits: {
       x: axisLimits(head.x.min, head.x.max),
       y: axisLimits(head.y.min, head.y.max),

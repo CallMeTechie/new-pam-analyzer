@@ -66,6 +66,21 @@ Messungen Holder A zugeordnet.
 **Prüfdatum**, in dieser Reihenfolge: Zeitstempel in der Kopfzeile (nur NXT-R) → Änderungsdatum der
 Originaldatei → Datum im Dateinamen → unbekannt.
 
+## Bewertung
+
+Einheitlich für Kopf, Holder und Tabellen (Alt-System: Tabellen 2 Stufen, Holder-Kacheln 4 Stufen):
+
+| Cpk | Stufe | Darstellung |
+|---|---|---|
+| < 1,00 | `critical` | rot |
+| 1,00 – < 1,33 | `warning` | gelb |
+| 1,33 – < 1,67 | `good` | blau |
+| ≥ 1,67 | `excellent` | grün |
+
+- **Bester und schlechtester Holder** nach Cpk XY (`bestShaft`, `worstShaft`).
+- **Vollständigkeit** (`componentStatus`): `complete`, wenn höchstens so viele Bauteile fehlen, wie
+  der Kopf Schäfte hat; `warning` ab 95 %; sonst `incomplete`; ohne Sollwert `unknown`.
+
 ## Abweichungen vom Alt-System
 
 | Thema | Alt-System | Neu |

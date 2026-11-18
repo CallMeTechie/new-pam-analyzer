@@ -117,10 +117,24 @@ export interface AxisStatistics {
   max: number | null;
 }
 
+/**
+ * Einheitliche Bewertung eines Cpk-Werts:
+ * `critical` < 1,00 ≤ `warning` < 1,33 ≤ `good` < 1,67 ≤ `excellent`.
+ */
+export type CpkRating = 'critical' | 'warning' | 'good' | 'excellent';
+
+/**
+ * Vollständigkeit eines PAM-Laufs:
+ * `complete`: höchstens so viele Bauteile fehlen, wie der Kopf Schäfte hat;
+ * `warning`: mindestens 95 % vorhanden; `incomplete`: weniger; `unknown`: Sollwert unbekannt.
+ */
+export type ComponentStatus = 'complete' | 'warning' | 'incomplete' | 'unknown';
+
 export interface CapabilityAxisStatistics extends AxisStatistics {
   /** `null`, wenn 3σ = 0 oder Koeffizient = 0. */
   cp: number | null;
   cpk: number | null;
+  rating: CpkRating | null;
 }
 
 export interface StatisticsSummary {
@@ -130,6 +144,8 @@ export interface StatisticsSummary {
   q: AxisStatistics;
   /** Kleinerer Wert aus Cpk X und Cpk Y. */
   cpkXY: number | null;
+  /** Bewertung von Cpk XY. */
+  rating: CpkRating | null;
 }
 
 export interface ShaftResult extends StatisticsSummary {
@@ -154,8 +170,12 @@ export interface AnalysisResult {
   measuredComponents: number;
   /** Nicht auswertbare Datenzeilen ohne Platzhalter, also echte Fehlmessungen bzw. Datenfehler. */
   failedMeasurements: number;
+  componentStatus: ComponentStatus;
   head: StatisticsSummary;
   shafts: ShaftResult[];
+  /** Schaft mit dem höchsten bzw. niedrigsten Cpk XY; `null` bei weniger als zwei bewerteten Schäften. */
+  bestShaft: number | null;
+  worstShaft: number | null;
   axisLimits: { x: AxisLimits; y: AxisLimits };
 }
 

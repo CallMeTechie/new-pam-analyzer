@@ -2,9 +2,12 @@ export {
   ALGORITHM_VERSION,
   analyzePamFile,
   axisLimits,
+  CPK_THRESHOLDS,
   capability,
+  componentStatus,
   detectCoefficient,
   expectedComponents,
+  rateCpk,
   SHAFT_LABELS,
   shaftLabel,
 } from './analyze.js';

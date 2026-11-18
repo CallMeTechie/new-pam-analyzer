@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { analyzePamFile, capability, detectCoefficient, parsePamFile, shaftCountFromType } from '../src/index.js';
+import {
+  analyzePamFile,
+  capability,
+  componentStatus,
+  detectCoefficient,
+  parsePamFile,
+  rateCpk,
+  shaftCountFromType,
+} from '../src/index.js';
 
 const NOW = new Date('2026-11-18T12:00:00Z');
 const T = '\t';
@@ -269,5 +277,42 @@ describe('Berechnung', () => {
     expect(shaftCountFromType('RH28')).toBe(28);
     expect(shaftCountFromType('OF')).toBe(0);
     expect(shaftCountFromType(null)).toBe(0);
+  });
+});
+
+describe('Bewertung', () => {
+  it('bewertet Cpk in vier einheitlichen Stufen', () => {
+    expect(rateCpk(0.99)).toBe('critical');
+    expect(rateCpk(1.0)).toBe('warning');
+    expect(rateCpk(1.329)).toBe('warning');
+    expect(rateCpk(1.33)).toBe('good');
+    expect(rateCpk(1.67)).toBe('excellent');
+    expect(rateCpk(null)).toBeNull();
+  });
+
+  it('bewertet die Vollständigkeit wie das Alt-System', () => {
+    expect(componentStatus(384, 384, 12)).toBe('complete');
+    expect(componentStatus(372, 384, 12)).toBe('complete');
+    expect(componentStatus(371, 384, 12)).toBe('warning');
+    expect(componentStatus(364, 384, 12)).toBe('incomplete');
+    expect(componentStatus(31, 32, 1)).toBe('complete');
+    expect(componentStatus(10, null, 12)).toBe('unknown');
+  });
+
+  it('markiert besten und schlechtesten Holder', () => {
+    const content = [
+      nxtHeader('H02F'),
+      row(1, 0, 0, 1, 1),
+      row(2, 0, 0, 2, -1),
+      row(3, 0, 0, 0, 0),
+      row(4, 1, 0, 10, 10),
+      row(5, 1, 0, -10, -10),
+      row(6, 1, 0, 0, 5),
+    ].join('\n');
+    const result = analyzePamFile(parsePamFile(content, 'x.dat', { now: NOW }));
+    expect(result.bestShaft).toBe(1);
+    expect(result.worstShaft).toBe(2);
+    expect(result.shafts[0]?.rating).toBe('excellent');
+    expect(result.head.x.rating).not.toBeNull();
   });
 });
