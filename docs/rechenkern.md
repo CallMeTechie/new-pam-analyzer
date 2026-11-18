@@ -74,12 +74,18 @@ Beispiel AIMEX-DX aus den Testdaten:
 | DX-R4 | 50 | 3,00 / 2,63 | 40 | 2,40 / 2,04 |
 | DX (S1) | 50 | 4,59 / 3,74 | 30 | 2,64 / 2,24 |
 
+## Fachlich bestätigt
+
+- DX-Koeffizienten: R12 = 38, R4 = 40, S1 = 30.
+- DX ohne Werkzeugangabe in der Kopfzeile und nur ein Schaft in den Daten ⇒ S1-Werkzeug.
+- H08M kann Glas- oder Keramik-Bauteile verwenden; mit Keramik werden mehr Bauteile bestückt
+  (Keramik 256, Glas 128).
+
 ## Offene fachliche Fragen
 
-- Sind die DX-Koeffizienten R12 = 38, R4 = 40, S1 = 30 korrekt?
-- Ist die Ableitung „DX ohne Werkzeug + ein Schaft ⇒ S1“ fachlich richtig?
 - Bedeutung von Datenspalte 2 und der NXT-R-Zusatzspalten 7 – 11.
-- H08M-Dateien haben 136 Datenzeilen bei 128 erwarteten Bauteilen (8 Zeilen ohne Messwerte). Ist das so vorgesehen?
+- H08M mit Glas: Die Dateien haben 136 Datenzeilen; die Zeilen 65 – 72 (je Schaft eine, Winkel 0)
+  sind in allen Testdateien leer. Sind das Platzhalter-Positionen ohne Bauteil?
 
 ## Absicherung
 
