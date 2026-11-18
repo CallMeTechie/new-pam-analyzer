@@ -190,6 +190,47 @@ describe('parsePamFile – Datenzeilen', () => {
   });
 });
 
+describe('parsePamFile – H08M Glas/Keramik', () => {
+  /** H08M-Datei mit `rows` Datenzeilen; Zeilen in `empty` ohne Messwerte. */
+  const h08m = (rows: number, empty: number[] = []) =>
+    [
+      nxtHeader('H08M'),
+      ...Array.from({ length: rows }, (_, i) => {
+        const n = i + 1;
+        return empty.includes(n) ? [n, ` ${i % 8}`, '0', '  0'].join(T) : row(n, i % 8, 0, 1 + (i % 5), 2 - (i % 3));
+      }),
+    ].join('\n');
+  const glassPlaceholders = [65, 66, 67, 68, 69, 70, 71, 72];
+
+  it('erkennt Glas an 136 Datenzeilen und führt Nr. 65–72 als Platzhalter', () => {
+    const parsed = parsePamFile(h08m(136, [...glassPlaceholders, 3]), 'P1_H08M_DU.dat', { now: NOW });
+    expect(parsed.header).toMatchObject({ h08mVariant: 'glass', h08mVariantSource: 'data' });
+    expect(parsed.invalidLines.filter((l) => l.reason === 'placeholder')).toHaveLength(8);
+    const result = analyzePamFile(parsed);
+    expect(result).toMatchObject({ expectedComponents: 128, measuredComponents: 127, failedMeasurements: 1 });
+  });
+
+  it('erkennt Keramik an 256 Datenzeilen; leere Zeilen sind dort Fehlmessungen', () => {
+    const parsed = parsePamFile(h08m(256, [65]), 'P1_H08M_DU.dat', { now: NOW });
+    expect(parsed.header).toMatchObject({ h08mVariant: 'ceramic', h08mVariantSource: 'data' });
+    expect(parsed.invalidLines).toEqual([expect.objectContaining({ reason: 'missing_measurement' })]);
+    expect(analyzePamFile(parsed)).toMatchObject({ expectedComponents: 256, failedMeasurements: 1 });
+  });
+
+  it('bevorzugt den Dateinamen und warnt bei Widerspruch zu den Daten', () => {
+    const parsed = parsePamFile(h08m(136, glassPlaceholders), 'P1_H08M_HBCC.dat', { now: NOW });
+    expect(parsed.header).toMatchObject({ h08mVariant: 'ceramic', h08mVariantSource: 'filename' });
+    expect(parsed.warnings.map((w) => w.code)).toContain('h08m_variant_mismatch');
+  });
+
+  it('kennt keine Platzhalter bei anderen Köpfen', () => {
+    const content = [nxtHeader('V12'), ['1', ' 0', '0', '  0'].join(T)].join('\n');
+    const parsed = parsePamFile(content, 'x.dat', { now: NOW });
+    expect(parsed.header.h08mVariant).toBeNull();
+    expect(parsed.invalidLines[0]?.reason).toBe('missing_measurement');
+  });
+});
+
 describe('Berechnung', () => {
   it('berechnet Cp und Cpk bei symmetrischer Toleranz', () => {
     const { cp, cpk } = capability(5, 10, 25);

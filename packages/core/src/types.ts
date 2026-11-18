@@ -22,6 +22,8 @@ export interface PamHeader {
   toolType: string | null;
   toolSerial: string | null;
   h08mVariant: H08mVariant | null;
+  /** Woher die H08M-Variante stammt: Dateiname (HBCC/HBCG) oder Anzahl der Datenzeilen. */
+  h08mVariantSource: 'filename' | 'data' | null;
   /** Prüfdatum als lokale Maschinenzeit `YYYY-MM-DD HH:mm:ss`. */
   testDate: string | null;
   dateSource: DateSource;
@@ -48,13 +50,15 @@ export interface Measurement {
  * - `shaft_out_of_range`: Schaftnummer außerhalb 1 … 30
  * - `invalid_angle`: Winkel nicht 0/90/180/270
  * - `invalid_value`: Messwert nicht numerisch oder außerhalb des plausiblen Bereichs
+ * - `placeholder`: Leere Platzhalterzeile ohne Bauteil (H08M Glas, Nr. 65–72); keine Fehlmessung
  */
 export type InvalidLineReason =
   | 'missing_measurement'
   | 'malformed'
   | 'shaft_out_of_range'
   | 'invalid_angle'
-  | 'invalid_value';
+  | 'invalid_value'
+  | 'placeholder';
 
 export interface InvalidLine {
   lineNumber: number;
@@ -62,7 +66,12 @@ export interface InvalidLine {
   content: string;
 }
 
-export type ParseWarningCode = 'header_not_tab_separated' | 'tool_inferred' | 'tool_missing' | 'continuation_line';
+export type ParseWarningCode =
+  | 'header_not_tab_separated'
+  | 'tool_inferred'
+  | 'tool_missing'
+  | 'continuation_line'
+  | 'h08m_variant_mismatch';
 
 export interface ParseWarning {
   code: ParseWarningCode;
@@ -143,6 +152,8 @@ export interface AnalysisResult {
   coefficientSource: CoefficientSource;
   expectedComponents: number | null;
   measuredComponents: number;
+  /** Nicht auswertbare Datenzeilen ohne Platzhalter, also echte Fehlmessungen bzw. Datenfehler. */
+  failedMeasurements: number;
   head: StatisticsSummary;
   shafts: ShaftResult[];
   axisLimits: { x: AxisLimits; y: AxisLimits };

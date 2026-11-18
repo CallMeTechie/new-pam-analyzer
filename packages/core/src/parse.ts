@@ -37,11 +37,26 @@ function machineFamilyOf(model: string): MachineFamily {
   return 'unknown';
 }
 
-function detectH08mVariant(fileName: string, headType: string): H08mVariant | null {
-  if (headType !== 'H08M' && headType !== 'H08MQ') return null;
+/** H08M mit Glas-Bauteilen: 136 Datenzeilen, davon 128 Bauteile und 8 leere Platzhalter (Nr. 65–72). */
+export const H08M_GLASS_ROWS = 136;
+/** H08M mit Keramik-Bauteilen: 256 Datenzeilen, alle mit Bauteil. */
+export const H08M_CERAMIC_ROWS = 256;
+const H08M_GLASS_PLACEHOLDERS = { first: 65, last: 72 };
+
+function isH08m(headType: string): boolean {
+  return headType === 'H08M' || headType === 'H08MQ';
+}
+
+function h08mVariantFromFileName(fileName: string): H08mVariant | null {
   const upper = fileName.toUpperCase();
   if (upper.includes('HBCC')) return 'ceramic';
   if (upper.includes('HBCG')) return 'glass';
+  return null;
+}
+
+function h08mVariantFromRowCount(rows: number): H08mVariant | null {
+  if (rows === H08M_CERAMIC_ROWS) return 'ceramic';
+  if (rows === H08M_GLASS_ROWS || rows === 128) return 'glass';
   return null;
 }
 
@@ -143,9 +158,10 @@ interface RawRow {
 
 function parseHeader(
   line: string,
-  fileName: string,
   warnings: ParseWarning[],
-): Omit<PamHeader, 'testDate' | 'dateSource'> & { lastField: string | undefined } {
+): Omit<PamHeader, 'testDate' | 'dateSource' | 'h08mVariant' | 'h08mVariantSource'> & {
+  lastField: string | undefined;
+} {
   const tabSeparated = line.includes('\t');
   // Tab-getrennt, leere Felder bleiben erhalten. NXT und AIMEX haben dadurch identische Positionen.
   const fields = tabSeparated ? line.split('\t').map((f) => f.trim()) : line.trim().split(/\s+/);
@@ -175,7 +191,6 @@ function parseHeader(
     headSerial: fields[3] ?? '',
     toolType,
     toolSerial,
-    h08mVariant: detectH08mVariant(fileName, headType),
     lastField: nonEmpty.at(-1),
   };
 }
@@ -196,7 +211,7 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
     throw new Error('Datei ist leer.');
   }
 
-  const { lastField, ...headerBase } = parseHeader(headerLine.text, fileName, warnings);
+  const { lastField, ...headerBase } = parseHeader(headerLine.text, warnings);
 
   let testDate = dateFromHeader(lastField, now);
   let dateSource: DateSource = testDate ? 'header' : 'unknown';
@@ -209,13 +224,38 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
     if (testDate) dateSource = 'filename';
   }
 
+  // H08M: Variante bevorzugt aus dem Dateinamen (HBCC/HBCG), sonst aus der Anzahl Datenzeilen.
+  let h08mVariant: H08mVariant | null = null;
+  let h08mVariantSource: PamHeader['h08mVariantSource'] = null;
+  const glassLayout = isH08m(headerBase.headType) && lines.length === H08M_GLASS_ROWS;
+  if (isH08m(headerBase.headType)) {
+    const fromName = h08mVariantFromFileName(fileName);
+    const fromData = h08mVariantFromRowCount(lines.length);
+    if (fromName) {
+      h08mVariant = fromName;
+      h08mVariantSource = 'filename';
+      if (fromData && fromData !== fromName) {
+        warnings.push({
+          code: 'h08m_variant_mismatch',
+          message: `Dateiname nennt ${fromName === 'glass' ? 'Glas' : 'Keramik'}, die Anzahl Datenzeilen (${lines.length}) passt zu ${fromData === 'glass' ? 'Glas' : 'Keramik'}.`,
+        });
+      }
+    } else if (fromData) {
+      h08mVariant = fromData;
+      h08mVariantSource = 'data';
+    }
+  }
+
   const rows: RawRow[] = [];
   for (const { lineNumber, text } of lines) {
     const columns = text.trim().replace(/\}+$/, '').trim().split(/\s+/);
     if (columns.length < 7) {
+      const sequence = Number.parseInt(columns[0] as string, 10);
+      const placeholder =
+        glassLayout && sequence >= H08M_GLASS_PLACEHOLDERS.first && sequence <= H08M_GLASS_PLACEHOLDERS.last;
       invalidLines.push({
         lineNumber,
-        reason: columns.length >= 4 ? 'missing_measurement' : 'malformed',
+        reason: placeholder ? 'placeholder' : columns.length >= 4 ? 'missing_measurement' : 'malformed',
         content: text,
       });
       continue;
@@ -236,7 +276,7 @@ export function parsePamFile(content: string, fileName: string, options: ParseOp
     });
   }
 
-  const header: PamHeader = { ...headerBase, testDate, dateSource };
+  const header: PamHeader = { ...headerBase, h08mVariant, h08mVariantSource, testDate, dateSource };
 
   // DX-Köpfe ohne Werkzeugangabe: Liegen alle Messungen auf einem Schaft, handelt es sich um ein S1-Werkzeug.
   if (header.headType === 'DX' && !header.toolType) {

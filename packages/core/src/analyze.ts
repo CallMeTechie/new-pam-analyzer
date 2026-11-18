@@ -184,6 +184,7 @@ export function analyzePamFile(parsed: ParsedPamFile, options: AnalyzeOptions = 
     coefficientSource,
     expectedComponents: expectedComponents(header.headType, header.toolType, header.h08mVariant, config),
     measuredComponents: parsed.measurements.length,
+    failedMeasurements: parsed.invalidLines.filter((l) => l.reason !== 'placeholder').length,
     head,
     shafts,
     axisLimits: {

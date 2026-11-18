@@ -178,7 +178,17 @@ describe('Abgleich mit dem Alt-System', () => {
       expect(h.machineNo).toBe(legacy.machine_no);
       expect(h.headType).toBe(legacy.head_type);
       expect(h.headSerial).toBe(legacy.head_serial);
-      expect(h.h08mVariant).toBe(legacy.h08m_variant);
+      if (legacy.h08m_variant !== null) {
+        expect(h.h08mVariant).toBe(legacy.h08m_variant);
+        expect(h.h08mVariantSource).toBe('filename');
+      } else if (h.headType === 'H08M' || h.headType === 'H08MQ') {
+        // Abweichung: Das Alt-System kannte die Variante ohne HBCC/HBCG im Dateinamen nicht.
+        // Neu wird sie aus der Anzahl Datenzeilen erkannt; die erwartete Bauteilanzahl bleibt gleich.
+        expect(h.h08mVariant).toBe('glass');
+        expect(h.h08mVariantSource).toBe('data');
+      } else {
+        expect(h.h08mVariant).toBeNull();
+      }
       if (deviation) {
         expect(h.toolType).toBe(deviation.toolType);
         expect(h.toolSerial).toBe(deviation.toolSerial);
@@ -203,6 +213,16 @@ describe('Abgleich mit dem Alt-System', () => {
       const dataLines = content.split('\n').filter((l) => l.trim() !== '').length - 1;
       expect(parsed.measurements.length + parsed.invalidLines.length).toBe(dataLines);
     });
+
+    if (fileName.includes('_H08M_') && content.split('\n').filter((l) => l.trim() !== '').length - 1 === 136) {
+      it('führt bei H08M Glas die Zeilen 65–72 als Platzhalter, nicht als Fehlmessung', () => {
+        const placeholders = parsed.invalidLines.filter((l) => l.reason === 'placeholder');
+        expect(placeholders.map((l) => l.lineNumber)).toEqual([66, 67, 68, 69, 70, 71, 72, 73]);
+        const result = analyzePamFile(parsed);
+        expect(result.expectedComponents).toBe(128);
+        expect(result.measuredComponents + result.failedMeasurements).toBe(128);
+      });
+    }
 
     if (deviation) {
       it('rechnet mit dem korrigierten Werkzeugkoeffizienten', () => {

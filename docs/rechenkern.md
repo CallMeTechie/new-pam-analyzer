@@ -31,7 +31,19 @@ Kennzahlen** (Ausnahme: die unten dokumentierten Korrekturen).
 | 7 – 11 | nur NXT-R, Bedeutung unbekannt |
 
 Zeilen mit nur 4 Spalten enthalten **keine Messwerte** (Bauteil nicht vermessen). Sie werden als
-`missing_measurement` gemeldet.
+`missing_measurement` gemeldet und in `failedMeasurements` gezählt.
+
+### H08M: Glas und Keramik
+
+| Variante | Bauteile | Datenzeilen | Besonderheit |
+|---|---|---|---|
+| Keramik | 256 | 256 | – |
+| Glas | 128 | 136 | Zeilen Nr. 65 – 72 (je Schaft eine, Winkel 0) sind leere Platzhalter ohne Bauteil |
+
+Die Variante kommt aus dem Dateinamen (`HBCC` = Keramik, `HBCG` = Glas). Fehlt das Kürzel, wird sie
+aus der Anzahl der Datenzeilen erkannt (`h08mVariantSource: 'data'`). Widersprechen sich Dateiname
+und Daten, gilt der Dateiname und es gibt die Warnung `h08m_variant_mismatch`. Platzhalterzeilen
+erscheinen in `invalidLines` mit dem Grund `placeholder` und zählen nicht als Fehlmessung.
 
 ## Berechnung
 
@@ -62,6 +74,7 @@ Originaldatei → Datum im Dateinamen → unbekannt.
 | DX ohne Werkzeugangabe | Werkzeug `1`, Koeffizient 50 | Liegen alle Messungen auf einem Schaft, wird S1 abgeleitet (mit Warnung) |
 | Prüfdatum ohne Quelle | Zeitstempel der hochgeladenen Temp-Datei, also faktisch der Upload-Zeitpunkt | `null` mit `dateSource: 'unknown'`; der Server entscheidet über einen Ersatzwert |
 | Ungültige Zeilen | stillschweigend verworfen | in `invalidLines` mit Zeilennummer und Grund |
+| H08M-Variante ohne HBCC/HBCG im Dateinamen | unbekannt | aus der Anzahl Datenzeilen erkannt; erwartete Bauteilanzahl unverändert |
 | Leerzeilen | eine Leerzeile führte dazu, dass die folgende Messzeile verloren ging | werden übersprungen |
 | Kopfdaten | vor dem Speichern HTML-escaped | unverändert; Escaping erst bei der Ausgabe |
 | Diagrammfarben und -symbole | Teil des Berechnungsergebnisses und in der Datenbank gespeichert | Sache der Oberfläche |
@@ -79,13 +92,12 @@ Beispiel AIMEX-DX aus den Testdaten:
 - DX-Koeffizienten: R12 = 38, R4 = 40, S1 = 30.
 - DX ohne Werkzeugangabe in der Kopfzeile und nur ein Schaft in den Daten ⇒ S1-Werkzeug.
 - H08M kann Glas- oder Keramik-Bauteile verwenden; mit Keramik werden mehr Bauteile bestückt
-  (Keramik 256, Glas 128).
+  (Keramik 256, Glas 128). Die 8 zusätzlichen Zeilen der Glas-Dateien sind daher keine Bauteile.
 
 ## Offene fachliche Fragen
 
 - Bedeutung von Datenspalte 2 und der NXT-R-Zusatzspalten 7 – 11.
-- H08M mit Glas: Die Dateien haben 136 Datenzeilen; die Zeilen 65 – 72 (je Schaft eine, Winkel 0)
-  sind in allen Testdateien leer. Sind das Platzhalter-Positionen ohne Bauteil?
+
 
 ## Absicherung
 
