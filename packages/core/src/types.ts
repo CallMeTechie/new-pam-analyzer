@@ -1,0 +1,155 @@
+/** Maschinenfamilie, abgeleitet aus dem ersten Feld der Kopfzeile. */
+export type MachineFamily = 'nxt' | 'nxtr' | 'aimex' | 'unknown';
+
+/** Bestückwinkel, die in PAM-Dateien vorkommen. */
+export type Angle = 0 | 90 | 180 | 270;
+
+/** Herkunft des Prüfdatums. */
+export type DateSource = 'header' | 'file_modified' | 'filename' | 'unknown';
+
+export type H08mVariant = 'ceramic' | 'glass';
+
+export interface PamHeader {
+  machineFamily: MachineFamily;
+  /** Erstes Feld der Kopfzeile, z. B. `M6`, `AIMEX`, `NXTR`. */
+  machineModel: string;
+  /** Maschinenkennung, z. B. `M6IIIXNo9001`. */
+  machineNo: string;
+  /** Kopftyp, z. B. `V12`, `H08M`, `RH28`, `DX`. */
+  headType: string;
+  headSerial: string;
+  /** Werkzeugtyp bei DynaHead (DX), z. B. `R12`, `R4`, `S1`. */
+  toolType: string | null;
+  toolSerial: string | null;
+  h08mVariant: H08mVariant | null;
+  /** Prüfdatum als lokale Maschinenzeit `YYYY-MM-DD HH:mm:ss`. */
+  testDate: string | null;
+  dateSource: DateSource;
+}
+
+export interface Measurement {
+  /** 1-basierte Schaft-/Holder-Nummer. */
+  shaft: number;
+  angle: Angle;
+  /** Versatz X in µm. */
+  x: number;
+  /** Versatz Y in µm. */
+  y: number;
+  /** Winkelversatz in Grad. */
+  q: number;
+  /** Zeilennummer in der Originaldatei (1-basiert). */
+  lineNumber: number;
+}
+
+/**
+ * Grund, warum eine Datenzeile nicht ausgewertet wurde:
+ * - `missing_measurement`: Zeile ohne X/Y/Q-Werte (keine Messung möglich)
+ * - `malformed`: Zeile nicht lesbar
+ * - `shaft_out_of_range`: Schaftnummer außerhalb 1 … 30
+ * - `invalid_angle`: Winkel nicht 0/90/180/270
+ * - `invalid_value`: Messwert nicht numerisch oder außerhalb des plausiblen Bereichs
+ */
+export type InvalidLineReason =
+  | 'missing_measurement'
+  | 'malformed'
+  | 'shaft_out_of_range'
+  | 'invalid_angle'
+  | 'invalid_value';
+
+export interface InvalidLine {
+  lineNumber: number;
+  reason: InvalidLineReason;
+  content: string;
+}
+
+export type ParseWarningCode = 'header_not_tab_separated' | 'tool_inferred' | 'tool_missing' | 'continuation_line';
+
+export interface ParseWarning {
+  code: ParseWarningCode;
+  message: string;
+}
+
+export interface ParsedPamFile {
+  fileName: string;
+  header: PamHeader;
+  /** Anzahl Schäfte laut Kopf-/Werkzeugtyp; 0, wenn unbekannt. */
+  shaftCount: number;
+  measurements: Measurement[];
+  invalidLines: InvalidLine[];
+  warnings: ParseWarning[];
+}
+
+export interface ParseOptions {
+  /** Änderungsdatum der Originaldatei (z. B. `File.lastModified` im Browser). */
+  lastModified?: Date;
+  /** Zeitzone für die Umrechnung von `lastModified` in lokale Zeit. Standard: Europe/Berlin. */
+  timeZone?: string;
+  /** Referenzzeitpunkt für Plausibilitätsprüfungen (Tests). Standard: jetzt. */
+  now?: Date;
+}
+
+export interface CoefficientConfig {
+  /** Cpk-Koeffizient (Toleranz ±µm) je Kopftyp. */
+  cpkCoefficients: Record<string, number>;
+  /** Cpk-Koeffizient je DynaHead-Werkzeug. */
+  dynaheadTools: Record<string, number>;
+  /** Erwartete Anzahl Bauteile je Kopftyp. */
+  placementCounts: Record<string, number | 'tool_dependent' | null>;
+  /** Erwartete Anzahl Bauteile je DynaHead-Werkzeug. */
+  dynaheadToolPlacements: Record<string, number>;
+  defaultCoefficient: number;
+}
+
+export interface AxisStatistics {
+  mean: number;
+  /** Dreifache Stichproben-Standardabweichung (n−1). */
+  sigma3: number;
+  min: number | null;
+  max: number | null;
+}
+
+export interface CapabilityAxisStatistics extends AxisStatistics {
+  /** `null`, wenn 3σ = 0 oder Koeffizient = 0. */
+  cp: number | null;
+  cpk: number | null;
+}
+
+export interface StatisticsSummary {
+  count: number;
+  x: CapabilityAxisStatistics;
+  y: CapabilityAxisStatistics;
+  q: AxisStatistics;
+  /** Kleinerer Wert aus Cpk X und Cpk Y. */
+  cpkXY: number | null;
+}
+
+export interface ShaftResult extends StatisticsSummary {
+  shaft: number;
+  /** Holder-Bezeichnung A … Z, AA … AD. */
+  label: string;
+}
+
+export type CoefficientSource = 'config' | 'default' | 'manual';
+
+export interface AxisLimits {
+  min: number;
+  max: number;
+}
+
+export interface AnalysisResult {
+  algorithmVersion: string;
+  coefficient: number;
+  detectedCoefficient: number;
+  coefficientSource: CoefficientSource;
+  expectedComponents: number | null;
+  measuredComponents: number;
+  head: StatisticsSummary;
+  shafts: ShaftResult[];
+  axisLimits: { x: AxisLimits; y: AxisLimits };
+}
+
+export interface AnalyzeOptions {
+  /** Manuell gesetzter Koeffizient (1–1000 µm); überschreibt die automatische Erkennung. */
+  coefficient?: number;
+  config?: CoefficientConfig;
+}

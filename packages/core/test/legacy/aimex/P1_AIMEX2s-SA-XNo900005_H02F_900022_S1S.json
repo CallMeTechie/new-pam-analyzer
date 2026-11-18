@@ -1,0 +1,70 @@
+{
+    "source": "aimex/P1_AIMEX2s-SA-XNo900005_H02F_900022_S1S.dat",
+    "sha256": "fadf9c8ec216c9beed3191ef859cb9e3da59f6c5e75251f8cbe801b88b85249c",
+    "file_header_info": {
+        "machine_no": "AIMEX2s-SA-XNo900005",
+        "head_type": "H02F",
+        "head_serial": "900022",
+        "tool_type": "",
+        "tool_serial": "",
+        "h08m_variant": null,
+        "date_source": "temp_file",
+        "test_date": null
+    },
+    "shaft_count": 2,
+    "point_count": 58,
+    "expected_components": 64,
+    "detected_coefficient": 25,
+    "used_coefficient": 25,
+    "head_stats_summary": {
+        "avg_x": -7.500440603448274,
+        "avg_y": 1.241641172413793,
+        "avg_q": 0.022032603448275866,
+        "sigma3_x": 11.722954190538363,
+        "sigma3_y": 10.609615719924262,
+        "sigma3_q": 0.07215731568762868,
+        "cp_x": 2.132568258278923,
+        "cpk_x": 1.492760196118115,
+        "cp_y": 2.3563530159769503,
+        "cpk_y": 2.2393232191218146
+    },
+    "cpk_results_table": {
+        "A": {
+            "cp_x": 2.784244243768346,
+            "cpk_x": 1.8801915026821165,
+            "cp_y": 2.055191526514159,
+            "cpk_y": 1.95688055317501,
+            "xy": 1.8801915026821165
+        },
+        "B": {
+            "cp_x": 1.8201487073391653,
+            "cpk_x": 1.3160078401941113,
+            "cp_y": 2.736771899297641,
+            "cpk_y": 2.5961733957324524,
+            "xy": 1.3160078401941113
+        },
+        "Total": {
+            "cp_x": 2.132568258278923,
+            "cpk_x": 1.492760196118115,
+            "cp_y": 2.3563530159769503,
+            "cpk_y": 2.2393232191218146,
+            "xy": 1.492760196118115
+        }
+    },
+    "min_max": {
+        "min_x": -13.96837,
+        "max_x": 2.622491,
+        "min_y": -8.755832,
+        "max_y": 7.667392,
+        "min_q": -0.03149,
+        "max_q": 0.087241
+    },
+    "x_axis_limits": {
+        "min": -50.0,
+        "max": 50.0
+    },
+    "y_axis_limits": {
+        "min": -50.0,
+        "max": 50.0
+    }
+}
