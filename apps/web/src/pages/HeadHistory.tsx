@@ -1,4 +1,3 @@
-import { CPK_THRESHOLDS } from '@pam/core';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Page } from '../components/Layout';
@@ -6,6 +5,7 @@ import { ErrorNotice, headLabel, Loading, PartsBar, RatingPill, ratingClass } fr
 import { useI18n } from '../i18n';
 import type { ResultRow } from '../lib/api';
 import { useScope } from '../lib/scope';
+import { useThresholds } from '../lib/thresholds';
 import { useApi } from '../lib/useApi';
 
 const W = 1000;
@@ -16,6 +16,7 @@ const time = (s: string) => Date.parse(`${s.replace(' ', 'T')}Z`);
 
 function Chart({ items, currentId }: { items: ResultRow[]; currentId: number }) {
   const { t, num, date, dateTime } = useI18n();
+  const CPK_THRESHOLDS = useThresholds();
   const scope = useScope();
   const navigate = useNavigate();
   const [hover, setHover] = useState<ResultRow | null>(null);
@@ -136,6 +137,7 @@ export function HeadHistory() {
     `/results/${id}/history`,
   );
   const currentId = Number(id);
+  const thresholds = useThresholds();
 
   if (error) {
     return (
@@ -152,6 +154,7 @@ export function HeadHistory() {
     );
   }
   const items = data.items;
+  const CPK_THRESHOLDS = thresholds;
   const latest = items.at(-1);
   const rated = items.filter((r) => r.cpkXY !== null);
   const best = rated.reduce<ResultRow | null>((b, r) => (!b || (r.cpkXY ?? 0) > (b.cpkXY ?? 0) ? r : b), null);
@@ -164,15 +167,13 @@ export function HeadHistory() {
   return (
     <Page
       title={t('history.title')}
+      info={t('history.intro')}
       actions={
         <Link to={scope.link(`/results/${currentId}`)} className="btn">
           ← {t('history.backToResult')}
         </Link>
       }
     >
-      <p className="muted" style={{ maxWidth: '80ch' }}>
-        {t('history.intro')}
-      </p>
       <div className="kpis">
         <div className="kpi" style={{ background: 'var(--dark)', color: '#fff' }}>
           <span style={{ color: 'rgba(255,255,255,.7)' }}>{t('fact.head')}</span>

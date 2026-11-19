@@ -38,6 +38,8 @@ test('administrator: first sign-in with default credentials, company, team and A
   await signIn(page, DEFAULT.email, DEFAULT.password);
   await changePassword(page, DEFAULT.password, ADMIN.password, ADMIN.email);
   await expect(page.getByText('No results yet')).toBeVisible();
+  await expect(page.locator('.footer')).toContainText('Made with');
+  await expect(page.locator('.footer')).toContainText('CallMeTechie');
 
   await page.getByRole('link', { name: 'Companies' }).click();
   await page.getByRole('button', { name: 'Add company' }).click();
@@ -47,7 +49,7 @@ test('administrator: first sign-in with default credentials, company, team and A
   await expect(page.getByRole('listitem').filter({ hasText: 'Customer A' })).toBeVisible();
 
   await page.getByRole('link', { name: 'Open company view' }).click();
-  await expect(page.getByText('You are viewing Customer A as FUJI Service')).toBeVisible();
+  await expect(page.getByText('You are viewing Customer A exactly as its members see it.')).toBeVisible();
   await page.getByRole('link', { name: 'Team & API keys' }).click();
   await page.getByRole('button', { name: 'Invite member' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Line Operator');
@@ -104,6 +106,7 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await page.getByRole('button', { name: 'Increase coefficient' }).click();
   await expect(page.getByText('manual')).toBeVisible();
 
+  await expect(page.getByRole('button', { name: 'Print' })).toBeVisible();
   await page.getByRole('link', { name: 'Head history' }).click();
   await expect(page.getByText('2 tests')).toBeVisible();
   await expect(page.locator('.history-chart g.pt')).toHaveCount(2);
@@ -126,4 +129,38 @@ test('company member sees only the own company and can switch to German', async 
   // The choice is stored in the profile.
   await page.reload();
   await expect(page.getByRole('link', { name: 'Ergebnisse' })).toBeVisible();
+});
+
+test('settings: rating thresholds, language import and manual', async ({ page }) => {
+  await signIn(page, ADMIN.email, ADMIN.password);
+  await expect(page.getByRole('heading', { name: 'Dashboard', level: 1 })).toBeVisible();
+  await page.goto('/settings#rating');
+  const warning = page.getByLabel(/warning\s*from/i);
+  // Far above every real Cpk: all results become critical.
+  await warning.fill('50');
+  await page.getByLabel(/good\s*from/i).fill('60');
+  await page.getByLabel(/excellent\s*from/i).fill('70');
+  await page.getByRole('button', { name: 'Save and rate again' }).click();
+  await expect(page.getByText('All results were rated again.')).toBeVisible();
+  await page.goto('/results?rating=critical');
+  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
+
+  await page.goto('/settings#languages');
+  const file = {
+    name: 'fr.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify({ code: 'fr', name: 'Français', messages: { 'nav.results': 'Résultats' } })),
+  };
+  await page.locator('input[type=file][accept="application/json,.json"]').setInputFiles(file);
+  await expect(page.getByText('Language file "Français" (fr)')).toBeVisible();
+  await page.getByRole('button', { name: 'Add language' }).click();
+  await expect(page.getByText('"Français" was imported.')).toBeVisible();
+  await page.locator('.footer .lang-switch select').selectOption('fr');
+  await expect(page.getByRole('link', { name: 'Résultats' })).toBeVisible();
+  await page.locator('.footer .lang-switch select').selectOption('en');
+
+  await page.goto('/settings#manual');
+  await expect(page.getByRole('heading', { name: 'Manual' })).toBeVisible();
+  await page.goto('/settings#version');
+  await expect(page.getByText('0.2.0').first()).toBeVisible();
 });

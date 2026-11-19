@@ -93,6 +93,15 @@ describe('Benutzerverwaltung', () => {
     expect((await bossA.json('DELETE', `/api/users/${me.id}`)).status).toBe(404);
   });
 
+  it('Administratoren verschieben Benutzer in eine andere Firma', async () => {
+    const { admin, bossA, workerA, b } = await world();
+    const worker = (await workerA.json('GET', '/api/auth/me')).body.user;
+    expect((await bossA.json('PATCH', `/api/users/${worker.id}`, { companyId: b })).status).toBe(403);
+    const moved = await admin.json('PATCH', `/api/users/${worker.id}`, { companyId: b });
+    expect(moved.body.user).toMatchObject({ companyId: b, companyName: 'Customer B' });
+    expect((await workerA.json('GET', '/api/auth/me')).status).toBe(401);
+  });
+
   it('deaktivierte Benutzer verlieren ihre Sitzungen', async () => {
     const { bossA, workerA } = await world();
     const worker = (await workerA.json('GET', '/api/auth/me')).body.user;

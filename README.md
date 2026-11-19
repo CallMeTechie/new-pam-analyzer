@@ -12,7 +12,8 @@ FUJI-Bestückautomaten NXT, NXT-R (APAM) und AIMEX.
 | `apps/web` | Web-Oberfläche (React), Englisch und Deutsch; Grundlage der Apps | ✅ fertig |
 | `apps/client` | Apps für Windows, Android und iOS (Tauri) | geplant |
 
-Details: [Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md) ·
+Details: [Handbuch](docs/manual/de.md) · [Änderungen](CHANGELOG.de.md) ·
+[Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md) ·
 [Server, API und Betrieb](docs/server.md) · [Web-Oberfläche](docs/web.md)
 
 ## Entwicklung
@@ -39,6 +40,10 @@ docker compose up -d
 
 Das Image kommt von `ghcr.io/callmetechie/new-pam-analyzer:latest`; mit `--build` wird es lokal
 gebaut. Die Web-Oberfläche läuft danach unter http://localhost:3000.
+
+Der Datenordner wird beim Start automatisch eingerichtet, auch als eingebundener Ordner eines
+NAS (z. B. Synology); Rechte von Hand sind nicht nötig. Hinter einem Reverse Proxy muss
+`PUBLIC_URL` genau die Adresse sein, die im Browser steht, z. B. `https://pam.example.com`.
 
 ### Erste Anmeldung
 

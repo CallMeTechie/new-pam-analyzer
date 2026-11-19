@@ -23,6 +23,10 @@ export const companies = sqliteTable('companies', {
   notes: text('notes'),
   /** The operator of the installation (FUJI Service). Exactly one company has this flag. */
   isService: integer('is_service', { mode: 'boolean' }).notNull().default(false),
+  /** Logo (PNG, JPEG or WebP, at most 512 KB). */
+  logo: blob('logo', { mode: 'buffer' }),
+  logoType: text('logo_type'),
+  logoUpdatedAt: integer('logo_updated_at', { mode: 'timestamp_ms' }),
   disabledAt: integer('disabled_at', { mode: 'timestamp_ms' }),
   createdAt: createdAt(),
 });

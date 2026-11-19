@@ -231,3 +231,65 @@ export function Field({
     </div>
   );
 }
+
+/** (i) icon with an explanation shown on hover, focus or tap; replaces explanatory paragraphs. */
+export function InfoTip({ text, label }: { text: ReactNode; label?: string }) {
+  const { t } = useI18n();
+  const id = useId();
+  const [open, setOpen] = useState(false);
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: hover only opens the tip early; the button handles focus, click and Escape
+    <span className="infotip" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        className="infotip-btn"
+        aria-label={label ?? t('common.info')}
+        aria-describedby={open ? id : undefined}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') setOpen(false);
+        }}
+      >
+        <Icon name="info" size={16} />
+      </button>
+      {open && (
+        <span role="tooltip" id={id} className="infotip-text">
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Company logo, or the initials when there is none. */
+export function CompanyBadge({
+  company,
+  size = 40,
+}: {
+  company: { id: number; name: string; isService?: boolean; logoVersion?: number | null };
+  size?: number;
+}) {
+  const initials =
+    company.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join('') || '?';
+  const style = { width: size, height: size, borderRadius: Math.round(size * 0.3), fontSize: Math.round(size * 0.36) };
+  if (company.logoVersion) {
+    return (
+      <span className="company-badge logo" style={style}>
+        <img src={`/api/companies/${company.id}/logo?v=${company.logoVersion}`} alt={company.name} />
+      </span>
+    );
+  }
+  return (
+    <span className={`company-badge${company.isService ? ' service' : ''}`} style={style} aria-hidden="true">
+      {initials}
+    </span>
+  );
+}

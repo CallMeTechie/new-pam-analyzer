@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { z } from 'zod';
@@ -9,8 +9,8 @@ import { createSession, deleteSession, deleteUserSessions, SESSION_COOKIE, userF
 import { companies, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
 import { DEFAULT_ADMIN } from '../services/bootstrap.js';
+import { isKnownLocale, localeCode } from '../services/languages.js';
 
-export const LOCALES = ['en', 'de'] as const;
 export const password = z.string().min(12, 'at least 12 characters').max(200);
 export const email = z.string().trim().toLowerCase().email().max(200);
 
@@ -25,7 +25,12 @@ function profile(db: AppEnv['Variables']['db'], userId: number) {
       role: users.role,
       locale: users.locale,
       mustChangePassword: users.mustChangePassword,
-      company: { id: companies.id, name: companies.name, isService: companies.isService },
+      company: {
+        id: companies.id,
+        name: companies.name,
+        isService: companies.isService,
+        logoVersion: sql<number | null>`${companies.logoUpdatedAt}`,
+      },
     })
     .from(users)
     .innerJoin(companies, eq(users.companyId, companies.id))
@@ -64,10 +69,13 @@ authRoutes.get('/me', (c) => {
 authRoutes.patch('/me', async (c) => {
   const user = currentUser(c);
   const body = parse(
-    z.object({ name: z.string().trim().min(1).max(100).optional(), locale: z.enum(LOCALES).optional() }),
+    z.object({ name: z.string().trim().min(1).max(100).optional(), locale: localeCode.optional() }),
     await jsonBody(c),
   );
   const db = c.get('db');
+  if (body.locale && !isKnownLocale(db, body.locale)) {
+    throw new HttpError(400, 'invalid_request', 'This language is not available.');
+  }
   db.update(users).set(body).where(eq(users.id, user.id)).run();
   return c.json({ user: profile(db, user.id) });
 });

@@ -10,6 +10,7 @@ export {
   rateCpk,
   SHAFT_LABELS,
   shaftLabel,
+  validThresholds,
 } from './analyze.js';
 export { DEFAULT_CONFIG } from './config.js';
 export {

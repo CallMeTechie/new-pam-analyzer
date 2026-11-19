@@ -189,7 +189,16 @@ export interface AnalysisResult {
   axisLimits: { x: AxisLimits; y: AxisLimits };
 }
 
+/** Untergrenzen der Bewertungsstufen „Warnung“, „gut“ und „sehr gut“; darunter „kritisch“. */
+export interface CpkThresholds {
+  warning: number;
+  good: number;
+  excellent: number;
+}
+
 export interface AnalyzeOptions {
+  /** Bewertungsgrenzen; Standard {@link CPK_THRESHOLDS}. */
+  thresholds?: CpkThresholds;
   /** Manuell gesetzter Koeffizient (1–1000 µm); überschreibt die automatische Erkennung. */
   coefficient?: number;
   config?: CoefficientConfig;

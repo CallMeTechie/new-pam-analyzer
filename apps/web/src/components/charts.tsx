@@ -1,4 +1,4 @@
-import { CPK_THRESHOLDS, type Measurement, shaftLabel } from '@pam/core';
+import { type CpkThresholds, type Measurement, shaftLabel } from '@pam/core';
 import { useMemo, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import type { Rating } from '../lib/api';
@@ -10,7 +10,15 @@ export const ANGLE_COLOR: Record<number, string> = {
   270: 'var(--a270)',
 };
 
-export function Gauge({ value, rating }: { value: number | null; rating: Rating | null }) {
+export function Gauge({
+  value,
+  rating,
+  thresholds,
+}: {
+  value: number | null;
+  rating: Rating | null;
+  thresholds: CpkThresholds;
+}) {
   const { t, num } = useI18n();
   const max = 2.5;
   const cx = 100;
@@ -33,7 +41,7 @@ export function Gauge({ value, rating }: { value: number | null; rating: Rating 
     );
   };
   const gap = 0.015;
-  const L = CPK_THRESHOLDS;
+  const L = thresholds;
   const needle = value === null ? null : pt(value, r - 18);
   return (
     <svg

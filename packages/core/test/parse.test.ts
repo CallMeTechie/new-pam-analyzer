@@ -7,6 +7,7 @@ import {
   parsePamFile,
   rateCpk,
   shaftCountFromType,
+  validThresholds,
 } from '../src/index.js';
 
 const NOW = new Date('2026-11-18T12:00:00Z');
@@ -278,11 +279,13 @@ describe('Berechnung', () => {
     expect(() => analyzePamFile(parsed, { coefficient: 0 })).toThrow(RangeError);
   });
 
-  it('erkennt Koeffizienten über Kopftyp, Werkzeug und generische Einträge', () => {
+  it('erkennt Koeffizienten über Kopftyp und Werkzeug, sonst Standardwert', () => {
     expect(detectCoefficient('V12', null).coefficient).toBe(38);
     expect(detectCoefficient('DX', 'R4').coefficient).toBe(40);
     expect(detectCoefficient('H12', null)).toEqual({ coefficient: 38, source: 'config' });
     expect(detectCoefficient('XYZ', null)).toEqual({ coefficient: 50, source: 'default' });
+    // Keine Sammeleinträge mehr: ein unbekannter 12er-Kopf erhält den Standardwert.
+    expect(detectCoefficient('Z12', null)).toEqual({ coefficient: 50, source: 'default' });
   });
 
   it('leitet die Schaftanzahl aus der Typbezeichnung ab', () => {
@@ -300,6 +303,17 @@ describe('Bewertung', () => {
     expect(rateCpk(1.33)).toBe('good');
     expect(rateCpk(1.67)).toBe('excellent');
     expect(rateCpk(null)).toBeNull();
+  });
+
+  it('bewertet mit eigenen Grenzen', () => {
+    const strict = { warning: 1.33, good: 1.67, excellent: 2.0 };
+    expect(rateCpk(1.2, strict)).toBe('critical');
+    expect(rateCpk(1.5, strict)).toBe('warning');
+    expect(rateCpk(1.8, strict)).toBe('good');
+    expect(rateCpk(2.0, strict)).toBe('excellent');
+    expect(validThresholds(strict)).toBe(true);
+    expect(validThresholds({ warning: 1.5, good: 1.33, excellent: 2 })).toBe(false);
+    expect(validThresholds({ warning: 0, good: 1, excellent: 2 })).toBe(false);
   });
 
   it('bewertet die Vollständigkeit wie das Alt-System', () => {

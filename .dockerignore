@@ -8,6 +8,7 @@ packages/core/test
 apps/server/test
 tools
 docs
+!docs/manual
 apps/web/e2e
 apps/web/test
 **/.e2e-data

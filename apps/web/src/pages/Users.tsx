@@ -32,6 +32,7 @@ export function Users() {
   return (
     <Page
       title={t('nav.users')}
+      info={t('users.intro')}
       actions={
         <button
           type="button"
@@ -44,9 +45,6 @@ export function Users() {
         </button>
       }
     >
-      <p className="muted" style={{ maxWidth: '80ch' }}>
-        {t('users.intro')}
-      </p>
       <section className="card filters">
         <input
           className="input"
@@ -98,7 +96,6 @@ export function Users() {
       {inviting && (
         <UserForm
           companyId={isAdmin ? (inviteCompany?.id ?? me.company.id) : me.company.id}
-          companyIsService={isAdmin ? (inviteCompany?.isService ?? true) : true}
           onClose={() => setInviting(false)}
           onSaved={reload}
         />

@@ -1,4 +1,12 @@
-import type { AnalysisResult, CoefficientConfig, InvalidLine, Measurement, PamHeader, ParseWarning } from '@pam/core';
+import type {
+  AnalysisResult,
+  CoefficientConfig,
+  CpkThresholds,
+  InvalidLine,
+  Measurement,
+  PamHeader,
+  ParseWarning,
+} from '@pam/core';
 
 export type Role = 'admin' | 'companyAdmin' | 'user';
 export type Rating = 'critical' | 'warning' | 'good' | 'excellent';
@@ -11,7 +19,7 @@ export interface Profile {
   role: Role;
   locale: string;
   mustChangePassword: boolean;
-  company: { id: number; name: string; isService: boolean };
+  company: { id: number; name: string; isService: boolean; logoVersion: number | null };
 }
 
 export interface ResultRow {
@@ -47,6 +55,7 @@ export interface ResultDetail {
     id: number;
     companyId: number | null;
     companyName: string | null;
+    companyLogoVersion: number | null;
     line: string | null;
     fileName: string;
     fileSize: number;
@@ -63,6 +72,7 @@ export interface ResultDetail {
   measurements: Measurement[];
   analysis: AnalysisResult;
   config: CoefficientConfig;
+  thresholds: CpkThresholds;
 }
 
 export interface Company {
@@ -72,6 +82,7 @@ export interface Company {
   location: string | null;
   notes: string | null;
   isService: boolean;
+  logoVersion: number | null;
   disabled: boolean;
   createdAt: string;
   users: number;

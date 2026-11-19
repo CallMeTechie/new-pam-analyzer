@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { de } from './de';
 import { en } from './en';
 
@@ -12,10 +12,34 @@ export type Message = string | Plural;
 export type Catalog = typeof en;
 export type MessageKey = keyof Catalog;
 
-export const CATALOGS: Record<string, { name: string; messages: Partial<Record<MessageKey, Message>> }> = {
-  en: { name: 'English', messages: en },
-  de: { name: 'Deutsch', messages: de },
+export interface CatalogEntry {
+  name: string;
+  messages: Partial<Record<MessageKey, Message>>;
+  /** Built into the app (English, German) or imported by an administrator. */
+  builtin: boolean;
+}
+
+/** All languages; imported catalogs are added at runtime and may extend built-in ones. */
+export const CATALOGS: Record<string, CatalogEntry> = {
+  en: { name: 'English', messages: en, builtin: true },
+  de: { name: 'Deutsch', messages: de, builtin: true },
 };
+
+const BUILTIN: Record<string, CatalogEntry> = { ...CATALOGS };
+
+/** Adds catalogs imported on the server; an imported built-in language overrides single texts. */
+export function registerCatalogs(list: { code: string; name: string; messages: Record<string, unknown> }[]): void {
+  for (const code of Object.keys(CATALOGS)) if (!BUILTIN[code]) delete CATALOGS[code];
+  for (const [code, entry] of Object.entries(BUILTIN)) CATALOGS[code] = entry;
+  for (const c of list) {
+    const base = BUILTIN[c.code];
+    CATALOGS[c.code] = {
+      name: c.name,
+      messages: { ...(base?.messages ?? {}), ...(c.messages as Partial<Record<MessageKey, Message>>) },
+      builtin: Boolean(base),
+    };
+  }
+}
 export const DEFAULT_LOCALE = 'en';
 export type Vars = Record<string, string | number>;
 
@@ -34,7 +58,8 @@ const STORAGE_KEY = 'pam-locale';
 export function initialLocale(): string {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && CATALOGS[saved]) return saved;
+    // Imported languages are loaded later; until then English is shown.
+    if (saved && /^[a-z]{2,3}(-[A-Z]{2})?$/.test(saved)) return saved;
   } catch {
     // no storage available
   }
@@ -55,6 +80,8 @@ export interface I18n {
   /** Absolute instant (ISO string or ms) in the browser's zone. */
   instant(value: string | number | Date | null | undefined): string;
   relative(value: string | number | Date | null | undefined): string;
+  /** Loads imported language catalogs again, e.g. after an import. */
+  reloadCatalogs?(): Promise<void>;
 }
 
 const I18nContext = createContext<I18n | null>(null);
@@ -103,8 +130,25 @@ export function makeI18n(locale: string, setLocale: (l: string) => void = () => 
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState(initialLocale);
+  const [revision, setRevision] = useState(0);
+  const reloadCatalogs = useCallback(async () => {
+    try {
+      const res = await fetch('/api/i18n', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        catalogs: { code: string; name: string; messages: Record<string, unknown> }[];
+      };
+      registerCatalogs(data.catalogs);
+      setRevision((r) => r + 1);
+    } catch {
+      // the built-in languages stay available
+    }
+  }, []);
+  useEffect(() => {
+    void reloadCatalogs();
+  }, [reloadCatalogs]);
   const setLocale = useCallback((next: string) => {
-    if (!CATALOGS[next]) return;
+    if (!/^[a-z]{2,3}(-[A-Z]{2})?$/.test(next)) return;
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
@@ -113,7 +157,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = next;
     setLocaleState(next);
   }, []);
-  const value = useMemo(() => makeI18n(locale, setLocale), [locale, setLocale]);
+  const value = useMemo(
+    () => ({ ...makeI18n(CATALOGS[locale] ? locale : DEFAULT_LOCALE, setLocale), reloadCatalogs }),
+    [locale, setLocale, revision, reloadCatalogs],
+  );
   document.documentElement.lang = locale;
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

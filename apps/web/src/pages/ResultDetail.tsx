@@ -1,10 +1,16 @@
-import { ALGORITHM_VERSION, type AnalysisResult, analyzePamFile, CPK_THRESHOLDS, type ParsedPamFile } from '@pam/core';
+import {
+  ALGORITHM_VERSION,
+  type AnalysisResult,
+  analyzePamFile,
+  type CpkThresholds,
+  type ParsedPamFile,
+} from '@pam/core';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ANGLE_COLOR, Gauge, Scatter } from '../components/charts';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
-import { COMPONENT_RATING, ErrorNotice, headLabel, Loading, Notice, ratingClass } from '../components/ui';
+import { COMPONENT_RATING, CompanyBadge, ErrorNotice, headLabel, Loading, Notice, ratingClass } from '../components/ui';
 import { useI18n } from '../i18n';
 import { api, type ResultDetail as Detail, type Rating } from '../lib/api';
 import { useUser } from '../lib/auth';
@@ -295,7 +301,15 @@ function Overall({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisRe
   );
 }
 
-function Holders({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisResult }) {
+function Holders({
+  parsed,
+  result,
+  thresholds,
+}: {
+  parsed: ParsedPamFile;
+  result: AnalysisResult;
+  thresholds: CpkThresholds;
+}) {
   const { t, num } = useI18n();
   const [sort, setSort] = useState<'holder' | 'cpk'>('holder');
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
@@ -305,7 +319,7 @@ function Holders({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisRe
   if (filter === 'attention') shafts = shafts.filter((s) => attention(s.rating));
   if (sort === 'cpk')
     shafts.sort((a, b) => (a.cpkXY ?? Number.POSITIVE_INFINITY) - (b.cpkXY ?? Number.POSITIVE_INFINITY));
-  const lim = num(CPK_THRESHOLDS.good, 2);
+  const lim = num(thresholds.good, 2);
   return (
     <section className="stack">
       <div className="section-h">
@@ -408,7 +422,7 @@ export function ResultDetail() {
   const result = useMemo(() => {
     if (!data || !parsed) return null;
     if (coefficient === null) return data.analysis;
-    return analyzePamFile(parsed, { coefficient, config: data.config });
+    return analyzePamFile(parsed, { coefficient, config: data.config, thresholds: data.thresholds });
   }, [data, parsed, coefficient]);
 
   const canDelete =
@@ -467,6 +481,10 @@ export function ResultDetail() {
             <Icon name="history" size={16} />
             <span className="label-sm-hide">{t('detail.history')}</span>
           </Link>
+          <button type="button" className="btn" onClick={() => window.print()}>
+            <Icon name="printer" size={16} />
+            <span className="label-sm-hide">{t('detail.print')}</span>
+          </button>
           <a href={`/api/results/${data.result.id}/file`} className="btn" download>
             <Icon name="download" size={16} />
             <span className="label-sm-hide">{t('detail.download')}</span>
@@ -485,6 +503,25 @@ export function ResultDetail() {
         </>
       }
     >
+      <div className="print-only print-header">
+        {data.result.companyId !== null && (
+          <CompanyBadge
+            company={{
+              id: data.result.companyId,
+              name: data.result.companyName ?? '',
+              logoVersion: data.result.companyLogoVersion,
+            }}
+            size={44}
+          />
+        )}
+        <div>
+          <b>{data.result.companyName ?? 'PAM Analyzer'}</b>
+          <span>
+            {t('print.title')} · {headLabel(h, t('fact.sn'))}
+          </span>
+        </div>
+        <span className="print-date">{t('print.printed', { date: instant(Date.now()) })}</span>
+      </div>
       <section className="card hero">
         <div>
           <div className="eyebrow">
@@ -508,7 +545,7 @@ export function ResultDetail() {
         </div>
         <div className={`gauge ${ratingClass(head.rating)}`}>
           <span className="g-lbl">{t('gauge.label')}</span>
-          <Gauge value={head.cpkXY} rating={head.rating} />
+          <Gauge value={head.cpkXY} rating={head.rating} thresholds={data.thresholds} />
           <span className="g-val">{num(head.cpkXY, 2)}</span>
           <span className="g-txt">{t(`rating.${head.rating ?? 'none'}`)}</span>
         </div>
@@ -523,7 +560,7 @@ export function ResultDetail() {
         toolType={h.toolType}
       />
       <Overall parsed={parsed} result={result} />
-      <Holders parsed={parsed} result={result} />
+      <Holders parsed={parsed} result={result} thresholds={data.thresholds} />
 
       <footer className="detail-footer">
         <span>{t('footer.core', { v: ALGORITHM_VERSION })}</span>
@@ -534,9 +571,9 @@ export function ResultDetail() {
         </span>
         <span>
           {t('footer.rating', {
-            a: num(CPK_THRESHOLDS.warning, 2),
-            b: num(CPK_THRESHOLDS.good, 2),
-            c: num(CPK_THRESHOLDS.excellent, 2),
+            a: num(data.thresholds.warning, 2),
+            b: num(data.thresholds.good, 2),
+            c: num(data.thresholds.excellent, 2),
           })}
         </span>
       </footer>

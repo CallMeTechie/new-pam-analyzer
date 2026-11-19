@@ -20,10 +20,27 @@ keine externen Quellen), Akzent Blau, vier Bewertungsfarben.
 **Firmenansicht:** FUJI Service öffnet unter *Firmen* jede Firma genau so, wie deren Mitarbeiter
 sie sehen (`/companies/:id/view/…`). Ein dunkles Band zeigt das an und führt zurück.
 
+## Bedienung
+
+- Erklärungen stehen hinter (i)-Symbolen und erscheinen beim Zeigen oder Antippen.
+- Der Footer bleibt beim Scrollen sichtbar.
+- **Drucken** im Ergebnis druckt auf A4: Kopf mit Firmenlogo, Messuhr, HEAD/TOTAL, Koeffizient,
+  Gesamtansicht und Holder.
+
+## Handbuch und Änderungen
+
+- Das Handbuch steht in `docs/manual/de.md` und `docs/manual/en.md` und erscheint in der
+  Oberfläche unter **Einstellungen → Handbuch**. Jede Änderung an Funktionen aktualisiert es mit.
+- Die Änderungen jeder Version stehen in `CHANGELOG.md` und `CHANGELOG.de.md` und erscheinen
+  unter **Einstellungen → Version**. Die Versionsnummer steht in den `package.json`-Dateien.
+
 ## Sprachen
 
-Kataloge in `src/i18n/` (`en.ts` Hauptsprache, `de.ts`). Eine weitere Sprache ist ein weiterer
-Katalog plus ein Eintrag in `CATALOGS`; der Typ von `de.ts` verlangt alle Schlüssel, und ein Test
+Kataloge in `src/i18n/` (`en.ts` Hauptsprache, `de.ts`). Weitere Sprachen importiert ein
+Administrator ohne Programmierung unter **Einstellungen → Sprachen**: englische Vorlage
+exportieren, übersetzen, als JSON (`code`, `name`, `messages`) importieren. Die Oberfläche prüft
+Platzhalter vor dem Import; fehlende Texte erscheinen auf Englisch. Eine Sprache fest einbauen:
+weiterer Katalog plus Eintrag in `CATALOGS`; der Typ von `de.ts` verlangt alle Schlüssel, und ein Test
 prüft Schlüssel, Platzhalter und Mehrzahlformen. Die Sprache gehört zum Benutzerprofil und gilt
 auf allen Geräten. Fehler des Servers kommen als Code und werden über `error.<code>` übersetzt.
 

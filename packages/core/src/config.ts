@@ -1,7 +1,8 @@
 import type { CoefficientConfig } from './types.js';
 
 /**
- * Standardkonfiguration, übernommen aus `assets/config/config.json` des alten PAM Analyzers.
+ * Standardkonfiguration, übernommen aus `assets/config/config.json` des alten PAM Analyzers
+ * (ohne die Sammeleinträge `1-HEAD` … `12-HEAD`, die keinem echten Kopftyp entsprechen).
  * Koeffizienten sind die symmetrische Toleranz in µm (USL = +k, LSL = −k).
  */
 export const DEFAULT_CONFIG: CoefficientConfig = {
@@ -12,6 +13,8 @@ export const DEFAULT_CONFIG: CoefficientConfig = {
     RH02: 25,
     H24: 25,
     V12: 38,
+    H12: 38,
+    H12S: 38,
     H12HS: 38,
     H12HSQ: 38,
     H08: 50,
@@ -28,12 +31,9 @@ export const DEFAULT_CONFIG: CoefficientConfig = {
     H02F: 25,
     H02: 30,
     H01: 30,
+    H01V: 30,
+    RH01: 30,
     OF: 50,
-    '12-HEAD': 38,
-    '8-HEAD': 50,
-    '4-HEAD': 50,
-    '2-HEAD': 30,
-    '1-HEAD': 30,
   },
   dynaheadTools: {
     R12: 38,
@@ -69,11 +69,6 @@ export const DEFAULT_CONFIG: CoefficientConfig = {
     DX: 'tool_dependent',
     RH02: 192,
     RH01: 96,
-    '12-HEAD': 384,
-    '8-HEAD': 256,
-    '4-HEAD': 128,
-    '2-HEAD': 64,
-    '1-HEAD': 32,
   },
   dynaheadToolPlacements: {
     R12: 384,
