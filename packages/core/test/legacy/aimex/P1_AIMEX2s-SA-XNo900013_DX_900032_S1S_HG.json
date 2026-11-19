@@ -1,0 +1,63 @@
+{
+    "source": "aimex/P1_AIMEX2s-SA-XNo900013_DX_900032_S1S_HG.dat",
+    "sha256": "1d1f69edc52021e42ff35609a6ecbd35c77845df38460ca026dfd18fbc9adf0b",
+    "file_header_info": {
+        "machine_no": "AIMEX2s-SA-XNo900013",
+        "head_type": "DX",
+        "head_serial": "900032",
+        "tool_type": "1",
+        "tool_serial": "0",
+        "h08m_variant": null,
+        "date_source": "temp_file",
+        "test_date": null
+    },
+    "shaft_count": 1,
+    "point_count": 31,
+    "expected_components": null,
+    "detected_coefficient": 50,
+    "used_coefficient": 50,
+    "head_stats_summary": {
+        "avg_x": -2.810029483870968,
+        "avg_y": 0.16908500000000007,
+        "avg_q": 0.013897064516129034,
+        "sigma3_x": 10.285732985833546,
+        "sigma3_y": 13.329258118976112,
+        "sigma3_q": 0.05723962720494684,
+        "cp_x": 4.861102273300754,
+        "cpk_x": 4.587905459059008,
+        "cp_y": 3.751146504456825,
+        "cpk_y": 3.738461252322703
+    },
+    "cpk_results_table": {
+        "A": {
+            "cp_x": 4.861102273300752,
+            "cpk_x": 4.587905459059005,
+            "cp_y": 3.7511465044568246,
+            "cpk_y": 3.7384612523227028,
+            "xy": 3.7384612523227028
+        },
+        "Total": {
+            "cp_x": 4.861102273300754,
+            "cpk_x": 4.587905459059008,
+            "cp_y": 3.751146504456825,
+            "cpk_y": 3.738461252322703,
+            "xy": 3.738461252322703
+        }
+    },
+    "min_max": {
+        "min_x": -7.748279,
+        "max_x": 6.868325,
+        "min_y": -12.149719,
+        "max_y": 9.208315,
+        "min_q": -0.028439,
+        "max_q": 0.065487
+    },
+    "x_axis_limits": {
+        "min": -50.0,
+        "max": 50.0
+    },
+    "y_axis_limits": {
+        "min": -50.0,
+        "max": 50.0
+    }
+}

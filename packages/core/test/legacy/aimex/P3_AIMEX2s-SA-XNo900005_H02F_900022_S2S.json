@@ -1,0 +1,70 @@
+{
+    "source": "aimex/P3_AIMEX2s-SA-XNo900005_H02F_900022_S2S.dat",
+    "sha256": "9c24141d25db5b7e616c1ae0795ec94a831ae1458a72e75288b9ac15ccaee10b",
+    "file_header_info": {
+        "machine_no": "AIMEX2s-SA-XNo900005",
+        "head_type": "H02F",
+        "head_serial": "900022",
+        "tool_type": "",
+        "tool_serial": "",
+        "h08m_variant": null,
+        "date_source": "temp_file",
+        "test_date": null
+    },
+    "shaft_count": 2,
+    "point_count": 59,
+    "expected_components": 64,
+    "detected_coefficient": 25,
+    "used_coefficient": 25,
+    "head_stats_summary": {
+        "avg_x": 8.028378508474574,
+        "avg_y": -2.0700920169491526,
+        "avg_q": 0.008622118644067797,
+        "sigma3_x": 17.189724442710098,
+        "sigma3_y": 23.0714718503039,
+        "sigma3_q": 0.07392839908217874,
+        "cp_x": 1.4543572285477864,
+        "cpk_x": 0.9873120158550787,
+        "cp_y": 1.0835892986025812,
+        "cpk_y": 0.9938641163350317
+    },
+    "cpk_results_table": {
+        "A": {
+            "cp_x": 2.3196127055313904,
+            "cpk_x": 1.7756781197619296,
+            "cp_y": 2.216660106694406,
+            "cpk_y": 1.9480152213873332,
+            "xy": 1.7756781197619296
+        },
+        "B": {
+            "cp_x": 1.2631336259444996,
+            "cpk_x": 0.7586482651216636,
+            "cp_y": 0.8333819904821298,
+            "cpk_y": 0.7932721744701737,
+            "xy": 0.7586482651216636
+        },
+        "Total": {
+            "cp_x": 1.4543572285477864,
+            "cpk_x": 0.9873120158550787,
+            "cp_y": 1.0835892986025812,
+            "cpk_y": 0.9938641163350317,
+            "xy": 0.9873120158550787
+        }
+    },
+    "min_max": {
+        "min_x": -2.574985,
+        "max_x": 27.275021,
+        "min_y": -13.123882,
+        "max_y": 46.244956,
+        "min_q": -0.051628,
+        "max_q": 0.059655
+    },
+    "x_axis_limits": {
+        "min": -50.0,
+        "max": 50.0
+    },
+    "y_axis_limits": {
+        "min": -54.0,
+        "max": 54.0
+    }
+}
