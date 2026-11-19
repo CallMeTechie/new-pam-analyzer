@@ -19,6 +19,10 @@ export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
     const token = getCookie(c, SESSION_COOKIE);
     const user = token ? userForSession(db, token, c.get('config').sessionTtlDays) : null;
     c.set('auth', user ? { kind: 'user', user } : null);
+    // Accounts with an initial password may only change it (and read or end their session).
+    if (user?.mustChangePassword && !c.req.path.startsWith('/api/auth/')) {
+      throw new HttpError(403, 'password_change_required', 'Please change your initial password first.');
+    }
   }
   await next();
 };

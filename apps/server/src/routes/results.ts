@@ -173,7 +173,6 @@ resultRoutes.get('/:id', (c) => {
       source: row.source,
       createdAt: row.createdAt,
       configVersion: row.configVersion,
-      previousCpkXY: row.previousCpkXY,
     },
     header: parsed.header,
     shaftCount: parsed.shaftCount,
@@ -181,6 +180,8 @@ resultRoutes.get('/:id', (c) => {
     invalidLines: parsed.invalidLines,
     measurements: parsed.measurements,
     analysis,
+    /** Configuration the result was evaluated with, so the UI can recompute with another coefficient. */
+    config: versioned.config,
   });
 });
 

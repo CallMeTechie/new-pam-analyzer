@@ -48,13 +48,17 @@ dashboardRoutes.get('/', (c) => {
     .get();
 
   const perDayRows = db
-    .select({ day: sql<string>`substr(${results.testDate}, 1, 10)`, n: count() })
+    .select({
+      day: sql<string>`substr(${results.testDate}, 1, 10)`,
+      n: count(),
+      critical: sql<number>`sum(case when ${results.rating} = 'critical' then 1 else 0 end)`,
+    })
     .from(results)
     .where(inPeriod)
     .groupBy(sql`substr(${results.testDate}, 1, 10)`)
     .all();
-  const byDay = new Map(perDayRows.map((r) => [r.day, r.n]));
-  const perDay = days.map((day) => ({ day, results: byDay.get(day) ?? 0 }));
+  const byDay = new Map(perDayRows.map((r) => [r.day, r]));
+  const perDay = days.map((day) => ({ day, results: byDay.get(day)?.n ?? 0, critical: byDay.get(day)?.critical ?? 0 }));
 
   const ratings = Object.fromEntries(
     db

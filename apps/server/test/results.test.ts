@@ -147,6 +147,16 @@ describe('Ergebnisse', () => {
     expect((await workerB.json('GET', '/api/results')).body.total).toBe(1);
     expect((await admin.json('GET', '/api/results')).body.total).toBe(5);
     expect((await admin.json('GET', `/api/results?companyId=${b}`)).body.total).toBe(1);
+    const counts = (await admin.json('GET', '/api/companies')).body.items.map((c: any) => [
+      c.name,
+      c.results,
+      c.machines,
+    ]);
+    expect(counts).toEqual([
+      ['FUJI Service', 0, 0],
+      ['Customer A', 4, 4],
+      ['Customer B', 1, 1],
+    ]);
     expect((await workerA.json('GET', `/api/results?companyId=${b}`)).status).toBe(403);
     const idB = (await workerB.json('GET', '/api/results')).body.items[0].id;
     expect((await workerA.json('GET', `/api/results/${idB}`)).status).toBe(404);

@@ -6,7 +6,7 @@ import { hashPassword } from '../auth/crypto.js';
 import { canManageCompany, currentUser, requireManage } from '../auth/middleware.js';
 import { deleteUserSessions } from '../auth/sessions.js';
 import type { Db } from '../db/index.js';
-import { companies, devices, ROLES, type Role, users } from '../db/schema.js';
+import { companies, ROLES, type Role, users } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse, type SessionUser } from '../http.js';
 import { email, LOCALES, password } from './auth.js';
 
@@ -26,7 +26,7 @@ function listUsers(db: Db, where: ReturnType<typeof eq> | undefined) {
       mustChangePassword: users.mustChangePassword,
       lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
-      devices: sql<number>`(select count(*) from ${devices} d where d.user_id = ${users.id} and d.disconnected_at is null)`,
+      devices: sql<number>`(select count(*) from "devices" d where d.user_id = "users"."id" and d.disconnected_at is null)`,
     })
     .from(users)
     .innerJoin(companies, eq(users.companyId, companies.id))

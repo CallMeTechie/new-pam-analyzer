@@ -13,3 +13,6 @@ Thumbs.db
 data/
 *.sqlite
 *.sqlite-*
+.e2e-data/
+test-results/
+playwright-report/

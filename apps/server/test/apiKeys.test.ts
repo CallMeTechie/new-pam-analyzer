@@ -63,6 +63,20 @@ describe('Geräteverbindungen', () => {
     expect(res.body.coefficients.config.defaultCoefficient).toBe(50);
   });
 
+  it('Konten mit Startpasswort verbinden keine Geräte', async () => {
+    const { t, bossA, a } = await world();
+    const { key } = (await bossA.json('POST', '/api/api-keys', { name: 'K' })).body;
+    await bossA.json('POST', '/api/users', {
+      companyId: a,
+      email: 'new@a.test',
+      name: 'New',
+      role: 'user',
+      password: PASSWORD,
+    });
+    const res = await t.client().json('POST', '/api/app/connect', device(key, 'new@a.test'));
+    expect(res).toMatchObject({ status: 403, body: { error: { code: 'password_change_required' } } });
+  });
+
   it('Benutzer anderer Firmen können sich nicht verbinden', async () => {
     const { t, bossA } = await world();
     const { key } = (await bossA.json('POST', '/api/api-keys', { name: 'K' })).body;

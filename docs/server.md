@@ -1,6 +1,6 @@
 # Server
 
-REST-API, Datenhaltung und (später) Auslieferung der Web-Oberfläche. Node.js 22, Hono, SQLite
+REST-API, Datenhaltung und Auslieferung der Web-Oberfläche ([Web-Oberfläche](web.md)). Node.js 22, Hono, SQLite
 über Drizzle ORM. Alle Daten liegen in einer Datei auf dem Volume `/data`.
 
 ## Betrieb
@@ -20,6 +20,7 @@ docker compose up -d --build
 | `MAX_UPLOAD_MB` / `MAX_FILE_MB` | `200` / `10` | Grenze je Upload bzw. je `.dat`-Datei |
 | `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Sperre nach Fehlversuchen |
 | `SERVICE_COMPANY_NAME` | `FUJI Service` | Name der Service-Firma beim ersten Start |
+| `WEB_DIR` | `/app/public` | Gebaute Web-Oberfläche; fehlt der Ordner, läuft nur die API |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | – | Legt beim Start den ersten Administrator an, solange es keinen gibt (Passwort ≥ 12 Zeichen, muss bei der ersten Anmeldung geändert werden) |
 
 **Sicherung:** Die Datenbank läuft im WAL-Modus; zu ihr gehören `pam.sqlite` sowie die Dateien
@@ -45,7 +46,9 @@ Firma. Eine Firma ist die **Service-Firma** (FUJI Service); ihre Mitglieder sehe
 - Die Rolle *Administrator* gibt es nur in der Service-Firma; nur Administratoren vergeben sie.
 - Niemand ändert die eigene Rolle oder deaktiviert sich selbst; der letzte Administrator bleibt.
 - Deaktivierte Benutzer oder Firmen verlieren sofort alle Sitzungen und Geräteverbindungen.
-- Neue Benutzer erhalten ein Startpasswort und müssen es bei der ersten Anmeldung ändern.
+- Neue Benutzer erhalten ein Startpasswort und müssen es bei der ersten Anmeldung ändern. Bis dahin
+  beantwortet der Server alles außer `/api/auth/*` mit `403 password_change_required`, und Apps
+  können sich mit dem Konto nicht verbinden.
 
 ## API-Keys und Geräte
 

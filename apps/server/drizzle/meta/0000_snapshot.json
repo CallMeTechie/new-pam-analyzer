@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "1efa9ccd-776f-494d-b29a-a5a8dd113cf3",
+  "id": "40aabc11-545f-4f97-a569-758720f6de82",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "api_keys": {
@@ -82,12 +82,16 @@
       "indexes": {
         "api_keys_key_hash_unique": {
           "name": "api_keys_key_hash_unique",
-          "columns": ["key_hash"],
+          "columns": [
+            "key_hash"
+          ],
           "isUnique": true
         },
         "api_keys_company_idx": {
           "name": "api_keys_company_idx",
-          "columns": ["company_id"],
+          "columns": [
+            "company_id"
+          ],
           "isUnique": false
         }
       },
@@ -96,8 +100,12 @@
           "name": "api_keys_company_id_companies_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "companies",
-          "columnsFrom": ["company_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -105,8 +113,12 @@
           "name": "api_keys_created_by_users_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "users",
-          "columnsFrom": ["created_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -180,7 +192,9 @@
       "indexes": {
         "companies_name_unique": {
           "name": "companies_name_unique",
-          "columns": ["name"],
+          "columns": [
+            "name"
+          ],
           "isUnique": true
         }
       },
@@ -282,17 +296,23 @@
       "indexes": {
         "devices_token_hash_unique": {
           "name": "devices_token_hash_unique",
-          "columns": ["token_hash"],
+          "columns": [
+            "token_hash"
+          ],
           "isUnique": true
         },
         "devices_key_idx": {
           "name": "devices_key_idx",
-          "columns": ["api_key_id"],
+          "columns": [
+            "api_key_id"
+          ],
           "isUnique": false
         },
         "devices_user_idx": {
           "name": "devices_user_idx",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -301,8 +321,12 @@
           "name": "devices_api_key_id_api_keys_id_fk",
           "tableFrom": "devices",
           "tableTo": "api_keys",
-          "columnsFrom": ["api_key_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "api_key_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -310,8 +334,12 @@
           "name": "devices_user_id_users_id_fk",
           "tableFrom": "devices",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -377,7 +405,10 @@
       "indexes": {
         "machines_company_no_idx": {
           "name": "machines_company_no_idx",
-          "columns": ["company_id", "machine_no"],
+          "columns": [
+            "company_id",
+            "machine_no"
+          ],
           "isUnique": true
         }
       },
@@ -386,8 +417,12 @@
           "name": "machines_company_id_companies_id_fk",
           "tableFrom": "machines",
           "tableTo": "companies",
-          "columnsFrom": ["company_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -462,15 +497,22 @@
           "name": "result_shafts_result_id_results_id_fk",
           "tableFrom": "result_shafts",
           "tableTo": "results",
-          "columnsFrom": ["result_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "result_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
         "result_shafts_result_id_shaft_pk": {
-          "columns": ["result_id", "shaft"],
+          "columns": [
+            "result_id",
+            "shaft"
+          ],
           "name": "result_shafts_result_id_shaft_pk"
         }
       },
@@ -768,13 +810,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "previous_cpk_xy": {
-          "name": "previous_cpk_xy",
-          "type": "real",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "integer",
@@ -801,32 +836,47 @@
       "indexes": {
         "results_company_date_idx": {
           "name": "results_company_date_idx",
-          "columns": ["company_id", "test_date"],
+          "columns": [
+            "company_id",
+            "test_date"
+          ],
           "isUnique": false
         },
         "results_head_idx": {
           "name": "results_head_idx",
-          "columns": ["head_serial", "head_type", "test_date"],
+          "columns": [
+            "head_serial",
+            "head_type",
+            "test_date"
+          ],
           "isUnique": false
         },
         "results_machine_idx": {
           "name": "results_machine_idx",
-          "columns": ["machine_no"],
+          "columns": [
+            "machine_no"
+          ],
           "isUnique": false
         },
         "results_sha_idx": {
           "name": "results_sha_idx",
-          "columns": ["sha256"],
+          "columns": [
+            "sha256"
+          ],
           "isUnique": false
         },
         "results_test_date_idx": {
           "name": "results_test_date_idx",
-          "columns": ["test_date"],
+          "columns": [
+            "test_date"
+          ],
           "isUnique": false
         },
         "results_created_idx": {
           "name": "results_created_idx",
-          "columns": ["created_at"],
+          "columns": [
+            "created_at"
+          ],
           "isUnique": false
         }
       },
@@ -835,8 +885,12 @@
           "name": "results_company_id_companies_id_fk",
           "tableFrom": "results",
           "tableTo": "companies",
-          "columnsFrom": ["company_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -844,8 +898,12 @@
           "name": "results_machine_id_machines_id_fk",
           "tableFrom": "results",
           "tableTo": "machines",
-          "columnsFrom": ["machine_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "machine_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -853,8 +911,12 @@
           "name": "results_uploaded_by_users_id_fk",
           "tableFrom": "results",
           "tableTo": "users",
-          "columnsFrom": ["uploaded_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "uploaded_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -862,8 +924,12 @@
           "name": "results_device_id_devices_id_fk",
           "tableFrom": "results",
           "tableTo": "devices",
-          "columnsFrom": ["device_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "device_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -871,8 +937,12 @@
           "name": "results_deleted_by_users_id_fk",
           "tableFrom": "results",
           "tableTo": "users",
-          "columnsFrom": ["deleted_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "deleted_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -917,7 +987,9 @@
       "indexes": {
         "sessions_user_idx": {
           "name": "sessions_user_idx",
-          "columns": ["user_id"],
+          "columns": [
+            "user_id"
+          ],
           "isUnique": false
         }
       },
@@ -926,8 +998,12 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -975,8 +1051,12 @@
           "name": "settings_updated_by_users_id_fk",
           "tableFrom": "settings",
           "tableTo": "users",
-          "columnsFrom": ["updated_by"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1087,12 +1167,16 @@
       "indexes": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": ["email"],
+          "columns": [
+            "email"
+          ],
           "isUnique": true
         },
         "users_company_idx": {
           "name": "users_company_idx",
-          "columns": ["company_id"],
+          "columns": [
+            "company_id"
+          ],
           "isUnique": false
         }
       },
@@ -1101,8 +1185,12 @@
           "name": "users_company_id_companies_id_fk",
           "tableFrom": "users",
           "tableTo": "companies",
-          "columnsFrom": ["company_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "company_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
