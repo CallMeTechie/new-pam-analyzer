@@ -8,6 +8,7 @@ import { currentUser } from '../auth/middleware.js';
 import { createSession, deleteSession, deleteUserSessions, SESSION_COOKIE, userForSession } from '../auth/sessions.js';
 import { companies, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
+import { DEFAULT_ADMIN } from '../services/bootstrap.js';
 
 export const LOCALES = ['en', 'de'] as const;
 export const password = z.string().min(12, 'at least 12 characters').max(200);
@@ -71,16 +72,40 @@ authRoutes.patch('/me', async (c) => {
   return c.json({ user: profile(db, user.id) });
 });
 
+/**
+ * Changes the password. The default administrator (`admin@example.com`) must also choose a
+ * real e-mail address, so no publicly known credentials remain.
+ */
 authRoutes.post('/password', async (c) => {
   const user = currentUser(c);
-  const body = parse(z.object({ currentPassword: z.string().max(200), newPassword: password }), await jsonBody(c));
+  const body = parse(
+    z.object({ currentPassword: z.string().max(200), newPassword: password, newEmail: email.optional() }),
+    await jsonBody(c),
+  );
   const db = c.get('db');
   const row = db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.id)).get();
   if (!row || !(await verifyPassword(body.currentPassword, row.hash))) {
     throw new HttpError(400, 'wrong_password', 'The current password is wrong.');
   }
+  if (body.newPassword === body.currentPassword || body.newPassword === DEFAULT_ADMIN.password) {
+    throw new HttpError(400, 'same_password', 'Choose a password that differs from the current one.');
+  }
+  const newEmail = body.newEmail && body.newEmail !== user.email ? body.newEmail : undefined;
+  if (user.email === DEFAULT_ADMIN.email && !newEmail) {
+    throw new HttpError(400, 'email_change_required', 'Choose your own e-mail address instead of the default one.');
+  }
+  if (newEmail === DEFAULT_ADMIN.email) {
+    throw new HttpError(400, 'email_change_required', 'Choose your own e-mail address instead of the default one.');
+  }
+  if (newEmail && db.select({ id: users.id }).from(users).where(eq(users.email, newEmail)).get()) {
+    throw new HttpError(409, 'email_taken', 'A user with this e-mail address already exists.');
+  }
   db.update(users)
-    .set({ passwordHash: await hashPassword(body.newPassword), mustChangePassword: false })
+    .set({
+      passwordHash: await hashPassword(body.newPassword),
+      mustChangePassword: false,
+      ...(newEmail ? { email: newEmail } : {}),
+    })
     .where(eq(users.id, user.id))
     .run();
   deleteUserSessions(db, user.id, getCookie(c, SESSION_COOKIE));

@@ -11,9 +11,6 @@ services:
       # Public address; with https:// the session cookie is marked secure.
       PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
       TIME_ZONE: ${TIME_ZONE:-Europe/Berlin}
-      # Creates the first administrator on the first start (password at least 12 characters).
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
 
 volumes:
   pam-data:

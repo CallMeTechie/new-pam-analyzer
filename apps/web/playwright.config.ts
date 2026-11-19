@@ -21,8 +21,6 @@ export default defineConfig({
       HOST: '127.0.0.1',
       DATA_DIR: '.e2e-data',
       WEB_DIR: 'dist',
-      ADMIN_EMAIL: 'admin@e2e.test',
-      ADMIN_PASSWORD: 'initial-admin-pass',
     },
   },
 });

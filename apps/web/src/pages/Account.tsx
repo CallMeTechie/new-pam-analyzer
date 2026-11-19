@@ -6,10 +6,14 @@ import { type ApiError, api, type Profile } from '../lib/api';
 import { useAuth, useUser } from '../lib/auth';
 
 const MIN_PASSWORD = 12;
+/** Default administrator of a new installation; must choose its own e-mail address. */
+export const DEFAULT_ADMIN_EMAIL = 'admin@example.com';
 
 export function PasswordForm({ onDone, forced }: { onDone?: () => void; forced?: boolean }) {
   const { t } = useI18n();
-  const { refresh } = useAuth();
+  const { refresh, user } = useAuth();
+  const defaultAccount = user?.email === DEFAULT_ADMIN_EMAIL;
+  const [newEmail, setNewEmail] = useState('');
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [repeat, setRepeat] = useState('');
@@ -22,7 +26,11 @@ export function PasswordForm({ onDone, forced }: { onDone?: () => void; forced?:
     e.preventDefault();
     setError(null);
     try {
-      await api.post('/auth/password', { currentPassword: current, newPassword: next });
+      await api.post('/auth/password', {
+        currentPassword: current,
+        newPassword: next,
+        ...(defaultAccount ? { newEmail: newEmail.trim() } : {}),
+      });
       setDone(true);
       setCurrent('');
       setNext('');
@@ -38,11 +46,26 @@ export function PasswordForm({ onDone, forced }: { onDone?: () => void; forced?:
     <form className="stack" onSubmit={submit}>
       {forced && (
         <Notice kind="info" title={t('password.forcedTitle')}>
-          {t('password.forcedText')}
+          {defaultAccount ? t('password.forcedDefaultText') : t('password.forcedText')}
         </Notice>
       )}
       {done && <Notice kind="success" title={t('password.changed')} />}
       {error && <ErrorNotice error={error} />}
+      {defaultAccount && (
+        <Field label={t('password.newEmail')} hint={t('password.newEmailHint')}>
+          {(p) => (
+            <input
+              {...p}
+              className="input"
+              type="email"
+              autoComplete="email"
+              required
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+            />
+          )}
+        </Field>
+      )}
       <label className="field">
         {t('password.current')}
         <input
@@ -82,7 +105,12 @@ export function PasswordForm({ onDone, forced }: { onDone?: () => void; forced?:
         <button
           type="submit"
           className="btn primary"
-          disabled={!current || next.length < MIN_PASSWORD || next !== repeat}
+          disabled={
+            !current ||
+            next.length < MIN_PASSWORD ||
+            next !== repeat ||
+            (defaultAccount && (!newEmail.includes('@') || newEmail.trim().toLowerCase() === DEFAULT_ADMIN_EMAIL))
+          }
         >
           {t('password.save')}
         </button>

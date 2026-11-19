@@ -26,13 +26,21 @@ und `1.2`. Selbst bauen: `docker compose up -d --build`.
 | `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Sperre nach Fehlversuchen |
 | `SERVICE_COMPANY_NAME` | `FUJI Service` | Name der Service-Firma beim ersten Start |
 | `WEB_DIR` | `/app/public` | Gebaute Web-Oberfläche; fehlt der Ordner, läuft nur die API |
-| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | – | Legt beim Start den ersten Administrator an, solange es keinen gibt (Passwort ≥ 12 Zeichen, muss bei der ersten Anmeldung geändert werden) |
 
 **Sicherung:** Die Datenbank läuft im WAL-Modus; zu ihr gehören `pam.sqlite` sowie die Dateien
 `-wal` und `-shm`. Für eine Sicherung den Container anhalten (`docker compose stop`) und den
 ganzen Ordner `/data` kopieren.
 
 Der Server gehört hinter einen Reverse-Proxy mit HTTPS (z. B. Caddy, Traefik, nginx).
+
+## Erster Start
+
+Ohne Administrator legt der Server beim Start das Konto `admin@example.com` mit dem Passwort
+`admin1234` in der Datenbank an. Bei der ersten Anmeldung müssen E-Mail-Adresse und Passwort
+geändert werden (`POST /api/auth/password` mit `newEmail`); bis dahin antwortet der Server auf
+alles außer `/api/auth/*` mit `403 password_change_required`. Zugangsdaten in Umgebungsvariablen
+gibt es nicht. Die Standard-Zugangsdaten sind öffentlich bekannt: vor dem ersten Login den Server
+nicht aus dem Internet erreichbar machen.
 
 ## Firmen, Rollen und Rechte
 

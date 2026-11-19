@@ -34,11 +34,31 @@ dann `pnpm --filter @pam/web dev`; Vite leitet `/api` an den Server weiter.
 ## Server starten
 
 ```bash
-ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD='ein-langes-passwort' docker compose up -d --build
+docker compose up -d
 ```
 
-Beim ersten Start entstehen die Firma „FUJI Service“ und der erste Administrator. Weitere
-Einstellungen: [Server](docs/server.md).
+Das Image kommt von `ghcr.io/callmetechie/new-pam-analyzer:latest`; mit `--build` wird es lokal
+gebaut. Die Web-Oberfläche läuft danach unter http://localhost:3000.
+
+### Erste Anmeldung
+
+Beim ersten Start legt der Server die Firma „FUJI Service“ und einen Administrator **in der
+Datenbank** an. Es gibt keine Zugangsdaten in `.env` oder Umgebungsvariablen.
+
+| | Standard |
+|---|---|
+| E-Mail-Adresse | `admin@example.com` |
+| Passwort | `admin1234` |
+
+Bei der ersten Anmeldung **müssen E-Mail-Adresse und Passwort geändert werden** (Passwort
+mindestens 12 Zeichen). Bis dahin ist mit dem Konto nichts anderes möglich, auch keine
+Verbindung aus den Apps. Danach funktionieren die Standard-Zugangsdaten nicht mehr.
+
+> **Wichtig:** Die Standard-Zugangsdaten sind öffentlich bekannt. Melden Sie sich direkt nach dem
+> ersten Start an und ändern Sie sie, bevor der Server aus dem Internet erreichbar ist.
+
+Gibt es keinen Administrator mehr (z. B. nach dem Löschen der Datenbank), legt der nächste Start
+das Standardkonto erneut an. Weitere Einstellungen: [Server](docs/server.md).
 
 ## Rechenkern verwenden
 

@@ -20,8 +20,6 @@ export interface ServerConfig {
   webDir: string;
   /** Name of the service company created on first start. */
   serviceCompanyName: string;
-  adminEmail: string | null;
-  adminPassword: string | null;
 }
 
 function int(value: string | undefined, fallback: number): number {
@@ -57,7 +55,5 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     timeZone: validTimeZone(env.TIME_ZONE) ?? 'Europe/Berlin',
     webDir: resolve(env.WEB_DIR ?? './public'),
     serviceCompanyName: env.SERVICE_COMPANY_NAME?.trim() || 'FUJI Service',
-    adminEmail: env.ADMIN_EMAIL?.trim().toLowerCase() || null,
-    adminPassword: env.ADMIN_PASSWORD || null,
   };
 }

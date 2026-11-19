@@ -96,6 +96,10 @@ export const de: Messages = {
   'password.changed': 'Ihr Passwort wurde geändert. Andere Sitzungen wurden abgemeldet.',
   'password.forcedTitle': 'Bitte eigenes Passwort wählen',
   'password.forcedText': 'Ihr Konto wurde mit einem Startpasswort angelegt. Ersetzen Sie es, bevor Sie fortfahren.',
+  'password.forcedDefaultText':
+    'Sie haben sich mit dem Standard-Administratorkonto angemeldet. Wählen Sie eine eigene E-Mail-Adresse und ein eigenes Passwort; die Standard-Zugangsdaten gelten danach nicht mehr.',
+  'password.newEmail': 'Ihre E-Mail-Adresse',
+  'password.newEmailHint': 'Ersetzt admin@example.com und dient ab sofort zur Anmeldung.',
   'account.title': 'Mein Konto',
   'account.profile': 'Profil',
 
@@ -445,6 +449,8 @@ export const de: Messages = {
   'error.upload_too_large': 'Der Upload ist zu groß. Laden Sie weniger Dateien auf einmal hoch.',
   'error.no_files': 'Es wurden keine Dateien gewählt.',
   'error.password_change_required': 'Bitte ändern Sie zuerst Ihr Startpasswort.',
+  'error.email_change_required': 'Wählen Sie eine eigene E-Mail-Adresse statt admin@example.com.',
+  'error.same_password': 'Wählen Sie ein neues Passwort, das sich vom bisherigen unterscheidet.',
   'error.network_error': 'Der Server ist nicht erreichbar. Prüfen Sie die Verbindung.',
   'error.internal_error': 'Etwas ist schiefgegangen. Bitte versuchen Sie es erneut.',
 };

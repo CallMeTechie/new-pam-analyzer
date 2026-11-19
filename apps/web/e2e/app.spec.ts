@@ -11,7 +11,9 @@ const fixture = (family: string, index: number) =>
     .filter((f) => f.endsWith('.dat'))
     .sort()[index];
 
-const ADMIN = { email: 'admin@e2e.test', initial: 'initial-admin-pass', password: 'admin-password-e2e' };
+/** Default credentials of a new installation, and what the administrator changes them to. */
+const DEFAULT = { email: 'admin@example.com', password: 'admin1234' };
+const ADMIN = { email: 'it@plant.test', password: 'admin-password-e2e' };
 let memberPassword = '';
 
 async function signIn(page: Page, email: string, password: string) {
@@ -21,8 +23,9 @@ async function signIn(page: Page, email: string, password: string) {
   await page.getByRole('button', { name: 'Sign in' }).click();
 }
 
-async function changePassword(page: Page, current: string, next: string) {
+async function changePassword(page: Page, current: string, next: string, newEmail?: string) {
   await expect(page.getByText('Please choose your own password')).toBeVisible();
+  if (newEmail) await page.getByLabel('Your e-mail address').fill(newEmail);
   await page.getByLabel('Current password').fill(current);
   await page.getByLabel('New password', { exact: true }).fill(next);
   await page.getByLabel('Repeat new password').fill(next);
@@ -31,9 +34,9 @@ async function changePassword(page: Page, current: string, next: string) {
 
 test.describe.configure({ mode: 'serial' });
 
-test('administrator: first sign-in, company, team and API key', async ({ page }) => {
-  await signIn(page, ADMIN.email, ADMIN.initial);
-  await changePassword(page, ADMIN.initial, ADMIN.password);
+test('administrator: first sign-in with default credentials, company, team and API key', async ({ page }) => {
+  await signIn(page, DEFAULT.email, DEFAULT.password);
+  await changePassword(page, DEFAULT.password, ADMIN.password, ADMIN.email);
   await expect(page.getByText('No results yet')).toBeVisible();
 
   await page.getByRole('link', { name: 'Companies' }).click();
@@ -67,6 +70,11 @@ test('administrator: first sign-in, company, team and API key', async ({ page })
 
   await page.getByRole('link', { name: 'Back to admin view' }).click();
   await expect(page.getByRole('heading', { name: 'Companies', level: 1 })).toBeVisible();
+});
+
+test('default credentials no longer work after the first sign-in', async ({ page }) => {
+  await signIn(page, DEFAULT.email, DEFAULT.password);
+  await expect(page.getByText('E-mail address or password is wrong.')).toBeVisible();
 });
 
 test('upload, results, search, detail and head history', async ({ page }) => {
