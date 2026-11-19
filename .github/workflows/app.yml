@@ -10,6 +10,12 @@ name: App
 on:
   push:
     tags: ["app-v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version, e.g. 0.2.0 (stable) or 0.3.0-beta.1 (beta)"
+        required: true
+        type: string
 
 permissions:
   contents: write
