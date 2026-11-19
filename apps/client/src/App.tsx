@@ -6,8 +6,9 @@ import { ScopeProvider } from '@web/lib/scope';
 import { HeadHistory } from '@web/pages/HeadHistory';
 import { ResultDetail, ResultDetailContext } from '@web/pages/ResultDetail';
 import { useState } from 'react';
-import { Link, Route, Routes } from 'react-router';
+import { Link, Outlet, Route, Routes, useMatch } from 'react-router';
 import { UploadChip } from './components';
+import { useLayout } from './lib/layout';
 import { useEngine } from './lib/useEngine';
 import { Results } from './pages/Results';
 import { Server } from './pages/Server';
@@ -44,10 +45,42 @@ function DetailActions({ detail }: { detail: Detail }) {
 
 function useDetailOptions() {
   const { t, instant } = useI18n();
+  const [, engine] = useEngine();
+  const mobile = engine.platform.formFactor === 'mobile';
   return {
+    tabbed: mobile,
+    zoomHolders: mobile,
     renderActions: (detail: Detail) => <DetailActions detail={detail} />,
     addedText: (detail: Detail) => t('client.detail.added', { date: instant(detail.result.createdAt) }),
   };
+}
+
+/**
+ * Results: the list, a result or the head history. Tablets and unfolded foldables show the list
+ * next to the result.
+ */
+function ResultsArea() {
+  const { t } = useI18n();
+  const layout = useLayout();
+  const detail = useMatch('/results/:id/*');
+  if (layout !== 'rail') return detail ? <Outlet /> : <Results />;
+  return (
+    <div className="split">
+      <div className="split-list">
+        <Results compact selectedId={detail ? Number(detail.params.id) : null} />
+      </div>
+      <div className="split-detail">
+        {detail ? (
+          <Outlet />
+        ) : (
+          <div className="split-empty">
+            <Icon name="results" size={34} />
+            <span>{t('client.split.empty')}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function NotFound() {
@@ -71,9 +104,11 @@ export function App() {
       <ResultDetailContext.Provider value={detailOptions}>
         <Routes>
           <Route element={<Shell />}>
-            <Route index element={<Results />} />
-            <Route path="results/:id" element={<ResultDetail />} />
-            <Route path="results/:id/history" element={<HeadHistory />} />
+            <Route element={<ResultsArea />}>
+              <Route index element={null} />
+              <Route path="results/:id" element={<ResultDetail />} />
+              <Route path="results/:id/history" element={<HeadHistory />} />
+            </Route>
             <Route path="server" element={<Server />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />

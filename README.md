@@ -10,12 +10,12 @@ FUJI-Bestückautomaten NXT, NXT-R (APAM) und AIMEX.
 | `packages/core` | Rechenkern: Parser und Cpk-Berechnung, ohne Abhängigkeiten | ✅ fertig, gegen das Alt-System abgesichert |
 | `apps/server` | Server als Docker-Container: REST-API, Firmen, Benutzer, API-Keys, Upload | ✅ fertig |
 | `apps/web` | Web-Oberfläche (React), Englisch und Deutsch; Grundlage der Apps | ✅ fertig |
-| `apps/client` | App für Windows (Tauri), Android und iOS folgen | ✅ Windows fertig |
+| `apps/client` | Apps für Windows und Android (Tauri), iOS folgt | ✅ Windows und Android |
 
 Details: [Handbuch](docs/manual/de.md) · [Änderungen](CHANGELOG.de.md) ·
 [Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md) ·
 [Server, API und Betrieb](docs/server.md) · [Web-Oberfläche](docs/web.md) ·
-[Windows-App](docs/app.md) · [Handbuch der App](docs/manual/app.de.md)
+[Apps](docs/app.md) · [Handbuch der App](docs/manual/app.de.md)
 
 ## Entwicklung
 

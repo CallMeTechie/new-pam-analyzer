@@ -6,6 +6,7 @@ import { useUser } from '../lib/auth';
 import { useApi } from '../lib/useApi';
 import { Icon } from './Icon';
 import { initials } from './Layout';
+import { QrCode } from './QrCode';
 import {
   CompanyBadge,
   CopyButton,
@@ -200,6 +201,13 @@ export function KeysPanel({ companyId, canManage }: { companyId: number; canMana
           <div className="secret">
             <code>{created.key}</code>
             <CopyButton value={created.key} />
+          </div>
+          <div className="qr-box">
+            <QrCode
+              value={JSON.stringify({ server: window.location.origin, apiKey: created.key })}
+              label={t('keys.qrLabel')}
+            />
+            <span className="muted">{t('keys.qrText')}</span>
           </div>
           <Notice>{t('keys.onceWarning')}</Notice>
           <div className="actions">

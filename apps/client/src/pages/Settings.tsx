@@ -36,25 +36,29 @@ function General() {
       <section className="card stack">
         <h2>{t('client.settings.updates')}</h2>
         <p className="muted">{t('client.settings.updatesText', { v: engine.platform.version })}</p>
-        <fieldset className="radio-cards">
-          <legend className="sr-only">{t('client.settings.channel')}</legend>
-          {channels.map((c) => (
-            <label key={c} className={s.channel === c ? 'on' : ''}>
-              <input
-                type="radio"
-                name="channel"
-                value={c}
-                checked={s.channel === c}
-                onChange={() => void engine.setChannel(c)}
-              />
-              <span>
-                <b>{t(`client.channel.${c}`)}</b>
-                <small>{t(`client.channel.${c}Text`)}</small>
-              </span>
-            </label>
-          ))}
-        </fieldset>
-        {engine.platform.updates ? (
+        {engine.platform.updatesBy !== 'play' && (
+          <fieldset className="radio-cards">
+            <legend className="sr-only">{t('client.settings.channel')}</legend>
+            {channels.map((c) => (
+              <label key={c} className={s.channel === c ? 'on' : ''}>
+                <input
+                  type="radio"
+                  name="channel"
+                  value={c}
+                  checked={s.channel === c}
+                  onChange={() => void engine.setChannel(c)}
+                />
+                <span>
+                  <b>{t(`client.channel.${c}`)}</b>
+                  <small>{t(`client.channel.${c}Text`)}</small>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+        {engine.platform.updatesBy === 'play' ? (
+          <Notice kind="info">{t('client.update.play')}</Notice>
+        ) : engine.platform.updates ? (
           <div className="form-row" style={{ alignItems: 'center' }}>
             <button type="button" className="btn" disabled={updates.checking} onClick={() => void updates.check(true)}>
               {updates.checking ? t('client.update.checking') : t('client.update.checkNow')}

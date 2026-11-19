@@ -2408,6 +2408,45 @@ table.table.compact td {
   }
 }
 
+/* QR code of a new API key */
+.qr-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.qr-box .qr {
+  flex: none;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.qr-box span {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Result page sections; the app shows them as tabs on small screens. */
+.rd-sec {
+  display: contents;
+}
+.rd-sec.tab-off {
+  display: none;
+}
+.hcard.zoomable {
+  cursor: pointer;
+}
+.hcard.zoomable:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.holder-zoom {
+  display: grid;
+  gap: 10px;
+}
+.holder-zoom p {
+  margin: 0;
+}
+
 .hero-id {
   display: flex;
   align-items: center;
@@ -2469,6 +2508,9 @@ table.table.compact td {
   }
   .print-only {
     display: flex !important;
+  }
+  .rd-sec.tab-off {
+    display: contents !important;
   }
   .main {
     min-height: 0;

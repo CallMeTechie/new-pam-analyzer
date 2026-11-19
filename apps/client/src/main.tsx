@@ -17,6 +17,10 @@ import type { Platform } from './platform/types';
 const inTauri = '__TAURI_INTERNALS__' in window;
 
 async function createPlatform(): Promise<Platform> {
+  if (inTauri && /Android/i.test(navigator.userAgent)) {
+    const { androidPlatform } = await import('./platform/android');
+    return androidPlatform(__APP_VERSION__);
+  }
   if (inTauri) {
     const { tauriPlatform } = await import('./platform/tauri');
     return tauriPlatform(__APP_VERSION__);
@@ -41,8 +45,16 @@ function Gate() {
 async function start() {
   const platform = await createPlatform();
   const engine = new Engine(platform);
+  if (platform.formFactor === 'mobile') document.documentElement.dataset.mobile = '';
+  // The web's print button calls window.print(); Android prints through its own dialog.
+  if (platform.print) {
+    const print = platform.print;
+    window.print = () => void print();
+  }
   setApiTransport(localTransport(engine));
   await engine.init();
+  // Marker for the Android emulator test in CI (shows up in logcat).
+  console.info(`PAM Analyzer ready: ${platform.os} ${platform.version}, ${engine.snapshot.rows.length} results`);
   setThresholds(engine.snapshot.config.thresholds);
   if (engine.snapshot.locale) localStorage.setItem('pam-locale', engine.snapshot.locale);
   // biome-ignore lint/suspicious/noExplicitAny: test hook for the browser preview

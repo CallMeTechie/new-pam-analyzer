@@ -11,7 +11,16 @@ import { Link, useNavigate, useParams } from 'react-router';
 import { ANGLE_COLOR, Gauge, Scatter } from '../components/charts';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
-import { COMPONENT_RATING, CompanyBadge, ErrorNotice, headLabel, Loading, Notice, ratingClass } from '../components/ui';
+import {
+  COMPONENT_RATING,
+  CompanyBadge,
+  ErrorNotice,
+  headLabel,
+  Loading,
+  Modal,
+  Notice,
+  ratingClass,
+} from '../components/ui';
 import { useI18n } from '../i18n';
 import { api, type ResultDetail as Detail, type Rating } from '../lib/api';
 import { useUser } from '../lib/auth';
@@ -304,13 +313,37 @@ function Overall({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisRe
 
 type Shaft = AnalysisResult['shafts'][number];
 
-function HolderCard({ shaft: s, parsed, result }: { shaft: Shaft; parsed: ParsedPamFile; result: AnalysisResult }) {
+function HolderCard({
+  shaft: s,
+  parsed,
+  result,
+  onOpen,
+}: {
+  shaft: Shaft;
+  parsed: ParsedPamFile;
+  result: AnalysisResult;
+  /** Opens the holder enlarged (touch devices). */
+  onOpen?: () => void;
+}) {
   const { t, num } = useI18n();
   const limit = Math.max(result.axisLimits.x.max, result.axisLimits.y.max);
   const mark = s.shaft === result.bestShaft ? t('holder.best') : s.shaft === result.worstShaft ? t('holder.worst') : '';
   const name = t('holder.name', { h: s.label });
   return (
-    <article className={`hcard ${ratingClass(s.rating)}`} aria-label={name}>
+    <article
+      className={`hcard ${ratingClass(s.rating)}${onOpen ? ' zoomable' : ''}`}
+      aria-label={name}
+      {...(onOpen
+        ? {
+            role: 'button',
+            tabIndex: 0,
+            onClick: onOpen,
+            onKeyDown: (e: { key: string }) => {
+              if (e.key === 'Enter' || e.key === ' ') onOpen();
+            },
+          }
+        : {})}
+    >
       <div className="hcard-h">
         <span className="hbadge">{s.label}</span>
         <span className="t">
@@ -384,6 +417,8 @@ function Holders({
   thresholds: CpkThresholds;
 }) {
   const { t, num } = useI18n();
+  const options = useContext(ResultDetailContext);
+  const [zoom, setZoom] = useState<Shaft | null>(null);
   const [sort, setSort] = useState<'holder' | 'cpk'>('holder');
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
   const count = result.shafts.filter((s) => attention(s.rating)).length;
@@ -425,7 +460,13 @@ function Holders({
       {shafts.length ? (
         <div className="holders">
           {shafts.map((s) => (
-            <HolderCard key={s.shaft} shaft={s} parsed={parsed} result={result} />
+            <HolderCard
+              key={s.shaft}
+              shaft={s}
+              parsed={parsed}
+              result={result}
+              {...(options.zoomHolders ? { onOpen: () => setZoom(s) } : {})}
+            />
           ))}
         </div>
       ) : (
@@ -435,6 +476,29 @@ function Holders({
             {t('holders.showAll')}
           </button>
         </div>
+      )}
+      {zoom && (
+        <Modal title={t('holder.name', { h: zoom.label })} onClose={() => setZoom(null)}>
+          <div className="holder-zoom">
+            <p className="muted">
+              Cpk XY <b>{num(zoom.cpkXY, 2)}</b> · {t(`rating.${zoom.rating ?? 'none'}`)} ·{' '}
+              {t('holder.parts', { n: zoom.count })}
+            </p>
+            <Scatter
+              points={parsed.measurements.filter((m) => m.shaft === zoom.shaft)}
+              limit={Math.max(result.axisLimits.x.max, result.axisLimits.y.max)}
+              coefficient={result.coefficient}
+              colorOf={(p) => ANGLE_COLOR[p.angle] ?? 'var(--muted)'}
+              label={t('holder.name', { h: zoom.label })}
+              interactive
+            />
+            <div className="actions">
+              <button type="button" className="btn" onClick={() => setZoom(null)}>
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </section>
   );
@@ -464,7 +528,14 @@ export interface ResultDetailOptions {
   renderActions?(detail: Detail): ReactNode;
   /** Text after the file name instead of "uploaded <date>". */
   addedText?(detail: Detail): string;
+  /** Small screens: overview, charts and holders as tabs (the printout still shows everything). */
+  tabbed?: boolean;
+  /** Touch devices: tapping a holder shows it enlarged. */
+  zoomHolders?: boolean;
 }
+
+const DETAIL_TABS = ['overview', 'charts', 'holders'] as const;
+type DetailTab = (typeof DETAIL_TABS)[number];
 export const ResultDetailContext = createContext<ResultDetailOptions>({});
 
 export function ResultDetail() {
@@ -476,6 +547,9 @@ export function ResultDetail() {
   const navigate = useNavigate();
   const { data, error, loading } = useApi<Detail>(`/results/${id}`);
   const [coefficient, setCoefficient] = useState<number | null>(null);
+  const [tab, setTab] = useState<DetailTab>('overview');
+  // Sections stay rendered so that the printout shows everything; inactive tabs are only hidden.
+  const sectionClass = (k: DetailTab) => `rd-sec rd-${k}${options.tabbed && tab !== k ? ' tab-off' : ''}`;
   const [printedAt, setPrintedAt] = useState(() => Date.now());
   useEffect(() => {
     const update = () => setPrintedAt(Date.now());
@@ -648,18 +722,33 @@ export function ResultDetail() {
         </div>
       </section>
 
-      <div className="no-print">
-        <Notes detail={data} result={result} />
+      {options.tabbed && (
+        <div className="tabs rd-tabs no-print" role="tablist" aria-label={t('detail.tabs')}>
+          {DETAIL_TABS.map((k) => (
+            <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
+              {t(`detail.tab.${k}`)}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className={sectionClass('overview')}>
+        <div className="no-print">
+          <Notes detail={data} result={result} />
+        </div>
+        <Boxes
+          result={result}
+          coefficient={coefficient}
+          setCoefficient={setCoefficient}
+          headType={h.headType}
+          toolType={h.toolType}
+        />
       </div>
-      <Boxes
-        result={result}
-        coefficient={coefficient}
-        setCoefficient={setCoefficient}
-        headType={h.headType}
-        toolType={h.toolType}
-      />
-      <Overall parsed={parsed} result={result} />
-      <Holders parsed={parsed} result={result} thresholds={data.thresholds} />
+      <div className={sectionClass('charts')}>
+        <Overall parsed={parsed} result={result} />
+      </div>
+      <div className={sectionClass('holders')}>
+        <Holders parsed={parsed} result={result} thresholds={data.thresholds} />
+      </div>
       <PrintHolders parsed={parsed} result={result} thresholds={data.thresholds} />
       <PrintPageFooter
         left={[

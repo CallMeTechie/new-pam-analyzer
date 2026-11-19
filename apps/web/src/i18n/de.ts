@@ -148,6 +148,10 @@ export const de: Messages = {
   'detail.download': 'Originaldatei',
   'detail.delete': 'Ergebnis löschen',
   'detail.deleteConfirm': 'Dieses Ergebnis löschen? Es erscheint dann nicht mehr in Listen und in der Kopf-Historie.',
+  'detail.tabs': 'Bereiche',
+  'detail.tab.overview': 'Übersicht',
+  'detail.tab.charts': 'Diagramme',
+  'detail.tab.holders': 'Holder',
   'detail.print': 'Drucken',
   'print.printed': 'Gedruckt {date}',
   'print.page': 'Seite {page} / {pages}',
@@ -356,6 +360,8 @@ export const de: Messages = {
   'keys.createdTitle': 'API-Key erstellt',
   'keys.createdText':
     'Geben Sie diesen Key zusammen mit Ihrer E-Mail-Adresse und Ihrem Passwort in der App ein. „{name}“ ist einsatzbereit.',
+  'keys.qrLabel': 'QR-Code mit Serveradresse und API-Key',
+  'keys.qrText': 'In der Android-App: Server → QR-Code scannen. Serveradresse und Key werden eingetragen.',
   'keys.onceWarning':
     'Der Key wird nur jetzt angezeigt. Kopieren Sie ihn und bewahren Sie ihn sicher auf; er kann nicht erneut angezeigt werden.',
   'keys.editTitle': 'API-Key bearbeiten',
@@ -499,6 +505,13 @@ export const de: Messages = {
   'error.logo_too_large': 'Das Logo darf höchstens 512 KB groß sein.',
   'error.network_error': 'Der Server ist nicht erreichbar. Prüfen Sie die Verbindung.',
   'error.internal_error': 'Etwas ist schiefgegangen. Bitte versuchen Sie es erneut.',
+  'client.split.empty': 'Wählen Sie ein Ergebnis aus der Liste.',
+  'client.connect.scan': 'QR-Code scannen',
+  'client.connect.scanText': 'Scannen Sie den QR-Code, den das Web beim Anlegen des API-Keys zeigt.',
+  'client.connect.scanFailed': 'Der QR-Code enthält keinen API-Key.',
+  'client.update.play': 'Updates installiert Google Play.',
+  'client.update.permission':
+    'Erlauben Sie PAM Analyzer, Apps zu installieren, und tippen Sie dann erneut auf „Jetzt aktualisieren“.',
   'client.nav.results': 'Auswertungen',
   'client.nav.server': 'Server',
   'client.nav.settings': 'Einstellungen',

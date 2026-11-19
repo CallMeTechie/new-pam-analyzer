@@ -284,3 +284,308 @@
     display: none !important;
   }
 }
+
+/* ---------- Touch layout (Android): phones, tablets, foldables ---------- */
+
+.input-with-button {
+  display: flex;
+  gap: 8px;
+}
+.input-with-button .input {
+  flex: 1;
+  min-width: 0;
+}
+.result-row.selected {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.client.mobile {
+  --pad-x: 16px;
+  min-height: 100vh;
+}
+.client.mobile .main {
+  min-height: 100vh;
+}
+.client.mobile .content {
+  padding-top: 16px;
+  gap: 14px;
+  container-type: inline-size;
+}
+.client.mobile .topbar {
+  min-height: 56px;
+  padding-block: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+.client.mobile .topbar h1 {
+  font-size: 18px;
+}
+.client.mobile .topbar .btn .label-sm-hide {
+  display: none;
+}
+.client.mobile .menu-toggle {
+  display: none !important;
+}
+
+/* Phones and folded foldables: navigation at the bottom */
+.client.mobile.bottom .main {
+  padding-bottom: 76px;
+}
+.bottom-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px 10px;
+}
+.bottom-nav a,
+.rail-nav a {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+  padding: 2px 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.bottom-nav a svg,
+.rail-nav a svg {
+  width: 56px;
+  height: 28px;
+  padding: 4px 18px;
+  border-radius: 999px;
+  box-sizing: border-box;
+}
+.bottom-nav a[aria-current="page"],
+.rail-nav a[aria-current="page"] {
+  color: var(--fg);
+}
+.bottom-nav a[aria-current="page"] svg,
+.rail-nav a[aria-current="page"] svg {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.bottom-nav .badge,
+.rail-nav .badge {
+  position: absolute;
+  top: 0;
+  left: calc(50% + 8px);
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--warn-fill);
+  color: #fff;
+  font-size: 10.5px;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* Tablets and unfolded foldables: navigation rail, list next to the result */
+.client.mobile.rail {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+}
+.rail-nav {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 18px 0;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+.split {
+  display: grid;
+  grid-template-columns: minmax(300px, 38%) minmax(0, 1fr);
+  min-height: 100vh;
+}
+.split-list,
+.split-detail {
+  min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.split-detail {
+  border-left: 1px solid var(--line);
+}
+.split-list .result-row {
+  gap: 8px 12px;
+  padding: 12px 14px;
+}
+.split-list .result-row .parts,
+.split-list .result-row .pill.plain {
+  display: none;
+}
+.split-empty {
+  margin: auto;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  color: var(--muted);
+  padding: 40px;
+  text-align: center;
+}
+
+/* "Open" as floating button */
+.btn.fab {
+  position: fixed;
+  right: 18px;
+  bottom: 88px;
+  z-index: 35;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 16px;
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.client.mobile.rail .btn.fab {
+  position: static;
+  min-height: 0;
+  padding: 8px 14px;
+  box-shadow: none;
+  border-radius: var(--r-sm);
+}
+@media (max-width: 599px) {
+  .btn.fab span {
+    display: none;
+  }
+  .btn.fab {
+    width: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+/* Result page with tabs; holders in 2, 3 or 4 columns depending on the width */
+.client.mobile .rd-tabs {
+  position: sticky;
+  top: 56px;
+  z-index: 10;
+}
+.client.mobile .hero {
+  gap: 14px;
+}
+@container (max-width: 559px) {
+  .holders {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .hcard {
+    padding: 8px 8px 6px;
+  }
+  .hcard-h .t span,
+  .hcard-h .v span {
+    display: none;
+  }
+  .hbadge {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+}
+@container (min-width: 560px) and (max-width: 839px) {
+  .holders {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@container (min-width: 840px) {
+  .holders {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Foldables half open (tabletop): charts above the hinge, controls below */
+.tabletop .client.mobile .rd-charts {
+  display: block !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--hinge-top, 50vh);
+  overflow-y: auto;
+  z-index: 45;
+  background: var(--bg);
+  padding: 10px 16px;
+}
+.tabletop .client.mobile .rd-charts .charts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tabletop .client.mobile .main:has(.rd-charts) {
+  padding-top: var(--hinge-bottom, 50vh);
+}
+.tabletop .client.mobile .rd-tabs button:nth-child(2) {
+  display: none;
+}
+
+@media print {
+  .bottom-nav,
+  .rail-nav,
+  .split-list,
+  .btn.fab {
+    display: none !important;
+  }
+  .client.mobile.rail,
+  .split {
+    display: block;
+  }
+  .split-detail {
+    height: auto;
+    overflow: visible;
+    border: 0;
+  }
+}
+
+/* Phones: compact result header and list rows */
+@container (max-width: 559px) {
+  .hero .gauge {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    justify-items: start;
+    align-items: center;
+    column-gap: 14px;
+    padding: 10px 14px;
+  }
+  .hero .gauge .g-lbl {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+  }
+  .hero .gauge svg {
+    grid-column: 1;
+    grid-row: 1 / 3;
+    width: 112px;
+  }
+  .hero .gauge .g-val {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    font-size: 1.6rem;
+  }
+  .hero .gauge .g-txt {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    justify-self: end;
+  }
+  .result-row .parts,
+  .result-row .pill.plain {
+    display: none;
+  }
+  .result-row {
+    gap: 6px 12px;
+    padding: 12px 14px;
+  }
+}

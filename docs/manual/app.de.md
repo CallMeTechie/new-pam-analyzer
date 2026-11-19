@@ -1,4 +1,4 @@
-# Handbuch der Windows-App
+# Handbuch der App (Windows und Android)
 
 Die App wertet PAM-Dateien von NXT, NXT-R und AIMEX direkt auf diesem PC aus, auch ohne Netz. Sie rechnet mit demselben Rechenkern wie der Server und kommt deshalb zu denselben Ergebnissen.
 
@@ -48,6 +48,29 @@ Die App sucht bei jedem Start nach einer neuen Version und meldet sie mit den Ä
 - **Beta**: neue Funktionen früher, dafür weniger getestet; erhält auch jede Stable-Version.
 
 Wer von Beta auf Stable zurückwechselt, behält seine Version, bis eine neuere Stable-Version erscheint.
+
+## Android
+
+Die App läuft auf Smartphones, Tablets und Foldables und kann dasselbe wie unter Windows.
+
+- **Dateien:** über „Öffnen“ (Android-Dateiauswahl, auch USB-Stick und Cloud-Apps), über
+  **Teilen → PAM Analyzer** in einer anderen App (Dateimanager, E-Mail, Teams …) oder durch
+  Antippen einer `.dat` im Dateimanager („Öffnen mit PAM Analyzer“).
+- **Handy:** Navigation unten. Das Ergebnis zeigt die Reiter Übersicht, Diagramme und Holder;
+  ein Holder lässt sich durch Antippen vergrößern.
+- **Tablet und aufgeklapptes Foldable:** Liste links, Ergebnis rechts.
+- **Foldable halb aufgeklappt (Tischmodus):** Diagramme oben, Bedienung unten.
+- **Drucken:** öffnet den Android-Druckdialog; dort auch **Als PDF speichern**.
+- **Server verbinden:** wie unter Windows. Den API-Key kann man scannen: Beim Anlegen zeigt das
+  Web einen QR-Code, in der App unter Server auf das Kamera-Symbol tippen.
+- **Updates:** Die APK von GitHub sucht beim Start nach Updates (Kanäle Stable und Beta). Beim
+  ersten Update fragt Android, ob PAM Analyzer Apps installieren darf; danach genügt
+  „Jetzt aktualisieren“. Die Version aus Google Play aktualisiert Play.
+
+### Installation (APK)
+
+Unter den Releases des Projekts auf GitHub `PAM-Analyzer_<Version>_android.apk` herunterladen
+und öffnen. Android fragt einmal, ob der Browser bzw. Dateimanager Apps installieren darf.
 
 ## Installation
 

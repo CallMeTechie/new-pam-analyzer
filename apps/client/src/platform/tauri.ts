@@ -34,6 +34,7 @@ export async function tauriPlatform(version: string): Promise<Platform> {
   const db = await Database.load('sqlite:pam.db');
   return {
     kind: 'tauri',
+    formFactor: 'desktop',
     os: 'windows',
     version,
     store: await sqlStore(db),

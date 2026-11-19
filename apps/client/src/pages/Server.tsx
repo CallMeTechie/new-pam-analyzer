@@ -17,6 +17,21 @@ function errorMessage(t: ReturnType<typeof useI18n>['t'], e: unknown): string {
   return text === web ? t('error.internal_error') : text;
 }
 
+/** Content of the QR code shown on the web: `{"server": "…", "apiKey": "pam_…"}` or just the key. */
+export function parseKeyQr(text: string): { apiKey: string; server?: string } | null {
+  const trimmed = text.trim();
+  if (/^pam_[\w-]{10,}$/.test(trimmed)) return { apiKey: trimmed };
+  try {
+    const data = JSON.parse(trimmed) as { apiKey?: unknown; server?: unknown };
+    if (typeof data.apiKey === 'string' && /^pam_[\w-]{10,}$/.test(data.apiKey)) {
+      return { apiKey: data.apiKey, ...(typeof data.server === 'string' ? { server: data.server } : {}) };
+    }
+  } catch {
+    // not JSON
+  }
+  return null;
+}
+
 function ConnectForm() {
   const { t } = useI18n();
   const [, engine] = useEngine();
@@ -44,6 +59,20 @@ function ConnectForm() {
     }
   }
   const complete = Object.values(form).every((v) => v.trim());
+  const [scanError, setScanError] = useState<string | null>(null);
+
+  /** The web shows the new key as QR code: JSON with server and key, or the key alone. */
+  async function scanKey() {
+    setScanError(null);
+    const text = await engine.platform.scanQr?.();
+    if (!text) return;
+    const parsed = parseKeyQr(text);
+    if (!parsed) {
+      setScanError(t('client.connect.scanFailed'));
+      return;
+    }
+    setForm((f) => ({ ...f, apiKey: parsed.apiKey, ...(parsed.server ? { server: parsed.server } : {}) }));
+  }
 
   return (
     <div className="grid-2">
@@ -62,16 +91,24 @@ function ConnectForm() {
             />
           )}
         </Field>
-        <Field label={t('client.connect.apiKey')}>
+        <Field label={t('client.connect.apiKey')} {...(scanError ? { error: scanError } : {})}>
           {(p) => (
-            <input
-              {...p}
-              className="input mono"
-              value={form.apiKey}
-              onChange={set('apiKey')}
-              placeholder="pam_…"
-              autoComplete="off"
-            />
+            <div className="input-with-button">
+              <input
+                {...p}
+                className="input mono"
+                value={form.apiKey}
+                onChange={set('apiKey')}
+                placeholder="pam_…"
+                autoComplete="off"
+              />
+              {engine.platform.scanQr && (
+                <button type="button" className="btn" onClick={() => void scanKey()}>
+                  <Icon name="camera" size={16} />
+                  <span className="sr-only">{t('client.connect.scan')}</span>
+                </button>
+              )}
+            </div>
           )}
         </Field>
         <Field label={t('field.email')}>

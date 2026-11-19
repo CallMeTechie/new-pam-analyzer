@@ -15,8 +15,11 @@ const toInput = async (f: File): Promise<InputFile> => ({
  */
 export function browserPlatform(version: string): Platform {
   let secret: string | null = null;
+  // `?mobile` previews the touch layout (used by the tests).
+  const mobile = new URLSearchParams(window.location.search).has('mobile');
   return {
     kind: 'browser',
+    formFactor: mobile ? 'mobile' : 'desktop',
     os: 'other',
     version,
     store: memoryStore(),

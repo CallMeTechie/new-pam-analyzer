@@ -1,11 +1,13 @@
 name: App
 
-# Builds and publishes the Windows app, either from GitHub (Actions → App → Run workflow, enter the
-# version) or with a tag:
+# Builds and publishes the apps for Windows and Android, either from GitHub (Actions → App →
+# Run workflow, enter the version) or with a tag:
 #   0.2.0        / git tag app-v0.2.0          -> stable release, channels "stable" and "beta"
 #   0.3.0-beta.1 / git tag app-v0.3.0-beta.1   -> pre-release, channel "beta" only
-# The app reads its channel from the release "app-updates" (stable.json / beta.json) and installs
-# only updates signed with the key in the secret TAURI_SIGNING_PRIVATE_KEY (see docs/app.md).
+# The apps read their channel from the release "app-updates" (stable.json / beta.json) and install
+# only updates signed with the key in the secret TAURI_SIGNING_PRIVATE_KEY. Android also needs the
+# signing keystore (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS); with
+# PLAY_SERVICE_ACCOUNT_JSON the bundle is uploaded to Google Play as well. See docs/app.md.
 
 on:
   push:
@@ -25,7 +27,49 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      beta: ${{ steps.version.outputs.beta }}
+      code: ${{ steps.version.outputs.code }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secrets
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEY" ]; then echo "::error::Secret TAURI_SIGNING_PRIVATE_KEY is missing (see docs/app.md)."; exit 1; fi
+          if [ -z "$KEYSTORE" ]; then echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing (see docs/app.md)."; exit 1; fi
+      - id: version
+        name: Version from tag or input
+        env:
+          INPUT: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -n "$INPUT" ]; then tag="app-v${INPUT#app-v}"; else tag="$GITHUB_REF_NAME"; fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "::error::Release $tag exists already."
+            exit 1
+          fi
+          version=$(node .github/scripts/app-release.mjs version "$tag")
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "code=$(node .github/scripts/app-release.mjs version-code "$version")" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then echo "beta=true" >> "$GITHUB_OUTPUT"; else echo "beta=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          node .github/scripts/app-release.mjs notes "$v" notes.md
+          gh release create "${{ steps.version.outputs.tag }}" --draft --target "$GITHUB_SHA" \
+            --title "PAM Analyzer App ${v}" --notes-file notes.md
+
   windows:
+    needs: prepare
     runs-on: windows-latest
     defaults:
       run:
@@ -41,75 +85,126 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/client/src-tauri
-
-      - name: Check signing key
-        env:
-          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-        run: |
-          if [ -z "$KEY" ]; then
-            echo "::error::Secret TAURI_SIGNING_PRIVATE_KEY is missing (see docs/app.md)."
-            exit 1
-          fi
-
-      - id: version
-        name: Version from tag or input
-        env:
-          INPUT: ${{ inputs.version }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ -n "$INPUT" ]; then tag="app-v${INPUT#app-v}"; else tag="$GITHUB_REF_NAME"; fi
-          if gh release view "$tag" > /dev/null 2>&1; then
-            echo "::error::Release $tag exists already."
-            exit 1
-          fi
-          version=$(node .github/scripts/app-release.mjs version "$tag")
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          if [[ "$version" == *-* ]]; then echo "beta=true" >> "$GITHUB_OUTPUT"; else echo "beta=false" >> "$GITHUB_OUTPUT"; fi
-
+      - run: node .github/scripts/app-release.mjs version "${{ needs.prepare.outputs.tag }}"
       - run: pnpm install --frozen-lockfile
-
       - name: Build installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: pnpm --filter @pam/client tauri build
-
-      - name: Collect files
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          v="${{ steps.version.outputs.version }}"
+          v="${{ needs.prepare.outputs.version }}"
           mkdir -p out
-          dir=apps/client/src-tauri/target/release/bundle/nsis
-          exe=$(ls "$dir"/*-setup.exe | head -n 1)
+          exe=$(ls apps/client/src-tauri/target/release/bundle/nsis/*-setup.exe | head -n 1)
           cp "$exe" "out/PAM-Analyzer_${v}_x64-setup.exe"
           cp "$exe.sig" "out/PAM-Analyzer_${v}_x64-setup.exe.sig"
+          gh release upload "${{ needs.prepare.outputs.tag }}" out/*
+
+  android:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android,i686-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri
+      - run: node .github/scripts/app-release.mjs version "${{ needs.prepare.outputs.tag }}"
+      - run: pnpm install --frozen-lockfile
+      - name: Signing keystore
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          dir=apps/client/src-tauri/gen/android
+          echo "$KEYSTORE" | base64 -d > "$dir/release.keystore"
+          printf 'storeFile=release.keystore\nstorePassword=%s\nkeyAlias=%s\nkeyPassword=%s\n' "$PASSWORD" "$ALIAS" "$PASSWORD" > "$dir/keystore.properties"
+      - name: Build APK (GitHub, with self-update)
+        run: |
+          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          code="${{ needs.prepare.outputs.code }}"
+          pnpm --filter @pam/client tauri android build --apk --config "{\"bundle\":{\"android\":{\"versionCode\":$code}}}"
+      - name: Build bundle (Google Play, updated by Play)
+        run: |
+          export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
+          code="${{ needs.prepare.outputs.code }}"
+          # Google Play installs the updates; the permission to install apps is left out.
+          sed -i '/REQUEST_INSTALL_PACKAGES/d' apps/client/src-tauri/gen/android/app/src/main/AndroidManifest.xml
+          pnpm --filter @pam/client tauri android build --aab --config "{\"bundle\":{\"android\":{\"versionCode\":$code}}}"
+      - name: Upload to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          v="${{ needs.prepare.outputs.version }}"
+          out=apps/client/src-tauri/gen/android/app/build/outputs
+          mkdir -p dist-android
+          cp "$(ls $out/apk/universal/release/*.apk | head -n 1)" "dist-android/PAM-Analyzer_${v}_android.apk"
+          cp "$(ls $out/bundle/universalRelease/*.aab | head -n 1)" "dist-android/PAM-Analyzer_${v}_android.aab"
+          pnpm --filter @pam/client exec tauri signer sign "$PWD/dist-android/PAM-Analyzer_${v}_android.apk"
+          gh release upload "${{ needs.prepare.outputs.tag }}" dist-android/*
+      - id: play
+        name: Google Play configured?
+        env:
+          PLAY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: echo "enabled=$([ -n "$PLAY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - name: Upload to Google Play
+        if: steps.play.outputs.enabled == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.callmetechie.pamanalyzer
+          releaseFiles: dist-android/*.aab
+          track: ${{ needs.prepare.outputs.beta == 'true' && 'beta' || 'production' }}
+          status: completed
+
+  publish:
+    needs: [prepare, windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish release and update channels
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${{ needs.prepare.outputs.tag }}"
+          v="${{ needs.prepare.outputs.version }}"
+          base="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag}"
+          mkdir -p out
+          gh release download "$tag" --pattern "*.sig" --dir out
           node .github/scripts/app-release.mjs notes "$v" out/notes.md
-          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ steps.version.outputs.tag }}/PAM-Analyzer_${v}_x64-setup.exe"
-          node .github/scripts/app-release.mjs channel "$v" "$url" "out/PAM-Analyzer_${v}_x64-setup.exe.sig" out/notes.md out/channel.json
+          node .github/scripts/app-release.mjs channel "$v" out/notes.md out/channel.json \
+            "windows-x86_64-nsis,windows-x86_64=${base}/PAM-Analyzer_${v}_x64-setup.exe|out/PAM-Analyzer_${v}_x64-setup.exe.sig" \
+            "android=${base}/PAM-Analyzer_${v}_android.apk|out/PAM-Analyzer_${v}_android.apk.sig"
           cat out/channel.json
-
-      - name: Create release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          v="${{ steps.version.outputs.version }}"
-          flags="--latest"
-          if [ "${{ steps.version.outputs.beta }}" = "true" ]; then flags="--prerelease --latest=false"; fi
-          gh release create "${{ steps.version.outputs.tag }}" --target "$GITHUB_SHA" \
-            "out/PAM-Analyzer_${v}_x64-setup.exe" "out/PAM-Analyzer_${v}_x64-setup.exe.sig" \
-            --title "PAM Analyzer App ${v}" --notes-file out/notes.md $flags
-
-      - name: Publish update channels
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
+          if [ "${{ needs.prepare.outputs.beta }}" = "true" ]; then
+            gh release edit "$tag" --draft=false --prerelease --latest=false
+          else
+            gh release edit "$tag" --draft=false --latest
+          fi
           if ! gh release view app-updates > /dev/null 2>&1; then
             gh release create app-updates --prerelease --latest=false --title "App update channels" \
-              --notes "Update channels of the PAM Analyzer app (stable.json, beta.json). Do not delete."
+              --notes "Update channels of the PAM Analyzer apps (stable.json, beta.json). Do not delete."
           fi
           cp out/channel.json out/beta.json
           files="out/beta.json"
-          if [ "${{ steps.version.outputs.beta }}" = "false" ]; then
+          if [ "${{ needs.prepare.outputs.beta }}" = "false" ]; then
             cp out/channel.json out/stable.json
             files="$files out/stable.json"
           fi
