@@ -2408,13 +2408,39 @@ table.table.compact td {
   }
 }
 
-/* Print: PAM result on A4 */
+.hero-id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/*
+ * Print: PAM result on A4. Page 1 holds the result header, the Head and Total tables and both overall
+ * charts; the holders follow from page 2, at most 12 per page. Print date, calculation core, rating
+ * limits and the page number are drawn in the page margin (see PrintPageFooter).
+ */
 .print-only {
   display: none;
 }
 @page {
   size: A4 portrait;
-  margin: 12mm 11mm;
+  margin: 12mm 11mm 14mm;
+  @bottom-left {
+    font-family: "Geist Variable", system-ui, sans-serif;
+    font-size: 7pt;
+    color: #6b7280;
+    vertical-align: top;
+    padding-top: 2mm;
+  }
+  @bottom-right {
+    font-family: "Geist Variable", system-ui, sans-serif;
+    font-size: 7pt;
+    color: #6b7280;
+    vertical-align: top;
+    padding-top: 2mm;
+    white-space: nowrap;
+  }
 }
 @media print {
   :root {
@@ -2434,10 +2460,10 @@ table.table.compact td {
   .service-banner,
   .footer,
   .topbar,
+  .no-print,
+  .detail-footer,
   .detail-footer + *,
-  .legend button,
   .seg,
-  .stepper button,
   .tip {
     display: none !important;
   }
@@ -2461,38 +2487,32 @@ table.table.compact td {
   }
   .card,
   .hcard,
-  section,
   .boxes,
   .charts {
     break-inside: avoid;
   }
-  .print-header {
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid var(--dark);
-  }
-  .print-header > div {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    line-height: 1.3;
-  }
-  .print-header b {
-    font-size: 15px;
-  }
-  .print-header span {
-    color: var(--muted);
-  }
-  .print-date {
-    font-size: 10px;
-    color: var(--muted);
-  }
   .hero {
     grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px 20px;
   }
   .hero h2 {
     font-size: 20px;
+    margin-top: 4px;
+  }
+  .facts {
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .fact {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+  .fact span {
+    font-size: 10px;
+  }
+  .file-line {
+    margin-top: 8px;
+    font-size: 10px;
   }
   .gauge {
     min-width: 0;
@@ -2508,49 +2528,78 @@ table.table.compact td {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px;
   }
-  .boxes .box:last-child {
-    grid-column: 1 / -1 !important;
-  }
-  .boxes .box:last-child .tiles {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+  .box {
+    gap: 8px;
   }
   .bt {
     font-size: 10px;
-  }
-  .chart-h span,
-  .sec-hint {
-    display: none;
   }
   .bt th,
   .bt td {
     padding: 4px 4px;
   }
-  .tile {
-    min-height: 0;
-    padding: 8px;
-  }
-  .tile .t-val {
-    font-size: 16px;
+  .chart-h span,
+  .sec-hint {
+    display: none;
   }
   .charts {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 8px;
   }
+  .chart {
+    gap: 6px;
+  }
+  .chart h3 {
+    font-size: 13px;
+  }
+  .legend {
+    gap: 3px 9px;
+  }
+  .legend .lg-item {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-size: 9.5px;
+  }
   .section-h h2 {
     font-size: 14px;
   }
+  .print-holders {
+    flex-direction: column;
+    gap: 8px;
+    break-before: page;
+  }
+  .print-holders .section-h p {
+    font-size: 10.5px;
+  }
   .holders {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 6px;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px;
   }
   .hcard {
-    padding: 6px;
+    padding: 8px 8px 6px;
+    gap: 6px;
   }
-  .notice {
-    padding: 8px 10px;
+  .hcard .plot,
+  .hcard > svg {
+    width: 86%;
+    justify-self: center;
   }
-  .detail-footer {
-    font-size: 9px;
+  .hbadge {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+    border-radius: 8px;
+  }
+  .hcard-h .t b {
+    font-size: 12px;
+  }
+  .hcard-h .t span,
+  .hcard-h .v span {
+    font-size: 10px;
+  }
+  .hcard-h .v b {
+    font-size: 14px;
   }
   a {
     color: inherit;

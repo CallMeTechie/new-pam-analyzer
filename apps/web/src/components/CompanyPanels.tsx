@@ -1,3 +1,4 @@
+import { machineLabel } from '@pam/core';
 import { type FormEvent, useRef, useState } from 'react';
 import { CATALOGS, useI18n } from '../i18n';
 import { type ApiError, type ApiKey, api, type Company, type Machine, qs, type Role, type User } from '../lib/api';
@@ -575,7 +576,7 @@ export function MachinesPanel({ companyId, canManage }: { companyId: number; can
                 <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <FamilyIcon family={m.family} />
                   <span className="mono" style={{ fontSize: 13.5 }}>
-                    {m.machineNo}
+                    {machineLabel(m.machineNo, t('machine.sn'))}
                   </span>
                 </span>
               </td>
