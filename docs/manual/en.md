@@ -38,7 +38,7 @@ Members of the service company see the results of all companies.
 - **CPK coefficient & components**: the tolerance ±µm used for the calculation and the number of measured components. You can change the coefficient to try something out; it is not saved.
 - **Overall view**: all components by angle and by holder. A holder in the legend highlights its points.
 - **Individual view per holder**: Cpk XY and rating per holder, sortable, filterable to holders that need attention.
-- **Print**: prints the result on A4, with the company logo.
+- **Print**: prints the result on A4. Page 1 shows the result header, Head, Total and the overall charts; the holders follow from page 2 (at most 12 per page). The company logo appears when the result belongs to a company.
 - **Original file**: downloads the uploaded `.dat` file.
 
 ## Rating

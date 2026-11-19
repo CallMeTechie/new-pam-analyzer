@@ -3,9 +3,10 @@ import {
   type AnalysisResult,
   analyzePamFile,
   type CpkThresholds,
+  machineLabel,
   type ParsedPamFile,
 } from '@pam/core';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ANGLE_COLOR, Gauge, Scatter } from '../components/charts';
 import { Icon } from '../components/Icon';
@@ -170,7 +171,7 @@ function Boxes({
           </tbody>
         </table>
       </section>
-      <section className="card box">
+      <section className="card box box-coef no-print">
         <div className="box-h">
           <h3>{t('box.coef')}</h3>
         </div>
@@ -237,8 +238,8 @@ function Overall({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisRe
   const shaftColor = (s: number) => `hsl(${Math.round(((s - 1) / n) * 330)} 68% 46%)`;
   const hl = result.shafts.find((s) => s.shaft === highlight);
   return (
-    <section className="stack">
-      <div className="section-h">
+    <section className="stack overall">
+      <div className="section-h no-print">
         <div>
           <h2>{t('overall.title')}</h2>
           <p>{t('overall.sub', { coef: result.coefficient })}</p>
@@ -301,6 +302,78 @@ function Overall({ parsed, result }: { parsed: ParsedPamFile; result: AnalysisRe
   );
 }
 
+type Shaft = AnalysisResult['shafts'][number];
+
+function HolderCard({ shaft: s, parsed, result }: { shaft: Shaft; parsed: ParsedPamFile; result: AnalysisResult }) {
+  const { t, num } = useI18n();
+  const limit = Math.max(result.axisLimits.x.max, result.axisLimits.y.max);
+  const mark = s.shaft === result.bestShaft ? t('holder.best') : s.shaft === result.worstShaft ? t('holder.worst') : '';
+  const name = t('holder.name', { h: s.label });
+  return (
+    <article className={`hcard ${ratingClass(s.rating)}`} aria-label={name}>
+      <div className="hcard-h">
+        <span className="hbadge">{s.label}</span>
+        <span className="t">
+          <b>{name}</b>
+          <span>
+            {t('holder.parts', { n: s.count })}
+            {mark ? ` · ${mark}` : ''}
+          </span>
+        </span>
+        <span className="v">
+          <b>{num(s.cpkXY, 2)}</b>
+          <span>{t(`rating.${s.rating ?? 'none'}`)}</span>
+        </span>
+      </div>
+      <Scatter
+        points={parsed.measurements.filter((m) => m.shaft === s.shaft)}
+        limit={limit}
+        coefficient={result.coefficient}
+        colorOf={(p) => ANGLE_COLOR[p.angle] ?? 'var(--muted)'}
+        label={name}
+        small
+      />
+    </article>
+  );
+}
+
+/** Printout: all holders in their order, at most 12 per A4 page. */
+const PRINT_HOLDERS_PER_PAGE = 12;
+
+function PrintHolders({
+  parsed,
+  result,
+  thresholds,
+}: {
+  parsed: ParsedPamFile;
+  result: AnalysisResult;
+  thresholds: CpkThresholds;
+}) {
+  const { t, num } = useI18n();
+  const n = result.shafts.length;
+  const count = result.shafts.filter((s) => attention(s.rating)).length;
+  const lim = num(thresholds.good, 2);
+  const pages: Shaft[][] = [];
+  for (let i = 0; i < n; i += PRINT_HOLDERS_PER_PAGE) pages.push(result.shafts.slice(i, i + PRINT_HOLDERS_PER_PAGE));
+  return (
+    <>
+      {pages.map((page) => (
+        <section key={page[0]?.shaft} className="print-only print-holders">
+          <div className="section-h">
+            <h2>{t('print.holders', { from: page[0]?.label ?? '', to: page[page.length - 1]?.label ?? '', n })}</h2>
+            <p>{count ? t('holders.attention', { a: count, n, limit: lim }) : t('holders.allOk', { n, limit: lim })}</p>
+          </div>
+          <div className="holders">
+            {page.map((s) => (
+              <HolderCard key={s.shaft} shaft={s} parsed={parsed} result={result} />
+            ))}
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}
+
 function Holders({
   parsed,
   result,
@@ -313,7 +386,6 @@ function Holders({
   const { t, num } = useI18n();
   const [sort, setSort] = useState<'holder' | 'cpk'>('holder');
   const [filter, setFilter] = useState<'all' | 'attention'>('all');
-  const limit = Math.max(result.axisLimits.x.max, result.axisLimits.y.max);
   const count = result.shafts.filter((s) => attention(s.rating)).length;
   let shafts = result.shafts.slice();
   if (filter === 'attention') shafts = shafts.filter((s) => attention(s.rating));
@@ -321,7 +393,7 @@ function Holders({
     shafts.sort((a, b) => (a.cpkXY ?? Number.POSITIVE_INFINITY) - (b.cpkXY ?? Number.POSITIVE_INFINITY));
   const lim = num(thresholds.good, 2);
   return (
-    <section className="stack">
+    <section className="stack no-print">
       <div className="section-h">
         <div>
           <h2>{t('holders.title')}</h2>
@@ -352,37 +424,9 @@ function Holders({
       </div>
       {shafts.length ? (
         <div className="holders">
-          {shafts.map((s) => {
-            const mark =
-              s.shaft === result.bestShaft ? t('holder.best') : s.shaft === result.worstShaft ? t('holder.worst') : '';
-            const name = t('holder.name', { h: s.label });
-            return (
-              <article key={s.shaft} className={`hcard ${ratingClass(s.rating)}`} aria-label={name}>
-                <div className="hcard-h">
-                  <span className="hbadge">{s.label}</span>
-                  <span className="t">
-                    <b>{name}</b>
-                    <span>
-                      {t('holder.parts', { n: s.count })}
-                      {mark ? ` · ${mark}` : ''}
-                    </span>
-                  </span>
-                  <span className="v">
-                    <b>{num(s.cpkXY, 2)}</b>
-                    <span>{t(`rating.${s.rating ?? 'none'}`)}</span>
-                  </span>
-                </div>
-                <Scatter
-                  points={parsed.measurements.filter((m) => m.shaft === s.shaft)}
-                  limit={limit}
-                  coefficient={result.coefficient}
-                  colorOf={(p) => ANGLE_COLOR[p.angle] ?? 'var(--muted)'}
-                  label={name}
-                  small
-                />
-              </article>
-            );
-          })}
+          {shafts.map((s) => (
+            <HolderCard key={s.shaft} shaft={s} parsed={parsed} result={result} />
+          ))}
         </div>
       ) : (
         <div className="card empty">
@@ -396,6 +440,22 @@ function Holders({
   );
 }
 
+/** CSS string literal, safe inside a style element. */
+const cssString = (v: string) => `"${v.replace(/[\\"<>\n]/g, (c) => `\\${c.charCodeAt(0).toString(16)} `)}"`;
+
+/**
+ * Footer on every printed page (print date, calculation core, rating limits, page number), drawn by the
+ * browser in the page margin. `page` holds \u0001 and \u0002 where the page number and page count go.
+ */
+function PrintPageFooter({ left, page }: { left: string; page: string }) {
+  const [before = '', rest = ''] = page.split('\u0001');
+  const [middle = '', after = ''] = rest.split('\u0002');
+  const counter = `${cssString(before)} counter(page) ${cssString(middle)} counter(pages) ${cssString(after)}`;
+  return (
+    <style>{`@media print { @page { @bottom-left { content: ${cssString(left)}; } @bottom-right { content: ${counter}; } } }`}</style>
+  );
+}
+
 export function ResultDetail() {
   const { id } = useParams();
   const { t, int, num, dateTime, instant } = useI18n();
@@ -404,6 +464,12 @@ export function ResultDetail() {
   const navigate = useNavigate();
   const { data, error, loading } = useApi<Detail>(`/results/${id}`);
   const [coefficient, setCoefficient] = useState<number | null>(null);
+  const [printedAt, setPrintedAt] = useState(() => Date.now());
+  useEffect(() => {
+    const update = () => setPrintedAt(Date.now());
+    window.addEventListener('beforeprint', update);
+    return () => window.removeEventListener('beforeprint', update);
+  }, []);
 
   const parsed = useMemo<ParsedPamFile | null>(
     () =>
@@ -457,18 +523,36 @@ export function ResultDetail() {
   }
   const h = data.header;
   const head = result.head;
-  const facts: [string, string][] = [
-    [t('fact.head'), h.headType],
-    [t('fact.sn'), h.headSerial],
-    ...(h.toolType
-      ? [[t('fact.tool'), h.toolType + (h.toolSerial ? ` · ${h.toolSerial}` : '')] as [string, string]]
-      : []),
-    ...(h.h08mVariant ? [[t('fact.parts'), t(`parts.${h.h08mVariant}`)] as [string, string]] : []),
-    [t('fact.holders'), int(result.shafts.length)],
-    [t('fact.tested'), dateTime(data.result.testDate)],
-    ...(data.result.line ? [[t('fact.line'), data.result.line] as [string, string]] : []),
+  const complete = result.expectedComponents !== null && result.measuredComponents === result.expectedComponents;
+  const coefMode =
+    result.coefficientSource === 'manual'
+      ? t('coef.manual')
+      : result.coefficientSource === 'default'
+        ? t('coef.default')
+        : t('coef.auto', { head: h.headType === 'DX' ? (h.toolType ?? 'DX') : h.headType });
+  const facts: { k: string; v: string; cls?: string }[] = [
+    { k: t('fact.head'), v: h.headType },
+    { k: t('fact.sn'), v: h.headSerial },
+    ...(h.toolType ? [{ k: t('fact.tool'), v: h.toolType + (h.toolSerial ? ` · ${h.toolSerial}` : '') }] : []),
+    ...(h.h08mVariant ? [{ k: t('fact.parts'), v: t(`parts.${h.h08mVariant}`) }] : []),
+    { k: t('fact.holders'), v: int(result.shafts.length) },
+    { k: t('fact.tested'), v: dateTime(data.result.testDate) },
+    ...(data.result.line ? [{ k: t('fact.line'), v: data.result.line }] : []),
+    // Coefficient and components have their own box on screen; the printout shows them here.
+    { k: t('fact.coef'), v: `±${result.coefficient} µm · ${coefMode}`, cls: 'print-only' },
+    {
+      k: t('tile.parts'),
+      v: complete
+        ? `${int(result.measuredComponents)} ✓`
+        : `${int(result.measuredComponents)}${result.expectedComponents ? ` / ${int(result.expectedComponents)}` : ''}`,
+      cls: 'print-only',
+    },
     ...(scope.companyId === null
-      ? [[t('fact.company'), data.result.companyName ?? t('company.unassigned')] as [string, string]]
+      ? [
+          data.result.companyName
+            ? { k: t('fact.company'), v: data.result.companyName }
+            : { k: t('fact.company'), v: t('company.unassigned'), cls: 'no-print' },
+        ]
       : []),
   ];
 
@@ -503,37 +587,34 @@ export function ResultDetail() {
         </>
       }
     >
-      <div className="print-only print-header">
-        {data.result.companyId !== null && (
-          <CompanyBadge
-            company={{
-              id: data.result.companyId,
-              name: data.result.companyName ?? '',
-              logoVersion: data.result.companyLogoVersion,
-            }}
-            size={44}
-          />
-        )}
-        <div>
-          <b>{data.result.companyName ?? 'PAM Analyzer'}</b>
-          <span>
-            {t('print.title')} · {headLabel(h, t('fact.sn'))}
-          </span>
-        </div>
-        <span className="print-date">{t('print.printed', { date: instant(Date.now()) })}</span>
-      </div>
       <section className="card hero">
         <div>
-          <div className="eyebrow">
-            <Icon name="pulse" size={14} stroke={2.4} />
-            {t('hero.eyebrow', { family: t(`family.${h.machineFamily}`) })}
+          <div className="hero-id">
+            {data.result.companyId !== null && (
+              <span className="print-only">
+                <CompanyBadge
+                  company={{
+                    id: data.result.companyId,
+                    name: data.result.companyName ?? '',
+                    logoVersion: data.result.companyLogoVersion,
+                  }}
+                  size={44}
+                />
+              </span>
+            )}
+            <div>
+              <div className="eyebrow">
+                <Icon name="pulse" size={14} stroke={2.4} />
+                {t('hero.eyebrow', { family: t(`family.${h.machineFamily}`) })}
+              </div>
+              <h2>{machineLabel(h.machineNo, t('machine.sn'))}</h2>
+            </div>
           </div>
-          <h2>{h.machineNo}</h2>
           <div className="facts">
-            {facts.map(([k, v]) => (
-              <span key={k} className="fact">
-                <span>{k}</span>
-                <b>{v}</b>
+            {facts.map((f) => (
+              <span key={f.k} className={f.cls ? `fact ${f.cls}` : 'fact'}>
+                <span>{f.k}</span>
+                <b>{f.v}</b>
               </span>
             ))}
           </div>
@@ -551,7 +632,9 @@ export function ResultDetail() {
         </div>
       </section>
 
-      <Notes detail={data} result={result} />
+      <div className="no-print">
+        <Notes detail={data} result={result} />
+      </div>
       <Boxes
         result={result}
         coefficient={coefficient}
@@ -561,6 +644,19 @@ export function ResultDetail() {
       />
       <Overall parsed={parsed} result={result} />
       <Holders parsed={parsed} result={result} thresholds={data.thresholds} />
+      <PrintHolders parsed={parsed} result={result} thresholds={data.thresholds} />
+      <PrintPageFooter
+        left={[
+          t('print.printed', { date: instant(printedAt) }),
+          t('footer.core', { v: ALGORITHM_VERSION }),
+          t('footer.rating', {
+            a: num(data.thresholds.warning, 2),
+            b: num(data.thresholds.good, 2),
+            c: num(data.thresholds.excellent, 2),
+          }),
+        ].join(' · ')}
+        page={t('print.page', { page: '\u0001', pages: '\u0002' })}
+      />
 
       <footer className="detail-footer">
         <span>{t('footer.core', { v: ALGORITHM_VERSION })}</span>

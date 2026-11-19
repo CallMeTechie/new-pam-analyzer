@@ -1,3 +1,4 @@
+import { machineLabel } from '@pam/core';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { type MessageKey, useI18n } from '../i18n';
@@ -84,7 +85,7 @@ export function ResultListRow({ row, showCompany }: { row: ResultRow; showCompan
       <span className="rr-main">
         <b>{headLabel(row, t('fact.sn'))}</b>
         <span>
-          {row.machineNo}
+          {machineLabel(row.machineNo, t('machine.sn'))}
           {row.line ? ` · ${row.line}` : ''}
           {showCompany ? ` · ${row.companyName ?? t('company.unassigned')}` : ''}
         </span>

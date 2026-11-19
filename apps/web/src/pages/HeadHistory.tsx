@@ -1,3 +1,4 @@
+import { machineLabel } from '@pam/core';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { Page } from '../components/Layout';
@@ -262,7 +263,7 @@ export function HeadHistory() {
                   </span>
                 </span>
                 <span className="mono" style={{ flex: 1, minWidth: 160, fontSize: 13, color: 'var(--fg-2)' }}>
-                  {r.machineNo}
+                  {machineLabel(r.machineNo, t('machine.sn'))}
                   {r.line ? ` · ${r.line}` : ''}
                 </span>
                 <PartsBar measured={r.measured} expected={r.expected} status={r.componentStatus} />

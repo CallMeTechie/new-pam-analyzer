@@ -13,6 +13,7 @@ export {
   validThresholds,
 } from './analyze.js';
 export { DEFAULT_CONFIG } from './config.js';
+export { type MachineId, machineLabel, splitMachineNo } from './machine.js';
 export {
   dynaheadToolKey,
   H08M_CERAMIC_ROWS,

@@ -38,7 +38,7 @@ Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen.
 - **CPK-Koeffizient & Bauteile**: die Toleranz ±µm, die für die Berechnung gilt, und die Anzahl gemessener Bauteile. Den Koeffizienten können Sie zum Ausprobieren ändern; gespeichert wird das nicht.
 - **Gesamtansicht**: alle Bauteile nach Winkel und nach Holder. Ein Holder in der Legende hebt seine Punkte hervor.
 - **Einzelansicht je Holder**: Cpk XY und Bewertung je Holder, sortierbar, auf auffällige Holder filterbar.
-- **Drucken**: druckt das Ergebnis auf A4, mit Firmenlogo.
+- **Drucken**: druckt das Ergebnis auf A4. Seite 1 zeigt Kopfdaten, Head, Total und die Gesamtdiagramme, ab Seite 2 folgen die Holder (höchstens 12 je Seite). Das Firmenlogo erscheint, wenn dem Ergebnis eine Firma zugeordnet ist.
 - **Originaldatei**: lädt die hochgeladene `.dat`-Datei herunter.
 
 ## Bewertung

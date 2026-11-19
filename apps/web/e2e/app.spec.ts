@@ -104,9 +104,21 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Head', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Total', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Increase coefficient' }).click();
-  await expect(page.getByText('manual')).toBeVisible();
+  await expect(page.locator('#coef-sub')).toContainText('manual');
 
   await expect(page.getByRole('button', { name: 'Print' })).toBeVisible();
+  // Printout: module type and serial number from the machine number, coefficient and components in the
+  // result header, no notice or coefficient box, holders from page 2 with at most 12 per page.
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.locator('.hero h2')).toHaveText(/^\S+ · S\/N \d+$/);
+  await expect(page.locator('.hero .fact', { hasText: 'Coefficient' })).toBeVisible();
+  await expect(page.locator('.box-coef')).toBeHidden();
+  const pages = page.locator('.print-holders');
+  const holders = await page.locator('.print-holders .hcard').count();
+  expect(holders).toBeGreaterThan(0);
+  await expect(pages).toHaveCount(Math.ceil(holders / 12));
+  await expect(pages.first().locator('.hcard')).toHaveCount(Math.min(holders, 12));
+  await page.emulateMedia({ media: 'screen' });
   await page.getByRole('link', { name: 'Head history' }).click();
   await expect(page.getByText('2 tests')).toBeVisible();
   await expect(page.locator('.history-chart g.pt')).toHaveCount(2);

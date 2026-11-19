@@ -2,6 +2,18 @@
 
 All notable changes to the PAM Analyzer. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.3.0 – 2026-11-19
+
+### Added
+- The machine number is split into module type and serial number: "M6IIIXNo2149" shows as "M6III · S/N 2149", "NXTR-1R-Xno0000184" as "NXTR-1R · S/N 0000184".
+
+### Changed
+- Reworked printout: page 1 shows the result header, Head, Total and both overall charts; the holders follow from page 2, at most 12 per page.
+- In the printout, coefficient and components are part of the result header; the "CPK coefficient & components" and file notice boxes, the page header and the overall view caption are gone.
+- Print date, calculation core, rating limits and page number are in the footer of every page.
+- A result without a company prints without company and logo.
+- The Docker image is also published with its version number (e.g. `0.3.0`), and every version gets a git tag.
+
 ## 0.2.0 – 2026-11-19
 
 ### New

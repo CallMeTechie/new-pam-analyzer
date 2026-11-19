@@ -2,6 +2,18 @@
 
 Alle wichtigen Änderungen am PAM Analyzer. Versionen nach [Semantic Versioning](https://semver.org).
 
+## 0.3.0 – 19.11.2026
+
+### Neu
+- Die Maschinennummer wird in Modultyp und Seriennummer zerlegt: „M6IIIXNo2149“ erscheint als „M6III · S/N 2149“, „NXTR-1R-Xno0000184“ als „NXTR-1R · S/N 0000184“.
+
+### Geändert
+- Druckansicht überarbeitet: Seite 1 zeigt Kopfdaten, Head, Total und beide Gesamtdiagramme, ab Seite 2 folgen die Holder mit höchstens 12 je Seite.
+- Im Ausdruck stehen Koeffizient und Bauteile bei den Kopfdaten; die Kästen „CPK-Koeffizient & Bauteile“ und „Hinweis zur Datei“, die Kopfzeile und die Zeile zur Gesamtansicht entfallen.
+- Druckdatum, Rechenkern, Bewertungsgrenzen und Seitenzahl stehen in der Fußzeile jeder Seite.
+- Ist dem Ergebnis keine Firma zugeordnet, zeigt der Ausdruck weder Firma noch Logo.
+- Das Docker-Image wird zusätzlich mit der Versionsnummer veröffentlicht (z. B. `0.3.0`), und jede Version erhält einen Git-Tag.
+
 ## 0.2.0 – 19.11.2026
 
 ### Neu

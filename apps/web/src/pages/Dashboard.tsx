@@ -1,3 +1,4 @@
+import { machineLabel } from '@pam/core';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon';
@@ -27,7 +28,7 @@ function LatestCard({ row }: { row: ResultRow }) {
       <span className="top">
         <span style={{ minWidth: 0 }}>
           <b>{headLabel(row, t('fact.sn'))}</b>
-          <span className="m">{row.machineNo}</span>
+          <span className="m">{machineLabel(row.machineNo, t('machine.sn'))}</span>
         </span>
         <span className="chip">{t(`family.${row.machineFamily}`)}</span>
       </span>
