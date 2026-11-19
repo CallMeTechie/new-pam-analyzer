@@ -128,22 +128,37 @@ export function makeI18n(locale: string, setLocale: (l: string) => void = () => 
   };
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
+type CatalogList = { code: string; name: string; messages: Record<string, unknown> }[];
+
+async function serverCatalogs(): Promise<CatalogList | null> {
+  const res = await fetch('/api/i18n', { credentials: 'same-origin' });
+  if (!res.ok) return null;
+  return ((await res.json()) as { catalogs: CatalogList }).catalogs;
+}
+
+/**
+ * `loadCatalogs` supplies imported languages; the web loads them from its server, the apps from
+ * the connected server or not at all.
+ */
+export function I18nProvider({
+  children,
+  loadCatalogs = serverCatalogs,
+}: {
+  children: ReactNode;
+  loadCatalogs?: () => Promise<CatalogList | null>;
+}) {
   const [locale, setLocaleState] = useState(initialLocale);
   const [revision, setRevision] = useState(0);
   const reloadCatalogs = useCallback(async () => {
     try {
-      const res = await fetch('/api/i18n', { credentials: 'same-origin' });
-      if (!res.ok) return;
-      const data = (await res.json()) as {
-        catalogs: { code: string; name: string; messages: Record<string, unknown> }[];
-      };
-      registerCatalogs(data.catalogs);
+      const list = await loadCatalogs();
+      if (!list) return;
+      registerCatalogs(list);
       setRevision((r) => r + 1);
     } catch {
       // the built-in languages stay available
     }
-  }, []);
+  }, [loadCatalogs]);
   useEffect(() => {
     void reloadCatalogs();
   }, [reloadCatalogs]);

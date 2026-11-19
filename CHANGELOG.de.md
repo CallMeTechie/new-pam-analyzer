@@ -2,6 +2,15 @@
 
 Alle wichtigen Änderungen am PAM Analyzer. Versionen nach [Semantic Versioning](https://semver.org).
 
+## 0.4.0 – 19.11.2026
+
+### Neu
+- Windows-App (eigene Versionen, siehe Änderungen der App): wertet PAM-Dateien offline aus und lädt sie verbunden hoch.
+
+### Geändert
+- `GET /api/app/config` und `POST /api/app/connect` liefern zusätzlich die Zeitzone der Maschinen, damit die App dasselbe Prüfdatum ermittelt wie der Server.
+- Die Web-Seiten „Ergebnis“ und „Kopf-Historie“ werden von der App mitbenutzt.
+
 ## 0.3.0 – 19.11.2026
 
 ### Neu

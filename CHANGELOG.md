@@ -2,6 +2,15 @@
 
 All notable changes to the PAM Analyzer. Versions follow [Semantic Versioning](https://semver.org).
 
+## 0.4.0 – 2026-11-19
+
+### Added
+- Windows app (versioned separately, see the app changelog): evaluates PAM files offline and uploads them when connected.
+
+### Changed
+- `GET /api/app/config` and `POST /api/app/connect` also return the time zone of the machines, so the app determines the same test date as the server.
+- The web pages "Result" and "Head history" are shared with the app.
+
 ## 0.3.0 – 2026-11-19
 
 ### Added

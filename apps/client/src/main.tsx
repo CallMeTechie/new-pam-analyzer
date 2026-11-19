@@ -1,0 +1,77 @@
+import { I18nProvider } from '@web/i18n';
+import { setApiTransport } from '@web/lib/api';
+import { AuthProvider, useAuth } from '@web/lib/auth';
+import { setThresholds } from '@web/lib/thresholds';
+import { StrictMode, useEffect } from 'react';
+import { createRoot } from 'react-dom/client';
+import { HashRouter } from 'react-router';
+import '@web/styles.css';
+import './app.css';
+import { App } from './App';
+import { Engine } from './lib/engine';
+import { localTransport } from './lib/transport';
+import { EngineContext, useEngine } from './lib/useEngine';
+import { browserPlatform } from './platform/browser';
+import type { Platform } from './platform/types';
+
+const inTauri = '__TAURI_INTERNALS__' in window;
+
+async function createPlatform(): Promise<Platform> {
+  if (inTauri) {
+    const { tauriPlatform } = await import('./platform/tauri');
+    return tauriPlatform(__APP_VERSION__);
+  }
+  return browserPlatform(__APP_VERSION__);
+}
+
+/** Waits for the local data, then renders the pages that need a signed-in "user". */
+function Gate() {
+  const { user, refresh } = useAuth();
+  const [s] = useEngine();
+  // The local profile shows the connected company and user.
+  useEffect(() => {
+    void refresh();
+  }, [s.connection, refresh]);
+  // Keep the rating thresholds of the web pages in step with the evaluation settings.
+  useEffect(() => setThresholds(s.config.thresholds), [s.config.thresholds]);
+  if (!s.ready || !user) return null;
+  return <App />;
+}
+
+async function start() {
+  const platform = await createPlatform();
+  const engine = new Engine(platform);
+  setApiTransport(localTransport(engine));
+  await engine.init();
+  setThresholds(engine.snapshot.config.thresholds);
+  if (engine.snapshot.locale) localStorage.setItem('pam-locale', engine.snapshot.locale);
+  // biome-ignore lint/suspicious/noExplicitAny: test hook for the browser preview
+  if (!inTauri) (window as any).__pamEngine = engine;
+
+  const loadCatalogs = async () => {
+    const c = engine.snapshot.connection;
+    if (!c) return null;
+    const res = await platform.request(`${c.server}/api/i18n`, { method: 'GET' });
+    if (res.status !== 200) return null;
+    return (JSON.parse(res.text) as { catalogs: { code: string; name: string; messages: Record<string, unknown> }[] })
+      .catalogs;
+  };
+
+  const root = document.getElementById('root');
+  if (!root) throw new Error('Missing #root');
+  createRoot(root).render(
+    <StrictMode>
+      <EngineContext.Provider value={engine}>
+        <HashRouter>
+          <I18nProvider loadCatalogs={loadCatalogs}>
+            <AuthProvider>
+              <Gate />
+            </AuthProvider>
+          </I18nProvider>
+        </HashRouter>
+      </EngineContext.Provider>
+    </StrictMode>,
+  );
+}
+
+void start();

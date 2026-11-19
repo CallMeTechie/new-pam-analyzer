@@ -6,7 +6,7 @@ import {
   machineLabel,
   type ParsedPamFile,
 } from '@pam/core';
-import { useEffect, useMemo, useState } from 'react';
+import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ANGLE_COLOR, Gauge, Scatter } from '../components/charts';
 import { Icon } from '../components/Icon';
@@ -456,7 +456,19 @@ function PrintPageFooter({ left, page }: { left: string; page: string }) {
   );
 }
 
+/**
+ * Lets another host of this page (the Windows app) replace the download button with its own
+ * actions, e.g. "Show in Explorer" and the upload status.
+ */
+export interface ResultDetailOptions {
+  renderActions?(detail: Detail): ReactNode;
+  /** Text after the file name instead of "uploaded <date>". */
+  addedText?(detail: Detail): string;
+}
+export const ResultDetailContext = createContext<ResultDetailOptions>({});
+
 export function ResultDetail() {
+  const options = useContext(ResultDetailContext);
   const { id } = useParams();
   const { t, int, num, dateTime, instant } = useI18n();
   const scope = useScope();
@@ -569,10 +581,14 @@ export function ResultDetail() {
             <Icon name="printer" size={16} />
             <span className="label-sm-hide">{t('detail.print')}</span>
           </button>
-          <a href={`/api/results/${data.result.id}/file`} className="btn" download>
-            <Icon name="download" size={16} />
-            <span className="label-sm-hide">{t('detail.download')}</span>
-          </a>
+          {options.renderActions ? (
+            options.renderActions(data)
+          ) : (
+            <a href={`/api/results/${data.result.id}/file`} className="btn" download>
+              <Icon name="download" size={16} />
+              <span className="label-sm-hide">{t('detail.download')}</span>
+            </a>
+          )}
           {canDelete && (
             <button
               type="button"
@@ -621,7 +637,7 @@ export function ResultDetail() {
           <div className="file-line">
             {data.result.fileName}
             {data.result.dateSource !== 'header' && ` · ${t(`dateSource.${data.result.dateSource}`)}`}
-            {` · ${t('detail.uploaded', { date: instant(data.result.createdAt) })}`}
+            {` · ${options.addedText ? options.addedText(data) : t('detail.uploaded', { date: instant(data.result.createdAt) })}`}
           </div>
         </div>
         <div className={`gauge ${ratingClass(head.rating)}`}>

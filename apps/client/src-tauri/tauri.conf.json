@@ -1,0 +1,60 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PAM Analyzer",
+  "version": "../package.json",
+  "identifier": "com.callmetechie.pamanalyzer",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PAM Analyzer",
+        "width": 1320,
+        "height": 860,
+        "minWidth": 1000,
+        "minHeight": 640,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
+    "publisher": "CallMeTechie",
+    "copyright": "CallMeTechie",
+    "category": "Utility",
+    "shortDescription": "PAM Analyzer",
+    "longDescription": "Evaluates PAM files of FUJI NXT, NXT-R and AIMEX placement heads.",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "fileAssociations": [
+      {
+        "ext": ["dat"],
+        "name": "PAM file",
+        "description": "PAM measurement file",
+        "role": "Viewer"
+      }
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English", "German"],
+        "displayLanguageSelector": false
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc4QzczNTk4RUZGRUI4MEUKUldRT3VQN3ZtRFhIZUJCckR4d1BHWjFrS0Exd0h1MFdFTmEySVZvRzk5a3BFY01oaGFYWDVlYmMK",
+      "endpoints": ["https://github.com/CallMeTechie/new-pam-analyzer/releases/download/app-updates/stable.json"],
+      "windows": { "installMode": "passive" }
+    }
+  }
+}

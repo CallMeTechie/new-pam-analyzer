@@ -81,7 +81,7 @@ export async function setup(overrides: Partial<ServerConfig> = {}, options: { ke
       async upload(files, fields = {}) {
         const form = new FormData();
         for (const f of files) {
-          form.append('files', new File([f.bytes], f.name));
+          form.append('files', new File([f.bytes as Uint8Array<ArrayBuffer>], f.name));
           form.append('lastModified', String(f.lastModified ?? ''));
         }
         for (const [k, v] of Object.entries(fields)) form.append(k, v);
