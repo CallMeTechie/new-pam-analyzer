@@ -11,8 +11,14 @@ Fertiges Image (amd64 und arm64), gebaut bei jedem Merge auf `main`:
 docker pull ghcr.io/callmetechie/new-pam-analyzer:latest
 ```
 
-Tags: `latest` (Stand von `main`), `sha-<commit>`, und bei Versions-Tags `v1.2.3` auch `1.2.3`
-und `1.2`. Selbst bauen: `docker compose up -d --build`.
+Tags: `latest` (Stand von `main`), die Version aus `apps/server/package.json` (z. B. `0.2.0` und
+`0.2`) und `sha-<commit>`. Zu jeder Version entsteht automatisch das Git-Tag `v0.2.0`.
+Selbst bauen: `docker compose up -d --build`.
+
+**Update:** Mit fester Version (z. B. `ghcr.io/callmetechie/new-pam-analyzer:0.2.0`) reicht es,
+die Nummer in `docker-compose.yml` zu ändern und das Projekt neu zu erstellen. Mit `latest` lädt
+`docker compose pull` das neue Image; der Container Manager einer Synology lädt ein vorhandenes
+`latest` dagegen nicht neu.
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
