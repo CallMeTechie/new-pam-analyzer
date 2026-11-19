@@ -5,9 +5,14 @@ REST-API, Datenhaltung und Auslieferung der Web-Oberfläche ([Web-Oberfläche](w
 
 ## Betrieb
 
+Fertiges Image (amd64 und arm64), gebaut bei jedem Merge auf `main`:
+
 ```bash
-docker compose up -d --build
+docker pull ghcr.io/callmetechie/new-pam-analyzer:latest
 ```
+
+Tags: `latest` (Stand von `main`), `sha-<commit>`, und bei Versions-Tags `v1.2.3` auch `1.2.3`
+und `1.2`. Selbst bauen: `docker compose up -d --build`.
 
 | Variable | Standard | Bedeutung |
 |---|---|---|
