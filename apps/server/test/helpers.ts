@@ -18,7 +18,8 @@ export function fixture(family: 'nxt' | 'nxtr' | 'aimex', index = 0): { name: st
   return { name, bytes: new Uint8Array(readFileSync(dir + name)) };
 }
 
-export const ADMIN = { email: 'admin@pam.test', password: 'admin-password-123' };
+/** Default administrator created on the first start. */
+export const ADMIN = { email: 'admin@example.com', password: 'admin1234' };
 export const PASSWORD = 'user-password-123';
 const ORIGIN = 'http://localhost';
 
@@ -38,8 +39,6 @@ export async function setup(overrides: Partial<ServerConfig> = {}, options: { ke
     ...loadConfig({}),
     databaseFile: ':memory:',
     webDir: '/nonexistent',
-    adminEmail: ADMIN.email,
-    adminPassword: ADMIN.password,
     ...overrides,
   };
   const database = openDatabase(':memory:');

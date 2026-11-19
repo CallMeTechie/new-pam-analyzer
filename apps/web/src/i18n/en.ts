@@ -92,6 +92,10 @@ export const en = {
   'password.changed': 'Your password has been changed. Other sessions were signed out.',
   'password.forcedTitle': 'Please choose your own password',
   'password.forcedText': 'Your account was created with an initial password. Replace it before you continue.',
+  'password.forcedDefaultText':
+    'You signed in with the default administrator account. Choose your own e-mail address and password; the default credentials stop working afterwards.',
+  'password.newEmail': 'Your e-mail address',
+  'password.newEmailHint': 'Replaces admin@example.com and is used to sign in from now on.',
   'account.title': 'My account',
   'account.profile': 'Profile',
 
@@ -432,6 +436,8 @@ export const en = {
   'error.upload_too_large': 'The upload is too large. Upload fewer files at once.',
   'error.no_files': 'No files were selected.',
   'error.password_change_required': 'Please change your initial password first.',
+  'error.email_change_required': 'Choose your own e-mail address instead of admin@example.com.',
+  'error.same_password': 'Choose a new password that differs from the current one.',
   'error.network_error': 'The server cannot be reached. Check the connection.',
   'error.internal_error': 'Something went wrong. Please try again.',
 } as const satisfies Record<string, string | { one: string; other: string }>;

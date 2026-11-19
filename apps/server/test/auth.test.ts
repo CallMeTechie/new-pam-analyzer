@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { ADMIN, PASSWORD, setup } from './helpers.js';
 
 describe('Anmeldung', () => {
-  it('legt beim ersten Start Service-Firma und Administrator an', async () => {
+  it('legt beim ersten Start Service-Firma und den Standard-Administrator an', async () => {
     const t = await setup({}, { keepInitialPassword: true });
     const admin = await t.login(ADMIN.email, ADMIN.password);
     const me = await admin.json('GET', '/api/auth/me');
@@ -70,14 +70,23 @@ describe('Anmeldung', () => {
       newPassword: 'short',
     });
     expect(short.body.error.code).toBe('invalid_request');
-    const ok = await admin.req('POST', '/api/auth/password', {
+    // Der Standard-Administrator muss auch eine eigene E-Mail-Adresse wählen.
+    const keepEmail = await admin.json('POST', '/api/auth/password', {
       currentPassword: ADMIN.password,
       newPassword: 'new-password-456',
     });
+    expect(keepEmail.body.error.code).toBe('email_change_required');
+    const ok = await admin.req('POST', '/api/auth/password', {
+      currentPassword: ADMIN.password,
+      newPassword: 'new-password-456',
+      newEmail: 'It@Plant.test',
+    });
     expect(ok.status).toBe(204);
-    expect((await admin.json('GET', '/api/auth/me')).body.user.mustChangePassword).toBe(false);
+    const me = (await admin.json('GET', '/api/auth/me')).body.user;
+    expect(me).toMatchObject({ email: 'it@plant.test', mustChangePassword: false });
     await expect(t.login(ADMIN.email, ADMIN.password)).rejects.toThrow();
-    await t.login(ADMIN.email, 'new-password-456');
+    await expect(t.login(ADMIN.email, 'new-password-456')).rejects.toThrow();
+    await t.login('it@plant.test', 'new-password-456');
   });
 
   it('mit Startpasswort ist nur die Passwortänderung erlaubt', async () => {
@@ -86,8 +95,25 @@ describe('Anmeldung', () => {
     const blocked = await admin.json('GET', '/api/results');
     expect(blocked).toMatchObject({ status: 403, body: { error: { code: 'password_change_required' } } });
     expect((await admin.json('GET', '/api/auth/me')).status).toBe(200);
-    await admin.req('POST', '/api/auth/password', { currentPassword: ADMIN.password, newPassword: 'new-password-456' });
+    await admin.req('POST', '/api/auth/password', {
+      currentPassword: ADMIN.password,
+      newPassword: 'new-password-456',
+      newEmail: 'it@plant.test',
+    });
     expect((await admin.json('GET', '/api/results')).status).toBe(200);
+  });
+
+  it('legt den Standard-Administrator nur an, solange es keinen Administrator gibt', async () => {
+    const t = await setup({}, { keepInitialPassword: true });
+    const admin = await t.login(ADMIN.email, ADMIN.password);
+    await admin.req('POST', '/api/auth/password', {
+      currentPassword: ADMIN.password,
+      newPassword: 'new-password-456',
+      newEmail: 'it@plant.test',
+    });
+    const { bootstrap } = await import('../src/services/bootstrap.js');
+    await bootstrap(t.db, t.config, () => {});
+    await expect(t.login(ADMIN.email, ADMIN.password)).rejects.toThrow();
   });
 
   it('speichert die Sprache des Benutzers', async () => {
