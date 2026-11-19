@@ -142,3 +142,52 @@ test('server: connect, upload the queue, collect files while offline', async ({ 
   await page.getByRole('button', { name: 'Really disconnect' }).click();
   await expect(page.getByRole('button', { name: 'Connect' })).toBeVisible();
 });
+
+test.describe('touch layout (Android)', () => {
+  test('phone: bottom navigation, open button, result tabs, holder zoom', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?mobile');
+    const nav = page.locator('.bottom-nav');
+    await expect(nav).toBeVisible();
+    await expect(page.locator('.sidebar')).toHaveCount(0);
+    await expect(page.getByTestId('dropzone')).toHaveCount(0);
+
+    const chooser = page.waitForEvent('filechooser');
+    await page.locator('.btn.fab').click();
+    await (await chooser).setFiles([fixture('nxtr', 4)]);
+    await expect(page).toHaveURL(/#\/results\/\d+$/);
+
+    await expect(page.getByRole('tab', { name: 'Overview' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('heading', { name: 'Head', exact: true })).toBeVisible();
+    await expect(page.locator('.hcard').first()).toBeHidden();
+    await page.getByRole('tab', { name: 'Holders' }).click();
+    await expect(page.getByRole('heading', { name: 'Head', exact: true })).toBeHidden();
+    const first = page.locator('.hcard').first();
+    await expect(first).toBeVisible();
+    // Two holders per row on a phone.
+    const [a, b] = await page
+      .locator('.holders .hcard')
+      .evaluateAll((els) => els.slice(0, 2).map((e) => e.getBoundingClientRect().top));
+    expect(a).toBe(b);
+    await first.click();
+    await expect(page.getByRole('dialog', { name: 'Holder A' })).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+
+    await nav.getByRole('link', { name: 'Settings' }).click();
+    await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+  });
+
+  test('tablet: list next to the result', async ({ page }) => {
+    await page.setViewportSize({ width: 1200, height: 800 });
+    await page.goto('/?mobile');
+    await expect(page.locator('.rail-nav')).toBeVisible();
+    await expect(page.getByText('Choose a result from the list.')).toBeVisible();
+    const chooser = page.waitForEvent('filechooser');
+    await page.getByRole('button', { name: 'Open files' }).click();
+    await (await chooser).setFiles([fixture('aimex', 2), fixture('nxt', 0)]);
+    await page.locator('a.result-row').first().click();
+    await expect(page.locator('.split-list a.result-row.selected')).toHaveCount(1);
+    await expect(page.locator('.split-detail .hero')).toBeVisible();
+    await expect(page.locator('.split-list a.result-row')).toHaveCount(2);
+  });
+});

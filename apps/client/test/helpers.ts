@@ -24,6 +24,7 @@ export function testPlatform(
   let current = handler;
   return {
     kind: 'browser',
+    formFactor: 'desktop',
     os: 'windows',
     version: '0.1.0-test',
     store,

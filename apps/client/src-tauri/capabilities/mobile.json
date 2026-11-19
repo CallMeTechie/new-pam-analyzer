@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/mobile-schema.json",
+  "identifier": "mobile",
+  "description": "Additional permissions on Android: the app's own plugin and the QR code scanner",
+  "windows": ["main"],
+  "platforms": ["android", "iOS"],
+  "permissions": [
+    "pam:default",
+    "barcode-scanner:allow-scan",
+    "barcode-scanner:allow-cancel",
+    "barcode-scanner:allow-check-permissions",
+    "barcode-scanner:allow-request-permissions"
+  ]
+}

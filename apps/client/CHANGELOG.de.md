@@ -2,6 +2,16 @@
 
 Änderungen an der PAM-Analyzer-App für Windows. Versionen nach [Semantic Versioning](https://semver.org); Beta-Versionen tragen `-beta.N`.
 
+## 0.2.0
+
+### Neu
+- Android-App für Smartphones, Tablets und Foldables, mit derselben Auswertung, Historie, Serververbindung und demselben Ausdruck wie unter Windows.
+- Android: Dateien über die Dateiauswahl, „Teilen“ aus anderen Apps und „Öffnen mit“ aus Dateimanagern; ZIP-Archive werden geöffnet.
+- Android: Navigation unten auf Handys und zugeklappten Foldables; Liste und Ergebnis nebeneinander auf Tablets und aufgeklappten Foldables; im Tischmodus von Foldables stehen die Diagramme über dem Falz.
+- Android: Die Ergebnisseite zeigt Übersicht, Diagramme und Holder als Reiter; Antippen vergrößert einen Holder.
+- Android: API-Key und Serveradresse lassen sich als QR-Code aus dem Web scannen.
+- Android: Die APK von GitHub aktualisiert sich selbst in den Kanälen Stable und Beta; die Version aus Google Play aktualisiert Play.
+
 ## 0.1.0
 
 ### Neu

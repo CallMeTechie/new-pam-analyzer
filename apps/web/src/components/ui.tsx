@@ -80,16 +80,23 @@ export function ResultListRow({
   row,
   showCompany,
   extra,
+  selected,
 }: {
   row: ResultRow;
   showCompany?: boolean;
   /** Additional status at the end of the row, e.g. the upload state in the app. */
   extra?: ReactNode;
+  /** Shown next to the list (app on tablets). */
+  selected?: boolean;
 }) {
   const { date, t } = useI18n();
   const scope = useScope();
   return (
-    <Link to={scope.link(`/results/${row.id}`)} className="result-row">
+    <Link
+      to={scope.link(`/results/${row.id}`)}
+      className={selected ? 'result-row selected' : 'result-row'}
+      {...(selected ? { 'aria-current': 'true' as const } : {})}
+    >
       <FamilyIcon family={row.machineFamily} />
       <span className="rr-main">
         <b>{headLabel(row, t('fact.sn'))}</b>

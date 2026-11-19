@@ -1,6 +1,6 @@
 import { Icon } from '@web/components/Icon';
 import { Page } from '@web/components/Layout';
-import { Empty, ResultListRow } from '@web/components/ui';
+import { Empty, Notice, ResultListRow } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import type { Family, Rating } from '@web/lib/api';
 import { useMemo, useState } from 'react';
@@ -15,9 +15,10 @@ const RATINGS: Rating[] = ['critical', 'warning', 'good', 'excellent'];
 const PAGE = 100;
 
 /** Local history: every file evaluated on this PC, newest test first. */
-export function Results() {
+export function Results({ compact = false, selectedId = null }: { compact?: boolean; selectedId?: number | null }) {
   const { t, int } = useI18n();
-  const [state] = useEngine();
+  const [state, engine] = useEngine();
+  const touch = engine.platform.formFactor === 'mobile';
   const navigate = useNavigate();
   const { pick, busy, last, clearLast, over } = useImport();
   const [q, setQ] = useState('');
@@ -43,21 +44,29 @@ export function Results() {
     <Page
       title={t('client.nav.results')}
       actions={
-        <button type="button" className="btn primary" onClick={() => void pick()} disabled={busy}>
-          <Icon name="folder" size={16} />
-          {t('client.open')}
+        <button
+          type="button"
+          className={`btn primary${touch ? ' fab' : ''}`}
+          onClick={() => void pick()}
+          disabled={busy}
+        >
+          <Icon name={touch ? 'plus' : 'folder'} size={16} />
+          <span className={compact ? 'fab-label' : undefined}>{t('client.open')}</span>
         </button>
       }
     >
-      <section className={`dropzone compact${over ? ' over' : ''}`} data-testid="dropzone">
-        <span className="icon-circle">
-          <Icon name="upload" size={22} />
-        </span>
-        <span className="dz-text">
-          <b>{busy ? t('client.drop.busy') : over ? t('client.drop.release') : t('client.drop.title')}</b>
-          <span className="muted">{t('client.drop.hint')}</span>
-        </span>
-      </section>
+      {!touch && (
+        <section className={`dropzone compact${over ? ' over' : ''}`} data-testid="dropzone">
+          <span className="icon-circle">
+            <Icon name="upload" size={22} />
+          </span>
+          <span className="dz-text">
+            <b>{busy ? t('client.drop.busy') : over ? t('client.drop.release') : t('client.drop.title')}</b>
+            <span className="muted">{t('client.drop.hint')}</span>
+          </span>
+        </section>
+      )}
+      {touch && busy && <Notice kind="info" title={t('client.drop.busy')} />}
       {last && (
         <ImportBanner
           summary={last}
@@ -151,6 +160,7 @@ export function Results() {
                 <ResultListRow
                   key={r.id}
                   row={toRow(r)}
+                  selected={r.id === selectedId}
                   extra={
                     state.connection || r.upload !== 'local' ? (
                       <UploadChip state={r.upload} reason={r.uploadError} />

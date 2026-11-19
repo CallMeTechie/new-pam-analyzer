@@ -1,12 +1,13 @@
 import { Icon, Logo } from '@web/components/Icon';
 import { Credit, LanguageSwitch } from '@web/components/Layout';
-import { Modal } from '@web/components/ui';
+import { Modal, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { ConnectionCard } from './components';
 import type { ImportSummary } from './lib/engine';
 import type { InputFile } from './lib/evaluate';
+import { useLayout, usePosture } from './lib/layout';
 import { useEngine } from './lib/useEngine';
 
 // ---------- importing files ----------
@@ -103,6 +104,7 @@ function UpdateProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState(false);
   const [dialog, setDialog] = useState(false);
   const [installing, setInstalling] = useState<number | null | false>(false);
+  const [needsPermission, setNeedsPermission] = useState(false);
   const started = useRef(false);
 
   const check = useCallback(
@@ -133,10 +135,14 @@ function UpdateProvider({ children }: { children: ReactNode }) {
     setInstalling(null);
     try {
       await updates.install((f) => setInstalling(f));
-    } catch {
       setInstalling(false);
-      setError(true);
-      setDialog(false);
+    } catch (e) {
+      setInstalling(false);
+      if (e instanceof Error && e.message === 'install_permission') setNeedsPermission(true);
+      else {
+        setError(true);
+        setDialog(false);
+      }
     }
   }
 
@@ -153,6 +159,7 @@ function UpdateProvider({ children }: { children: ReactNode }) {
             {s.update.version.includes('-') && <span className="beta-badge">BETA</span>}
           </p>
           {s.update.notes && <pre className="update-notes">{s.update.notes}</pre>}
+          {needsPermission && <Notice kind="info">{t('client.update.permission')}</Notice>}
           {installing !== false && (
             <div className="progress" role="progressbar" aria-label={t('client.update.installing')}>
               <span style={{ width: installing === null ? '30%' : `${Math.round(installing * 100)}%` }} />
@@ -180,12 +187,60 @@ function UpdateProvider({ children }: { children: ReactNode }) {
 
 // ---------- layout ----------
 
-export function Shell() {
+function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
   const { t, int } = useI18n();
   const [s] = useEngine();
   const queued = s.rows.filter((r) => r.upload === 'queued' || r.upload === 'rejected').length;
   const { pathname } = useLocation();
   const onResults = pathname === '/' || pathname.startsWith('/results');
+  const badge = (n: number) => (n > 0 ? <span className="badge">{int(n)}</span> : null);
+  return (
+    <>
+      <Link to="/" aria-current={onResults ? 'page' : undefined}>
+        <Icon name="results" />
+        <span>{t('client.nav.results')}</span>
+        {variant === 'sidebar' && badge(s.rows.length)}
+      </Link>
+      <NavLink to="/server">
+        <Icon name="upload" />
+        <span>{t('client.nav.server')}</span>
+        {badge(queued)}
+      </NavLink>
+      <NavLink to="/settings">
+        <Icon name="settings" />
+        <span>{t('client.nav.settings')}</span>
+      </NavLink>
+    </>
+  );
+}
+
+export function Shell() {
+  const { t } = useI18n();
+  const layout = useLayout();
+  usePosture();
+  if (layout !== 'desktop') {
+    return (
+      <ImportProvider>
+        <UpdateProvider>
+          <div className={`app client mobile ${layout}`}>
+            {layout === 'rail' && (
+              <nav className="rail-nav" aria-label={t('nav.label')}>
+                <NavItems variant="rail" />
+              </nav>
+            )}
+            <div className="main">
+              <Outlet />
+            </div>
+            {layout === 'bottom' && (
+              <nav className="bottom-nav" aria-label={t('nav.label')}>
+                <NavItems variant="bottom" />
+              </nav>
+            )}
+          </div>
+        </UpdateProvider>
+      </ImportProvider>
+    );
+  }
   return (
     <ImportProvider>
       <UpdateProvider>
@@ -201,20 +256,7 @@ export function Shell() {
               </NavLink>
               <nav className="nav" aria-label={t('nav.label')}>
                 <div className="nav-section">
-                  <Link to="/" aria-current={onResults ? 'page' : undefined}>
-                    <Icon name="results" />
-                    <span>{t('client.nav.results')}</span>
-                    {s.rows.length > 0 && <span className="badge">{int(s.rows.length)}</span>}
-                  </Link>
-                  <NavLink to="/server">
-                    <Icon name="upload" />
-                    <span>{t('client.nav.server')}</span>
-                    {queued > 0 && <span className="badge">{int(queued)}</span>}
-                  </NavLink>
-                  <NavLink to="/settings">
-                    <Icon name="settings" />
-                    <span>{t('client.nav.settings')}</span>
-                  </NavLink>
+                  <NavItems variant="sidebar" />
                 </div>
               </nav>
               <ConnectionCard />

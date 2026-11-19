@@ -2,6 +2,14 @@
 
 Alle wichtigen Änderungen am PAM Analyzer. Versionen nach [Semantic Versioning](https://semver.org).
 
+## 0.5.0 – 19.11.2026
+
+### Neu
+- Ein neuer API-Key wird zusätzlich als QR-Code mit der Serveradresse gezeigt, zum Scannen mit der Android-App.
+
+### Geändert
+- Die Ergebnisseite kann ihre Bereiche als Reiter zeigen und Holder vergrößern (für die Android-App).
+
 ## 0.4.0 – 19.11.2026
 
 ### Neu

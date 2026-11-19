@@ -1,4 +1,4 @@
-# Manual of the Windows app
+# Manual of the app (Windows and Android)
 
 The app evaluates PAM files from NXT, NXT-R and AIMEX directly on this PC, also without a network. It uses the same calculation core as the server and therefore comes to the same results.
 
@@ -48,6 +48,29 @@ The app looks for a new version at every start and shows it with its changes. **
 - **Beta**: new features earlier, but less tested; also receives every stable version.
 
 Whoever switches back from Beta to Stable keeps the installed version until a newer stable version appears.
+
+## Android
+
+The app runs on smartphones, tablets and foldables and can do the same as on Windows.
+
+- **Files:** through "Open" (Android file picker, also USB sticks and cloud apps), through
+  **Share → PAM Analyzer** in another app (file manager, e-mail, Teams …) or by tapping a `.dat`
+  in a file manager ("Open with PAM Analyzer").
+- **Phone:** navigation at the bottom. The result shows the tabs Overview, Charts and Holders;
+  tap a holder to enlarge it.
+- **Tablet and unfolded foldable:** list on the left, result on the right.
+- **Foldable half open (tabletop):** charts above, controls below.
+- **Print:** opens the Android print dialog, including **Save as PDF**.
+- **Connect to the server:** as on Windows. The API key can be scanned: the web shows a QR code
+  when the key is created; in the app tap the camera symbol under Server.
+- **Updates:** the APK from GitHub looks for updates at start (channels Stable and Beta). At the
+  first update Android asks whether PAM Analyzer may install apps; after that "Update now" is
+  enough. The version from Google Play is updated by Play.
+
+### Installation (APK)
+
+Download `PAM-Analyzer_<version>_android.apk` from the releases of the project on GitHub and
+open it. Android asks once whether the browser or file manager may install apps.
 
 ## Installation
 
