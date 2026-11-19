@@ -1,0 +1,69 @@
+import { ALGORITHM_VERSION, CPK_THRESHOLDS } from '@pam/core';
+import { eq } from 'drizzle-orm';
+import { Hono } from 'hono';
+import { z } from 'zod';
+import { connectDevice, disconnectDevice } from '../auth/apiKeys.js';
+import { checkCredentials } from '../auth/login.js';
+import { requireAuth } from '../auth/middleware.js';
+import { companies, users } from '../db/schema.js';
+import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
+import { getCoefficientConfig } from '../services/settings.js';
+
+/**
+ * Endpoints for the Windows, Android and iOS apps. An app connects once with an API key of the
+ * company plus the user's e-mail and password and then uses the returned device token.
+ */
+export const appRoutes = new Hono<AppEnv>();
+
+const PLATFORMS = ['windows', 'android', 'ios', 'macos', 'linux', 'other'] as const;
+
+appRoutes.post('/connect', async (c) => {
+  const body = parse(
+    z.object({
+      apiKey: z.string().trim().min(10).max(200),
+      email: z.string().trim().toLowerCase().max(200),
+      password: z.string().min(1).max(200),
+      installId: z.string().trim().min(8).max(100),
+      deviceName: z.string().trim().min(1).max(100),
+      platform: z.enum(PLATFORMS),
+      appVersion: z.string().trim().max(40).optional(),
+    }),
+    await jsonBody(c),
+  );
+  const db = c.get('db');
+  const userId = await checkCredentials(db, c.get('config'), body.email, body.password);
+  const { token, deviceId } = connectDevice(db, {
+    apiKey: body.apiKey,
+    userId,
+    installId: body.installId,
+    name: body.deviceName,
+    platform: body.platform,
+    appVersion: body.appVersion,
+  });
+  const info = db
+    .select({ userName: users.name, locale: users.locale, companyId: companies.id, companyName: companies.name })
+    .from(users)
+    .innerJoin(companies, eq(users.companyId, companies.id))
+    .where(eq(users.id, userId))
+    .get();
+  return c.json({ token, deviceId, ...info, ...appConfig(c.get('db')) }, 201);
+});
+
+function appConfig(db: AppEnv['Variables']['db']) {
+  return { algorithmVersion: ALGORITHM_VERSION, cpkThresholds: CPK_THRESHOLDS, coefficients: getCoefficientConfig(db) };
+}
+
+/** Current evaluation settings, so offline results match the server. */
+appRoutes.get('/config', (c) => {
+  const auth = requireAuth(c);
+  if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
+  return c.json(appConfig(c.get('db')));
+});
+
+/** The app disconnects itself and frees its slot. */
+appRoutes.delete('/connection', (c) => {
+  const auth = requireAuth(c);
+  if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
+  disconnectDevice(c.get('db'), auth.device.id);
+  return c.body(null, 204);
+});
