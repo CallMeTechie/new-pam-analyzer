@@ -52,7 +52,9 @@ die e2e-Tests simulieren den Server. Unter Linux braucht `tauri dev` die WebKitG
 ## Veröffentlichen
 
 Der Workflow `.github/workflows/app.yml` baut auf `windows-latest` den Installer und
-veröffentlicht ihn als GitHub-Release. Ausgelöst wird er durch ein Tag:
+veröffentlicht ihn als GitHub-Release. Am einfachsten startet man ihn auf GitHub unter
+**Actions → App → Run workflow** mit der Versionsnummer (z. B. `0.2.0` oder `0.3.0-beta.1`); das
+Tag `app-v…` legt der Workflow selbst an. Alternativ löst ein selbst gepushtes Tag ihn aus:
 
 | Tag | Release | Update-Kanal |
 |---|---|---|

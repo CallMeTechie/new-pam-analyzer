@@ -1,8 +1,9 @@
 name: App
 
-# Builds and publishes the Windows app.
-#   git tag app-v0.2.0          -> stable release, channels "stable" and "beta"
-#   git tag app-v0.3.0-beta.1   -> pre-release, channel "beta" only
+# Builds and publishes the Windows app, either from GitHub (Actions → App → Run workflow, enter the
+# version) or with a tag:
+#   0.2.0        / git tag app-v0.2.0          -> stable release, channels "stable" and "beta"
+#   0.3.0-beta.1 / git tag app-v0.3.0-beta.1   -> pre-release, channel "beta" only
 # The app reads its channel from the release "app-updates" (stable.json / beta.json) and installs
 # only updates signed with the key in the secret TAURI_SIGNING_PRIVATE_KEY (see docs/app.md).
 
@@ -45,9 +46,18 @@ jobs:
           fi
 
       - id: version
-        name: Version from tag
+        name: Version from tag or input
+        env:
+          INPUT: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(node .github/scripts/app-release.mjs version "$GITHUB_REF_NAME")
+          if [ -n "$INPUT" ]; then tag="app-v${INPUT#app-v}"; else tag="$GITHUB_REF_NAME"; fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            echo "::error::Release $tag exists already."
+            exit 1
+          fi
+          version=$(node .github/scripts/app-release.mjs version "$tag")
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           if [[ "$version" == *-* ]]; then echo "beta=true" >> "$GITHUB_OUTPUT"; else echo "beta=false" >> "$GITHUB_OUTPUT"; fi
 
@@ -68,7 +78,7 @@ jobs:
           cp "$exe" "out/PAM-Analyzer_${v}_x64-setup.exe"
           cp "$exe.sig" "out/PAM-Analyzer_${v}_x64-setup.exe.sig"
           node .github/scripts/app-release.mjs notes "$v" out/notes.md
-          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/PAM-Analyzer_${v}_x64-setup.exe"
+          url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${{ steps.version.outputs.tag }}/PAM-Analyzer_${v}_x64-setup.exe"
           node .github/scripts/app-release.mjs channel "$v" "$url" "out/PAM-Analyzer_${v}_x64-setup.exe.sig" out/notes.md out/channel.json
           cat out/channel.json
 
@@ -79,7 +89,7 @@ jobs:
           v="${{ steps.version.outputs.version }}"
           flags="--latest"
           if [ "${{ steps.version.outputs.beta }}" = "true" ]; then flags="--prerelease --latest=false"; fi
-          gh release create "$GITHUB_REF_NAME" \
+          gh release create "${{ steps.version.outputs.tag }}" --target "$GITHUB_SHA" \
             "out/PAM-Analyzer_${v}_x64-setup.exe" "out/PAM-Analyzer_${v}_x64-setup.exe.sig" \
             --title "PAM Analyzer App ${v}" --notes-file out/notes.md $flags
 
