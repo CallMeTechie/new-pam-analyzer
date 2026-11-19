@@ -26,7 +26,7 @@ const companyBody = z.object({
 
 function listCompanies(db: Db, onlyId?: number) {
   const n = (table: string, extra = '') =>
-    sql<number>`(select count(*) from ${sql.raw(table)} t where t.company_id = ${companies.id} ${sql.raw(extra)})`;
+    sql<number>`(select count(*) from ${sql.raw(table)} t where t.company_id = "companies"."id" ${sql.raw(extra)})`;
   return db
     .select({
       id: companies.id,
@@ -43,7 +43,7 @@ function listCompanies(db: Db, onlyId?: number) {
       results: n('results', 'and t.deleted_at is null'),
       lastResultAt: sql<
         string | null
-      >`(select max(t.test_date) from results t where t.company_id = ${companies.id} and t.deleted_at is null)`,
+      >`(select max(t.test_date) from results t where t.company_id = "companies"."id" and t.deleted_at is null)`,
     })
     .from(companies)
     .where(onlyId ? eq(companies.id, onlyId) : undefined)

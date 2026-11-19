@@ -8,12 +8,12 @@ FUJI-Bestückautomaten NXT, NXT-R (APAM) und AIMEX.
 | Pfad | Inhalt | Stand |
 |---|---|---|
 | `packages/core` | Rechenkern: Parser und Cpk-Berechnung, ohne Abhängigkeiten | ✅ fertig, gegen das Alt-System abgesichert |
-| `packages/ui` | Gemeinsame Oberfläche für Web und Apps | geplant |
-| `apps/server` | Server als Docker-Container: REST-API, Firmen, Benutzer, API-Keys, Upload | ✅ API fertig, Web-Oberfläche folgt |
+| `apps/server` | Server als Docker-Container: REST-API, Firmen, Benutzer, API-Keys, Upload | ✅ fertig |
+| `apps/web` | Web-Oberfläche (React), Englisch und Deutsch; Grundlage der Apps | ✅ fertig |
 | `apps/client` | Apps für Windows, Android und iOS (Tauri) | geplant |
 
 Details: [Architektur](docs/architektur.md) · [Rechenkern und Dateiformat](docs/rechenkern.md) ·
-[Server, API und Betrieb](docs/server.md)
+[Server, API und Betrieb](docs/server.md) · [Web-Oberfläche](docs/web.md)
 
 ## Entwicklung
 
@@ -25,7 +25,11 @@ pnpm test        # Tests aller Pakete
 pnpm typecheck
 pnpm lint
 pnpm build
+pnpm --filter @pam/web e2e   # Browser-Tests gegen den gebauten Server
 ```
+
+Web-Oberfläche mit Live-Reload: Server mit `pnpm --filter @pam/server dev` starten (Port 3000),
+dann `pnpm --filter @pam/web dev`; Vite leitet `/api` an den Server weiter.
 
 ## Server starten
 

@@ -1,7 +1,7 @@
 services:
   pam-analyzer:
+    image: ghcr.io/callmetechie/new-pam-analyzer:latest
     build: .
-    image: pam-analyzer:latest
     restart: unless-stopped
     ports:
       - "3000:3000"

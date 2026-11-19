@@ -3,7 +3,7 @@ import { ADMIN, PASSWORD, setup } from './helpers.js';
 
 describe('Anmeldung', () => {
   it('legt beim ersten Start Service-Firma und Administrator an', async () => {
-    const t = await setup();
+    const t = await setup({}, { keepInitialPassword: true });
     const admin = await t.login(ADMIN.email, ADMIN.password);
     const me = await admin.json('GET', '/api/auth/me');
     expect(me.body.user).toMatchObject({
@@ -58,7 +58,7 @@ describe('Anmeldung', () => {
   });
 
   it('ändert das Passwort und hebt die Pflicht zur Änderung auf', async () => {
-    const t = await setup();
+    const t = await setup({}, { keepInitialPassword: true });
     const admin = await t.login(ADMIN.email, ADMIN.password);
     const wrong = await admin.json('POST', '/api/auth/password', {
       currentPassword: 'nope',
@@ -78,6 +78,16 @@ describe('Anmeldung', () => {
     expect((await admin.json('GET', '/api/auth/me')).body.user.mustChangePassword).toBe(false);
     await expect(t.login(ADMIN.email, ADMIN.password)).rejects.toThrow();
     await t.login(ADMIN.email, 'new-password-456');
+  });
+
+  it('mit Startpasswort ist nur die Passwortänderung erlaubt', async () => {
+    const t = await setup({}, { keepInitialPassword: true });
+    const admin = await t.login(ADMIN.email, ADMIN.password);
+    const blocked = await admin.json('GET', '/api/results');
+    expect(blocked).toMatchObject({ status: 403, body: { error: { code: 'password_change_required' } } });
+    expect((await admin.json('GET', '/api/auth/me')).status).toBe(200);
+    await admin.req('POST', '/api/auth/password', { currentPassword: ADMIN.password, newPassword: 'new-password-456' });
+    expect((await admin.json('GET', '/api/results')).status).toBe(200);
   });
 
   it('speichert die Sprache des Benutzers', async () => {

@@ -6,7 +6,17 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/*.md", "!**/test/fixtures", "!**/test/legacy", "!**/dist", "!apps/server/drizzle/meta"]
+    "includes": [
+      "**",
+      "!**/*.md",
+      "!**/test/fixtures",
+      "!**/test/legacy",
+      "!**/dist",
+      "!apps/server/drizzle/meta",
+      "!**/.e2e-data",
+      "!**/test-results",
+      "!**/playwright-report"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -19,7 +29,12 @@
     }
   },
   "linter": {
-    "enabled": true
+    "enabled": true,
+    "rules": {
+      "a11y": {
+        "useSemanticElements": "off"
+      }
+    }
   },
   "overrides": [
     {
@@ -31,6 +46,19 @@
           },
           "style": {
             "noNonNullAssertion": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["**/*.css"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noDescendingSpecificity": "off"
+          },
+          "complexity": {
+            "noImportantStyles": "off"
           }
         }
       }

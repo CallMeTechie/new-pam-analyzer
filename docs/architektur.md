@@ -11,7 +11,7 @@
 ```
   Windows / Android / iOS (Tauri)                Docker-Container
  ┌──────────────────────────────┐           ┌──────────────────────────┐
- │ UI (packages/ui)             │           │ Web-UI (packages/ui)     │
+ │ UI (aus apps/web)            │           │ Web-UI (apps/web)        │
  │ core  → rechnet offline      │  HTTPS    │ REST-API (Geräte-Token)  │
  │ lokale SQLite (Historie)     │ ────────► │ core  → rechnet erneut   │
  │ Upload-Warteschlange         │  .dat +   │ SQLite  (Volume /data)   │
@@ -56,10 +56,7 @@
 - Die Apps bringen die Standard-Koeffizienten mit und holen den aktuellen Stand vom Server.
 - Jedes Ergebnis speichert die Version der Berechnung (`ALGORITHM_VERSION`) und den verwendeten Koeffizienten.
 
-## Migration aus dem Alt-System
+## Daten aus dem Alt-System
 
-Das Alt-System speichert keine Originaldateien, sondern nur die geparsten Messpunkte
-(`pam_results.data_json`, teils gzip-komprimiert). Die Migration übernimmt diese Punkte, macht das
-HTML-Escaping der Kopfdaten rückgängig und berechnet alle Kennzahlen mit dem neuen Rechenkern neu.
-Datensätze, deren Werte sich dabei ändern (z. B. AIMEX-DX, siehe [Rechenkern](rechenkern.md)),
-werden markiert und behalten den alten Wert zur Nachvollziehbarkeit.
+Es werden keine Daten aus dem alten PAM Analyzer übernommen. Die neue Datenbank beginnt leer;
+Ergebnisse kommen über Upload in der Web-Oberfläche oder aus den Apps.

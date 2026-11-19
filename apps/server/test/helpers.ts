@@ -33,7 +33,7 @@ export interface Client {
   setToken(token: string | null): void;
 }
 
-export async function setup(overrides: Partial<ServerConfig> = {}) {
+export async function setup(overrides: Partial<ServerConfig> = {}, options: { keepInitialPassword?: boolean } = {}) {
   const config: ServerConfig = {
     ...loadConfig({}),
     databaseFile: ':memory:',
@@ -44,6 +44,8 @@ export async function setup(overrides: Partial<ServerConfig> = {}) {
   };
   const database = openDatabase(':memory:');
   await bootstrap(database.db, config, () => {});
+  // Most tests skip the forced change of the administrator's initial password.
+  if (!options.keepInitialPassword) database.db.update(users).set({ mustChangePassword: false }).run();
   const app = createApp(database.db, config);
   const db = database.db;
 

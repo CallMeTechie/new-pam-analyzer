@@ -32,6 +32,14 @@ appRoutes.post('/connect', async (c) => {
   );
   const db = c.get('db');
   const userId = await checkCredentials(db, c.get('config'), body.email, body.password);
+  const account = db.select({ mustChange: users.mustChangePassword }).from(users).where(eq(users.id, userId)).get();
+  if (account?.mustChange) {
+    throw new HttpError(
+      403,
+      'password_change_required',
+      'Please sign in on the web once and change your initial password.',
+    );
+  }
   const { token, deviceId } = connectDevice(db, {
     apiKey: body.apiKey,
     userId,

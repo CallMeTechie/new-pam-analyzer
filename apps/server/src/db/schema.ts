@@ -130,7 +130,7 @@ export const machines = sqliteTable(
   (t) => [uniqueIndex('machines_company_no_idx').on(t.companyId, t.machineNo)],
 );
 
-export const SOURCES = ['web', 'app', 'migration'] as const;
+export const SOURCES = ['web', 'app'] as const;
 export type Source = (typeof SOURCES)[number];
 
 /**
@@ -188,8 +188,6 @@ export const results = sqliteTable(
     source: text('source', { enum: SOURCES }).notNull(),
     uploadedBy: integer('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
     deviceId: integer('device_id').references(() => devices.id, { onDelete: 'set null' }),
-    /** Value before a recalculation, e.g. after the AIMEX DX correction during migration. */
-    previousCpkXY: real('previous_cpk_xy'),
     createdAt: createdAt(),
     deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
     deletedBy: integer('deleted_by').references(() => users.id, { onDelete: 'set null' }),
