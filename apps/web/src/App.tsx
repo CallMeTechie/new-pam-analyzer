@@ -47,7 +47,7 @@ const sharedRoutes = (
 /** FUJI Service sees a company exactly as its members do. */
 function CompanyView() {
   const { companyId } = useParams();
-  const { data, error } = useApi<{ company: Company }>(`/companies/${companyId}`);
+  const { data, error, reload } = useApi<{ company: Company }>(`/companies/${companyId}`);
   if (error) {
     return (
       <div className="center-page">
@@ -57,7 +57,10 @@ function CompanyView() {
   }
   if (!data) return <Loading />;
   return (
-    <ScopeProvider viewCompany={{ id: data.company.id, name: data.company.name }}>
+    <ScopeProvider
+      viewCompany={{ id: data.company.id, name: data.company.name, logoVersion: data.company.logoVersion }}
+      onCompanyChange={reload}
+    >
       <Routes>
         <Route element={<Layout />}>
           {sharedRoutes}

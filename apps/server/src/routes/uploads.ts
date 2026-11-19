@@ -7,7 +7,7 @@ import { companies } from '../db/schema.js';
 import { type AppEnv, HttpError, notFound } from '../http.js';
 import { expandUpload, MAX_FILES, type SkippedFile, type UploadFile } from '../services/archive.js';
 import { type IngestOutcome, ingestFile } from '../services/ingest.js';
-import { getCoefficientConfig } from '../services/settings.js';
+import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 export const uploadRoutes = new Hono<AppEnv>();
 
@@ -72,6 +72,7 @@ uploadRoutes.post(
     const ctx = {
       source: auth.kind === 'device' ? ('app' as const) : ('web' as const),
       config: getCoefficientConfig(db),
+      thresholds: getThresholds(db),
       maxFileBytes: config.maxFileBytes,
       timeZone: config.timeZone,
       companyId,

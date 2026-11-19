@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeysPanel, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
+import { KeysPanel, LogoEditor, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
 import { Page } from '../components/Layout';
 import { Notice } from '../components/ui';
 import { useI18n } from '../i18n';
@@ -15,11 +15,16 @@ export function Team() {
   const companyId = scope.companyId;
   if (companyId === null) return null;
   return (
-    <Page title={t('nav.team')}>
-      <p className="muted" style={{ maxWidth: '80ch' }}>
-        {t('team.intro', { company: scope.companyName ?? '' })}
-      </p>
+    <Page title={t('nav.team')} info={t('team.intro', { company: scope.companyName ?? '' })}>
       {!scope.canManage && <Notice kind="info">{t('team.readOnly')}</Notice>}
+      {scope.canManage && (
+        <section className="card" style={{ padding: '14px 18px' }}>
+          <LogoEditor
+            company={{ id: companyId, name: scope.companyName ?? '', logoVersion: scope.companyLogoVersion }}
+            onChange={scope.refreshCompany}
+          />
+        </section>
+      )}
       <div className="tabs" role="tablist" aria-label={t('companies.sections')}>
         {(['users', 'keys', 'machines'] as const).map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
@@ -28,7 +33,9 @@ export function Team() {
         ))}
       </div>
       <section className="card">
-        {tab === 'users' && <UsersPanel companyId={companyId} companyIsService={false} canManage={scope.canManage} />}
+        {tab === 'users' && (
+          <UsersPanel companyId={companyId} companyName={scope.companyName ?? ''} canManage={scope.canManage} />
+        )}
         {tab === 'keys' && <KeysPanel companyId={companyId} canManage={scope.canManage} />}
         {tab === 'machines' && <MachinesPanel companyId={companyId} canManage={scope.canManage} />}
       </section>

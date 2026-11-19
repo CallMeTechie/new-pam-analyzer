@@ -5,6 +5,7 @@ import { api, type Profile } from '../lib/api';
 import { useAuth, useUser } from '../lib/auth';
 import { useScope } from '../lib/scope';
 import { Icon, type IconName, Logo } from './Icon';
+import { CompanyBadge, InfoTip } from './ui';
 
 interface NavItem {
   to: string;
@@ -117,6 +118,20 @@ function ProfileMenu() {
 }
 
 /** Language choice; signed-in users keep it in their profile, so it applies on every device. */
+/** "Made with ♥ by CallMeTechie" – in the footer and on the sign-in page. */
+export function Credit() {
+  const { t } = useI18n();
+  return (
+    <a className="credit" href="https://github.com/CallMeTechie" target="_blank" rel="noreferrer">
+      {t('credit.madeWith')}
+      <span className="heart" role="img" aria-label={t('credit.love')}>
+        ♥
+      </span>
+      {t('credit.by')} CallMeTechie
+    </a>
+  );
+}
+
 export function LanguageSwitch() {
   const { t, locale, setLocale } = useI18n();
   const { user, setUser } = useAuth();
@@ -162,9 +177,18 @@ export function Layout() {
             <Logo />
             <span>
               <b>PAM Analyzer</b>
-              <small>{scope.viewing ? scope.companyName : 'FUJI NXT · NXT-R · AIMEX'}</small>
+              <small>FUJI NXT · NXT-R · AIMEX</small>
             </span>
           </Link>
+          {scope.mode === 'company' && scope.companyId !== null && (
+            <div className="sidebar-company">
+              <CompanyBadge
+                company={{ id: scope.companyId, name: scope.companyName ?? '', logoVersion: scope.companyLogoVersion }}
+                size={34}
+              />
+              <span>{scope.companyName}</span>
+            </div>
+          )}
           <nav className="nav" aria-label={t('nav.label')}>
             {sections.map((s) => (
               <div className="nav-section" key={s.label}>
@@ -194,7 +218,7 @@ export function Layout() {
         </MenuContext.Provider>
         <footer className="footer">
           <LanguageSwitch />
-          <span>{t('footer.product')}</span>
+          <Credit />
           <span className="version">v{__APP_VERSION__}</span>
         </footer>
       </div>
@@ -205,7 +229,18 @@ export function Layout() {
 const MenuContext = createContext<() => void>(() => {});
 
 /** Top bar with title and actions, followed by the page content. */
-export function Page({ title, actions, children }: { title: string; actions?: ReactNode; children: ReactNode }) {
+export function Page({
+  title,
+  info,
+  actions,
+  children,
+}: {
+  title: string;
+  /** Explanation behind an (i) icon next to the title. */
+  info?: ReactNode;
+  actions?: ReactNode;
+  children: ReactNode;
+}) {
   const { t } = useI18n();
   const openMenu = useContext(MenuContext);
   useEffect(() => {
@@ -223,7 +258,10 @@ export function Page({ title, actions, children }: { title: string; actions?: Re
         >
           <Icon name="menu" />
         </button>
-        <h1>{title}</h1>
+        <h1 className="title-with-info">
+          {title}
+          {info && <InfoTip text={info} />}
+        </h1>
         {actions}
       </header>
       <main className="content">{children}</main>

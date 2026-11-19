@@ -58,7 +58,8 @@ Für den ganzen Kopf und für jeden Schaft getrennt, jeweils für X und Y:
 Ist 3σ = 0, sind Cp und Cpk `null` (Alt-System: Text `'N/A'`).
 
 **Koeffizient k**, in dieser Reihenfolge: manuell gesetzt → Kopftyp → bei DX das Werkzeug
-(R12/R4/S1) → generischer Eintrag nach Schaftzahl (`12-HEAD` …) → Standardwert 50.
+(R12/R4/S1) → Standardwert 50. Die Sammeleinträge `1-HEAD` … `12-HEAD` des Alt-Systems entfallen;
+sie entsprachen keinem echten Kopftyp.
 
 **Schaftanzahl**: erste Zahl im Kopftyp, bei DX im Werkzeugtyp. Bei genau einem Schaft werden alle
 Messungen Holder A zugeordnet.
@@ -70,7 +71,8 @@ kennzeichnet Ergebnisse, deren Datum nicht aus der Datei stammt.
 
 ## Bewertung
 
-Einheitlich für Kopf, Holder und Tabellen (Alt-System: Tabellen 2 Stufen, Holder-Kacheln 4 Stufen):
+Einheitlich für Kopf, Holder und Tabellen (Alt-System: Tabellen 2 Stufen, Holder-Kacheln 4 Stufen).
+Standardgrenzen; ein Administrator kann sie in den Einstellungen ändern (`analyzePamFile(…, { thresholds })`):
 
 | Cpk | Stufe | Darstellung |
 |---|---|---|
@@ -79,6 +81,9 @@ Einheitlich für Kopf, Holder und Tabellen (Alt-System: Tabellen 2 Stufen, Holde
 | 1,33 – < 1,67 | `good` | blau |
 | ≥ 1,67 | `excellent` | grün |
 
+- Bewertet wird der Cpk, also Lage und Streuung **aller** Bauteile eines Holders, nicht jedes
+  Bauteil einzeln. Ein einzelner Ausreißer weit außerhalb der Toleranz vergrößert 3σ stark und kann
+  einen Holder allein in eine schlechtere Stufe bringen. Das entspricht dem Alt-System.
 - **Bester und schlechtester Holder** nach Cpk XY (`bestShaft`, `worstShaft`).
 - **Vollständigkeit** (`componentStatus`): `complete`, wenn höchstens so viele Bauteile fehlen, wie
   der Kopf Schäfte hat; `warning` ab 95 %; sonst `incomplete`; ohne Sollwert `unknown`.

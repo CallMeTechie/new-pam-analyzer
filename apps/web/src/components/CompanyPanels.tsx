@@ -1,11 +1,23 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useRef, useState } from 'react';
 import { CATALOGS, useI18n } from '../i18n';
-import { type ApiError, type ApiKey, api, type Machine, qs, type Role, type User } from '../lib/api';
+import { type ApiError, type ApiKey, api, type Company, type Machine, qs, type Role, type User } from '../lib/api';
 import { useUser } from '../lib/auth';
 import { useApi } from '../lib/useApi';
 import { Icon } from './Icon';
 import { initials } from './Layout';
-import { CopyButton, Empty, ErrorNotice, FamilyIcon, Field, Loading, Modal, Notice } from './ui';
+import {
+  CompanyBadge,
+  CopyButton,
+  Empty,
+  ErrorNotice,
+  errorText,
+  FamilyIcon,
+  Field,
+  InfoTip,
+  Loading,
+  Modal,
+  Notice,
+} from './ui';
 
 /** Random initial password, shown once to the person creating the account. */
 export function generatePassword(): string {
@@ -52,7 +64,6 @@ export function KeysPanel({ companyId, canManage }: { companyId: number; canMana
 
   return (
     <div className="stack">
-      <Notice kind="info">{t('keys.info')}</Notice>
       <form className="card dashed form-row" onSubmit={create} style={{ padding: '14px 16px' }}>
         <label className="field">
           {t('keys.name')}
@@ -81,6 +92,7 @@ export function KeysPanel({ companyId, canManage }: { companyId: number; canMana
           <Icon name="plus" size={16} />
           {t('keys.create')}
         </button>
+        <InfoTip text={t('keys.info')} />
       </form>
       {formError && <ErrorNotice error={formError} />}
       {error && <ErrorNotice error={error} />}
@@ -253,20 +265,27 @@ function EditKey({ apiKey, onClose, onSaved }: { apiKey: ApiKey; onClose(): void
 /* ------------------------------ Users ------------------------------ */
 
 export function UserForm({
-  companyId,
-  companyIsService,
+  companyId: initialCompanyId,
+  companyName,
   user,
   onClose,
   onSaved,
 }: {
   companyId: number;
-  companyIsService: boolean;
+  /** Shown read-only when the company cannot be chosen. */
+  companyName?: string;
   user?: User;
   onClose(): void;
   onSaved(): void;
 }) {
   const { t } = useI18n();
   const me = useUser();
+  const isAdmin = me.role === 'admin' && me.company.isService;
+  // Administrators choose the company (and can move users); everyone else sees it read-only.
+  const companies = useApi<{ items: Company[] }>(isAdmin ? '/companies' : null);
+  const [companyId, setCompanyId] = useState(user?.companyId ?? initialCompanyId);
+  const company = companies.data?.items.find((c) => c.id === companyId);
+  const companyIsService = company?.isService ?? (companyId === me.company.id && me.company.isService);
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [role, setRole] = useState<Role>(user?.role ?? 'user');
@@ -287,6 +306,7 @@ export function UserForm({
           name: name.trim(),
           email,
           locale,
+          ...(isAdmin && !self && companyId !== user.companyId ? { companyId } : {}),
           ...(self ? {} : { role }),
           ...(password ? { password } : {}),
         });
@@ -323,6 +343,34 @@ export function UserForm({
     <Modal title={user ? t('users.editTitle') : t('users.inviteTitle')} onClose={onClose}>
       <form className="stack" onSubmit={save}>
         {error && <ErrorNotice error={error} />}
+        <Field
+          label={t('upload.company')}
+          hint={user && isAdmin && companyId !== user.companyId ? t('users.moveHint') : undefined}
+        >
+          {(p) =>
+            isAdmin && !self ? (
+              <select
+                {...p}
+                className="select"
+                value={companyId}
+                onChange={(e) => {
+                  const next = Number(e.target.value);
+                  setCompanyId(next);
+                  const target = companies.data?.items.find((c) => c.id === next);
+                  if (!target?.isService && role === 'admin') setRole('companyAdmin');
+                }}
+              >
+                {companies.data?.items.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input {...p} className="input" value={user?.companyName ?? companyName ?? me.company.name} disabled />
+            )
+          }
+        </Field>
         <div className="form-grid">
           <label className="field">
             {t('field.name')}
@@ -458,13 +506,7 @@ export function UserRows({ users, onChange, showCompany }: { users: User[]; onCh
         </div>
       ))}
       {editing && (
-        <UserForm
-          companyId={editing.companyId}
-          companyIsService={me.company.isService && editing.companyId === me.company.id}
-          user={editing}
-          onClose={() => setEditing(null)}
-          onSaved={onChange}
-        />
+        <UserForm companyId={editing.companyId} user={editing} onClose={() => setEditing(null)} onSaved={onChange} />
       )}
     </div>
   );
@@ -472,11 +514,11 @@ export function UserRows({ users, onChange, showCompany }: { users: User[]; onCh
 
 export function UsersPanel({
   companyId,
-  companyIsService,
+  companyName,
   canManage,
 }: {
   companyId: number;
-  companyIsService: boolean;
+  companyName: string;
   canManage: boolean;
 }) {
   const { t } = useI18n();
@@ -486,22 +528,20 @@ export function UsersPanel({
   return (
     <div className="stack">
       <div className="section-h" style={{ alignItems: 'center' }}>
-        <p>{t('users.teamInfo')}</p>
-        <button type="button" className="btn dark" onClick={() => setInviting(true)}>
-          <Icon name="plus" size={16} />
-          {t('users.invite')}
-        </button>
+        <span />
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <InfoTip text={t('users.teamInfo')} />
+          <button type="button" className="btn dark" onClick={() => setInviting(true)}>
+            <Icon name="plus" size={16} />
+            {t('users.invite')}
+          </button>
+        </span>
       </div>
       {error && <ErrorNotice error={error} />}
       {!data && !error && <Loading />}
       {data && <UserRows users={data.items} onChange={reload} />}
       {inviting && (
-        <UserForm
-          companyId={companyId}
-          companyIsService={companyIsService}
-          onClose={() => setInviting(false)}
-          onSaved={reload}
-        />
+        <UserForm companyId={companyId} companyName={companyName} onClose={() => setInviting(false)} onSaved={reload} />
       )}
     </div>
   );
@@ -584,6 +624,70 @@ export function MachinesPanel({ companyId, canManage }: { companyId: number; can
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+/* ------------------------------ Logo ------------------------------ */
+
+/** Upload or remove the logo of a company (PNG, JPEG or WebP, at most 512 KB). */
+export function LogoEditor({
+  company,
+  onChange,
+}: {
+  company: { id: number; name: string; isService?: boolean; logoVersion?: number | null };
+  onChange(): void;
+}) {
+  const { t } = useI18n();
+  const input = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<ApiError | null>(null);
+  async function upload(file: File) {
+    setError(null);
+    const form = new FormData();
+    form.append('logo', file);
+    try {
+      await api.put(`/companies/${company.id}/logo`, form);
+      onChange();
+    } catch (err) {
+      setError(err as ApiError);
+    }
+  }
+  return (
+    <div className="logo-editor">
+      <CompanyBadge company={company} size={56} />
+      <div className="stack tight">
+        <div className="form-row" style={{ gap: 8 }}>
+          <button type="button" className="btn small" onClick={() => input.current?.click()}>
+            <Icon name="upload" size={14} />
+            {company.logoVersion ? t('logo.replace') : t('logo.upload')}
+          </button>
+          {company.logoVersion ? (
+            <button
+              type="button"
+              className="btn small danger"
+              onClick={async () => {
+                await api.delete(`/companies/${company.id}/logo`);
+                onChange();
+              }}
+            >
+              {t('logo.remove')}
+            </button>
+          ) : null}
+          <InfoTip text={t('logo.hint')} />
+        </div>
+        {error && <span className="error-text">{errorText(t, error)}</span>}
+      </div>
+      <input
+        ref={input}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void upload(file);
+          e.target.value = '';
+        }}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { type DragEvent, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
-import { errorText, Notice, RatingPill } from '../components/ui';
+import { errorText, InfoTip, Notice, RatingPill } from '../components/ui';
 import { useI18n } from '../i18n';
 import { ApiError, type Company, type IngestOutcome, type UploadResponse, uploadFiles } from '../lib/api';
 import { useScope } from '../lib/scope';
@@ -144,15 +144,21 @@ export function Upload() {
     r.status === 'rejected' ? t(`reject.${r.reason ?? 'unreadable'}` as never) : t(`upload.status.${r.status}`);
 
   return (
-    <Page title={t('nav.upload')}>
-      <p className="muted" style={{ maxWidth: '80ch' }}>
-        {t('upload.intro')}
-      </p>
+    <Page title={t('nav.upload')} info={t('upload.intro')}>
       {staffAll && (
-        <section className="card form-row">
-          <label className="field">
-            {t('upload.company')}
-            <select className="select" value={companyId} onChange={(e) => setCompanyId(e.target.value)} disabled={busy}>
+        <section className="card form-row" style={{ padding: '14px 18px' }}>
+          <div className="field" style={{ flex: '0 1 420px' }}>
+            <span className="title-with-info">
+              <label htmlFor="upload-company">{t('upload.company')}</label>
+              <InfoTip text={companyId ? t('upload.companyHint') : t('upload.unassignedHint')} />
+            </span>
+            <select
+              id="upload-company"
+              className="select"
+              value={companyId}
+              onChange={(e) => setCompanyId(e.target.value)}
+              disabled={busy}
+            >
               <option value="">{t('upload.unassigned')}</option>
               {companies.data?.items
                 .filter((c) => !c.isService && !c.disabled)
@@ -162,10 +168,7 @@ export function Upload() {
                   </option>
                 ))}
             </select>
-          </label>
-          <p className="muted" style={{ fontSize: 13.5, flex: '2 1 280px' }}>
-            {companyId ? t('upload.companyHint') : t('upload.unassignedHint')}
-          </p>
+          </div>
         </section>
       )}
       {scope.viewing && <Notice kind="info">{t('upload.forCompany', { company: scope.companyName ?? '' })}</Notice>}

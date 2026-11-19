@@ -5,6 +5,9 @@ import { type AppEnv, type Auth, HttpError, type SessionUser } from '../http.js'
 import { principalForDevice } from './apiKeys.js';
 import { SESSION_COOKIE, userForSession } from './sessions.js';
 
+/** Paths an account with an initial password may still use. */
+const OPEN_PATHS = ['/api/auth/', '/api/i18n', '/api/version'];
+
 /** Resolves the caller from the session cookie or an `Authorization: Bearer pamd_…` device token. */
 export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
   const db = c.get('db');
@@ -20,7 +23,7 @@ export const authenticate: MiddlewareHandler<AppEnv> = async (c, next) => {
     const user = token ? userForSession(db, token, c.get('config').sessionTtlDays) : null;
     c.set('auth', user ? { kind: 'user', user } : null);
     // Accounts with an initial password may only change it (and read or end their session).
-    if (user?.mustChangePassword && !c.req.path.startsWith('/api/auth/')) {
+    if (user?.mustChangePassword && !OPEN_PATHS.some((p) => c.req.path.startsWith(p))) {
       throw new HttpError(403, 'password_change_required', 'Please change your initial password first.');
     }
   }

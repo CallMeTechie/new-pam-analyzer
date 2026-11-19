@@ -10,6 +10,7 @@ import type {
   CoefficientSource,
   ComponentStatus,
   CpkRating,
+  CpkThresholds,
   Measurement,
   ParsedPamFile,
   ShaftResult,
@@ -76,14 +77,24 @@ function minOrNull(a: number | null, b: number | null): number | null {
   return Math.min(a, b);
 }
 
-/** Grenzen der Cpk-Bewertung (einheitlich für Tabellen, Holder und Kopf). */
-export const CPK_THRESHOLDS = { warning: 1.0, good: 1.33, excellent: 1.67 } as const;
+/** Standardgrenzen der Cpk-Bewertung (einheitlich für Tabellen, Holder und Kopf). */
+export const CPK_THRESHOLDS: CpkThresholds = { warning: 1.0, good: 1.33, excellent: 1.67 };
 
-export function rateCpk(value: number | null): CpkRating | null {
+/** Gültig sind positive, streng aufsteigende Grenzen. */
+export function validThresholds(t: CpkThresholds): boolean {
+  return (
+    [t.warning, t.good, t.excellent].every((v) => Number.isFinite(v) && v > 0 && v < 100) &&
+    t.warning < t.good &&
+    t.good < t.excellent
+  );
+}
+
+/** Bewertet einen Cpk-Wert: kritisch < warning ≤ Warnung < good ≤ gut < excellent ≤ sehr gut. */
+export function rateCpk(value: number | null, thresholds: CpkThresholds = CPK_THRESHOLDS): CpkRating | null {
   if (value === null || Number.isNaN(value)) return null;
-  if (value < CPK_THRESHOLDS.warning) return 'critical';
-  if (value < CPK_THRESHOLDS.good) return 'warning';
-  if (value < CPK_THRESHOLDS.excellent) return 'good';
+  if (value < thresholds.warning) return 'critical';
+  if (value < thresholds.good) return 'warning';
+  if (value < thresholds.excellent) return 'good';
   return 'excellent';
 }
 
@@ -94,16 +105,16 @@ export function componentStatus(measured: number, expected: number | null, shaft
   return measured / expected >= 0.95 ? 'warning' : 'incomplete';
 }
 
-function summarize(points: Measurement[], coefficient: number): StatisticsSummary {
+function summarize(points: Measurement[], coefficient: number, thresholds: CpkThresholds): StatisticsSummary {
   const withCapability = (stats: AxisStatistics): CapabilityAxisStatistics => {
     const values = capability(stats.mean, stats.sigma3, coefficient);
-    return { ...stats, ...values, rating: rateCpk(values.cpk) };
+    return { ...stats, ...values, rating: rateCpk(values.cpk, thresholds) };
   };
   const x = withCapability(axisStatistics(points.map((p) => p.x)));
   const y = withCapability(axisStatistics(points.map((p) => p.y)));
   const q = axisStatistics(points.map((p) => p.q));
   const cpkXY = minOrNull(x.cpk, y.cpk);
-  return { count: points.length, x, y, q, cpkXY, rating: rateCpk(cpkXY) };
+  return { count: points.length, x, y, q, cpkXY, rating: rateCpk(cpkXY, thresholds) };
 }
 
 function lookup(table: Record<string, number>, key: string | null): number | undefined {
@@ -122,9 +133,6 @@ export function detectCoefficient(
     const tool = lookup(config.dynaheadTools, dynaheadToolKey(toolType));
     if (tool !== undefined) return { coefficient: tool, source: 'config' };
   }
-  const number = headType.match(/\d+/)?.[0];
-  const generic = number ? lookup(config.cpkCoefficients, `${number}-HEAD`) : undefined;
-  if (generic !== undefined) return { coefficient: generic, source: 'config' };
   return { coefficient: config.defaultCoefficient, source: 'default' };
 }
 
@@ -143,10 +151,7 @@ export function expectedComponents(
     if (tool !== undefined) return tool;
   }
   const direct = Object.hasOwn(config.placementCounts, headType) ? config.placementCounts[headType] : undefined;
-  if (typeof direct === 'number') return direct;
-  const number = headType.match(/\d+/)?.[0];
-  const generic = number ? config.placementCounts[`${number}-HEAD`] : undefined;
-  return typeof generic === 'number' ? generic : null;
+  return typeof direct === 'number' ? direct : null;
 }
 
 /** Symmetrische Achsgrenzen für Streudiagramme: mindestens ±50 µm, sonst 15 % Rand. */
@@ -159,6 +164,8 @@ export function axisLimits(min: number | null, max: number | null): AxisLimits {
 /** Wertet eine gelesene PAM-Datei aus: Kennzahlen für den ganzen Kopf und je Schaft. */
 export function analyzePamFile(parsed: ParsedPamFile, options: AnalyzeOptions = {}): AnalysisResult {
   const config = options.config ?? DEFAULT_CONFIG;
+  const thresholds = options.thresholds ?? CPK_THRESHOLDS;
+  if (!validThresholds(thresholds)) throw new RangeError('Rating thresholds must be positive and ascending.');
   const { header } = parsed;
   const detected = detectCoefficient(header.headType, header.toolType, config);
 
@@ -193,10 +200,10 @@ export function analyzePamFile(parsed: ParsedPamFile, options: AnalyzeOptions = 
     .sort((a, b) => a - b)
     .map((shaft) => {
       const points = [...(byShaft.get(shaft)?.values() ?? [])].flat();
-      return { shaft, label: shaftLabel(shaft), ...summarize(points, coefficient) };
+      return { shaft, label: shaftLabel(shaft), ...summarize(points, coefficient, thresholds) };
     });
 
-  const head = summarize(parsed.measurements, coefficient);
+  const head = summarize(parsed.measurements, coefficient, thresholds);
   const rated = shafts.filter((s) => s.cpkXY !== null);
   const pick = (better: (a: number, b: number) => boolean) =>
     rated.length < 2

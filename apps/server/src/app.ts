@@ -13,6 +13,7 @@ import { authRoutes } from './routes/auth.js';
 import { companyRoutes } from './routes/companies.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { machineRoutes } from './routes/machines.js';
+import { metaRoutes } from './routes/meta.js';
 import { resultRoutes } from './routes/results.js';
 import { settingsRoutes } from './routes/settings.js';
 import { uploadRoutes } from './routes/uploads.js';
@@ -43,6 +44,7 @@ export function createApp(db: Db, config: ServerConfig) {
   });
   api.use(authenticate, sameOrigin);
   api.route('/auth', authRoutes);
+  api.route('/', metaRoutes);
   api.route('/app', appRoutes);
   api.route('/companies', companyRoutes);
   api.route('/users', userRoutes);

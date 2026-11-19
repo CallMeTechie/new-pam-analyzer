@@ -1,9 +1,9 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { KeysPanel, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
+import { KeysPanel, LogoEditor, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
 import { Icon } from '../components/Icon';
-import { initials, Page } from '../components/Layout';
-import { Empty, ErrorNotice, Loading, Modal } from '../components/ui';
+import { Page } from '../components/Layout';
+import { CompanyBadge, Empty, ErrorNotice, Loading, Modal } from '../components/ui';
 import { useI18n } from '../i18n';
 import { type ApiError, api, type Company } from '../lib/api';
 import { useUser } from '../lib/auth';
@@ -87,6 +87,7 @@ export function Companies() {
   return (
     <Page
       title={t('nav.companies')}
+      info={t('companies.intro')}
       actions={
         isAdmin && (
           <button type="button" className="btn primary" onClick={() => setForm('new')}>
@@ -96,9 +97,6 @@ export function Companies() {
         )
       }
     >
-      <p className="muted" style={{ maxWidth: '80ch' }}>
-        {t('companies.intro')}
-      </p>
       {error && <ErrorNotice error={error} />}
       {!data && !error && <Loading />}
       {data && (
@@ -113,7 +111,7 @@ export function Companies() {
                   onClick={() => select(c.id)}
                   style={{ opacity: c.disabled ? 0.6 : 1 }}
                 >
-                  <span className={`ci${c.isService ? ' service' : ''}`}>{initials(c.name)}</span>
+                  <CompanyBadge company={c} />
                   <span className="cm">
                     <b>{c.name}</b>
                     <span>
@@ -133,22 +131,7 @@ export function Companies() {
             <section className="card stack" style={{ gap: 18 }}>
               <div className="section-h" style={{ alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-                  <span
-                    className={`company-item ci${selected.isService ? ' service' : ''}`}
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 14,
-                      display: 'grid',
-                      placeItems: 'center',
-                      fontWeight: 800,
-                      background: selected.isService ? 'var(--dark)' : 'var(--surface-3)',
-                      color: selected.isService ? '#fff' : 'var(--fg)',
-                      padding: 0,
-                    }}
-                  >
-                    {initials(selected.name)}
-                  </span>
+                  <CompanyBadge company={selected} size={52} />
                   <div style={{ minWidth: 0 }}>
                     <b style={{ fontSize: 22, fontWeight: 800, display: 'block', overflowWrap: 'anywhere' }}>
                       {selected.name}
@@ -215,6 +198,7 @@ export function Companies() {
                 </div>
               </div>
               {selected.notes && <p style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{selected.notes}</p>}
+              {isAdmin && <LogoEditor company={selected} onChange={reload} />}
               <div className="tabs" role="tablist" aria-label={t('companies.sections')}>
                 {(['keys', 'users', 'machines'] as const).map((k) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
@@ -227,7 +211,7 @@ export function Companies() {
                 <UsersPanel
                   key={`u${selected.id}`}
                   companyId={selected.id}
-                  companyIsService={selected.isService}
+                  companyName={selected.name}
                   canManage={isAdmin}
                 />
               )}

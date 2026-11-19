@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { Logo } from '../components/Icon';
-import { LanguageSwitch } from '../components/Layout';
+import { Credit, LanguageSwitch } from '../components/Layout';
 import { ErrorNotice } from '../components/ui';
 import { useI18n } from '../i18n';
 import { ApiError } from '../lib/api';
@@ -41,8 +41,8 @@ export function Login() {
           <h1>{t('login.claim')}</h1>
           <p>{t('login.claimSub')}</p>
         </div>
-        <span className="hide-sm" style={{ opacity: 0.7, fontSize: 13 }}>
-          FUJI Service
+        <span className="hide-sm" style={{ opacity: 0.8, fontSize: 13 }}>
+          <Credit />
         </span>
       </div>
       <div className="login-form">
@@ -78,7 +78,15 @@ export function Login() {
           <p className="muted" style={{ fontSize: 13 }}>
             {t('login.help')}
           </p>
-          <LanguageSwitch />
+          <div
+            style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 12, fontSize: 13 }}
+            className="muted"
+          >
+            <LanguageSwitch />
+            <span className="show-sm">
+              <Credit />
+            </span>
+          </div>
         </form>
       </div>
     </div>

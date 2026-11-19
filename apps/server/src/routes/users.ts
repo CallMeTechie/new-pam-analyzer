@@ -8,7 +8,8 @@ import { deleteUserSessions } from '../auth/sessions.js';
 import type { Db } from '../db/index.js';
 import { companies, ROLES, type Role, users } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse, type SessionUser } from '../http.js';
-import { email, LOCALES, password } from './auth.js';
+import { isKnownLocale, localeCode } from '../services/languages.js';
+import { email, password } from './auth.js';
 
 export const userRoutes = new Hono<AppEnv>();
 
@@ -81,7 +82,7 @@ userRoutes.post('/', async (c) => {
       email,
       name: z.string().trim().min(1).max(100),
       role: z.enum(ROLES),
-      locale: z.enum(LOCALES).default('en'),
+      locale: localeCode.default('en'),
       password,
     }),
     await jsonBody(c),
@@ -91,6 +92,9 @@ userRoutes.post('/', async (c) => {
   const company = companyOf(db, body.companyId);
   if (!company) throw notFound('Company');
   checkRole(actor, body.role, company.isService);
+  if (body.locale && !isKnownLocale(db, body.locale)) {
+    throw new HttpError(400, 'invalid_request', 'This language is not available.');
+  }
   if (db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).get()) {
     throw new HttpError(409, 'email_taken', 'A user with this e-mail address already exists.');
   }
@@ -123,8 +127,10 @@ userRoutes.patch('/:id', async (c) => {
       name: z.string().trim().min(1).max(100).optional(),
       email: email.optional(),
       role: z.enum(ROLES).optional(),
-      locale: z.enum(LOCALES).optional(),
+      locale: localeCode.optional(),
       disabled: z.boolean().optional(),
+      /** Move to another company (administrators only). */
+      companyId: z.number().int().positive().optional(),
       /** New initial password; the user must change it at the next sign-in. */
       password: password.optional(),
     }),
@@ -135,7 +141,21 @@ userRoutes.patch('/:id', async (c) => {
     throw new HttpError(400, 'self_change', 'You cannot change your own role or disable yourself.');
   }
   if (row.role === 'admin' && actor.role !== 'admin') throw notFound('User');
-  if (body.role) checkRole(actor, body.role, companyOf(db, row.companyId)?.isService ?? false);
+  if (body.locale && !isKnownLocale(db, body.locale)) {
+    throw new HttpError(400, 'invalid_request', 'This language is not available.');
+  }
+  const moving = body.companyId !== undefined && body.companyId !== row.companyId;
+  if (moving) {
+    if (actor.role !== 'admin' || !actor.isService)
+      throw new HttpError(403, 'forbidden', 'Only administrators can move users.');
+    if (self) throw new HttpError(400, 'self_change', 'You cannot move yourself to another company.');
+    if (!companyOf(db, body.companyId as number)) throw notFound('Company');
+  }
+  const targetCompany = companyOf(db, moving ? (body.companyId as number) : row.companyId);
+  if (body.role) checkRole(actor, body.role, targetCompany?.isService ?? false);
+  else if (moving && row.role === 'admin' && !targetCompany?.isService) {
+    throw new HttpError(400, 'invalid_role', 'Administrators must belong to the service company.');
+  }
   if (row.role === 'admin' && ((body.role && body.role !== 'admin') || body.disabled)) ensureOtherAdmin(db, row.id);
   if (body.email) {
     const other = db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).get();
@@ -159,7 +179,7 @@ userRoutes.patch('/:id', async (c) => {
     })
     .where(eq(users.id, row.id))
     .run();
-  if (disabled || newPassword) {
+  if (disabled || newPassword || moving) {
     deleteUserSessions(db, row.id);
     disconnectUserDevices(db, row.id);
   }

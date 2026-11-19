@@ -1,8 +1,8 @@
-import { type CoefficientConfig, DEFAULT_CONFIG } from '@pam/core';
-import { eq } from 'drizzle-orm';
+import { type CoefficientConfig, CPK_THRESHOLDS, type CpkThresholds, DEFAULT_CONFIG, validThresholds } from '@pam/core';
+import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/index.js';
-import { settings } from '../db/schema.js';
+import { resultShafts, results, settings } from '../db/schema.js';
 
 export interface VersionedConfig {
   /** `default` for the built-in values, otherwise the ISO time of the change. */
@@ -74,4 +74,40 @@ export function getGeneralSettings(db: Db): GeneralSettings {
 export function setGeneralSettings(db: Db, value: GeneralSettings, userId: number): GeneralSettings {
   write(db, GENERAL, value, userId);
   return value;
+}
+
+const RATING = 'rating';
+
+export const thresholdsSchema = z
+  .object({
+    warning: z.number().positive().max(99),
+    good: z.number().positive().max(99),
+    excellent: z.number().positive().max(99),
+  })
+  .refine(validThresholds, { message: 'Thresholds must be ascending: warning < good < excellent.' });
+
+/** Current rating thresholds; the calculation core's defaults until an administrator changes them. */
+export function getThresholds(db: Db): CpkThresholds {
+  return read<CpkThresholds>(db, RATING) ?? CPK_THRESHOLDS;
+}
+
+const ratingSql = (column: unknown, t: CpkThresholds) =>
+  sql`case when ${column} is null then null
+    when ${column} < ${t.warning} then 'critical'
+    when ${column} < ${t.good} then 'warning'
+    when ${column} < ${t.excellent} then 'good'
+    else 'excellent' end`;
+
+/** Saves new thresholds and rates every stored result and holder again. */
+export function setThresholds(db: Db, t: CpkThresholds, userId: number): CpkThresholds {
+  db.transaction((tx) => {
+    write(tx as unknown as Db, RATING, t, userId);
+    tx.update(results)
+      .set({ rating: ratingSql(results.cpkXY, t) })
+      .run();
+    tx.update(resultShafts)
+      .set({ rating: ratingSql(resultShafts.cpkXY, t) })
+      .run();
+  });
+  return t;
 }

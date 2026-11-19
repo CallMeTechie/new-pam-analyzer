@@ -27,6 +27,13 @@ und `1.2`. Selbst bauen: `docker compose up -d --build`.
 | `SERVICE_COMPANY_NAME` | `FUJI Service` | Name der Service-Firma beim ersten Start |
 | `WEB_DIR` | `/app/public` | Gebaute Web-Oberfläche; fehlt der Ordner, läuft nur die API |
 
+**Datenordner:** Der Container startet als root, legt `/data` an, macht den Ordner für den
+Server-Benutzer (uid 1000) beschreibbar und startet den Server dann ohne Root-Rechte. Ein
+eingebundener Ordner eines NAS (z. B. `/volume1/docker/pam-analyzer/data` auf einer Synology)
+braucht deshalb keine Rechte von Hand. Ist der Ordner trotzdem nicht beschreibbar (etwa eine
+Netzwerkfreigabe mit `root_squash`), bricht der Start mit einer verständlichen Meldung ab.
+Mit `user:` in `docker-compose.yml` startet der Server direkt als dieser Benutzer.
+
 **Sicherung:** Die Datenbank läuft im WAL-Modus; zu ihr gehören `pam.sqlite` sowie die Dateien
 `-wal` und `-shm`. Für eine Sicherung den Container anhalten (`docker compose stop`) und den
 ganzen Ordner `/data` kopieren.
@@ -118,6 +125,10 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `GET /api/dashboard` | Übersicht: Summen, Ergebnisse je Tag, Bewertungen, neueste Ergebnisse |
 | `GET/PUT /api/settings/coefficients` | Koeffizienten; jede Änderung ist eine neue Version |
 | `GET/PUT /api/settings/general` | Standard-Anzahl Geräte für neue API-Keys |
+| `GET/PUT /api/settings/rating` | Bewertungsgrenzen; Speichern bewertet alle Ergebnisse neu |
+| `PUT/GET/DELETE /api/companies/:id/logo` | Firmenlogo (PNG, JPEG, WebP, ≤ 512 KB); Firmen-Admin oder Administrator |
+| `GET /api/i18n`, `PUT/DELETE /api/i18n/:code` | Importierte Sprachkataloge (lesen ohne Anmeldung, ändern nur Administratoren) |
+| `GET /api/version` | Versionen von Server und Rechenkern (ohne Anmeldung) |
 
 Die Suche teilt `q` in Wörter; jedes Wort muss in Maschinennummer, Kopftyp, Kopf-Seriennummer,
 Werkzeug-Seriennummer, Dateiname, Linie oder Firmenname vorkommen.

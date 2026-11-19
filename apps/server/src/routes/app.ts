@@ -1,4 +1,4 @@
-import { ALGORITHM_VERSION, CPK_THRESHOLDS } from '@pam/core';
+import { ALGORITHM_VERSION } from '@pam/core';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import { checkCredentials } from '../auth/login.js';
 import { requireAuth } from '../auth/middleware.js';
 import { companies, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
-import { getCoefficientConfig } from '../services/settings.js';
+import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 /**
  * Endpoints for the Windows, Android and iOS apps. An app connects once with an API key of the
@@ -58,7 +58,11 @@ appRoutes.post('/connect', async (c) => {
 });
 
 function appConfig(db: AppEnv['Variables']['db']) {
-  return { algorithmVersion: ALGORITHM_VERSION, cpkThresholds: CPK_THRESHOLDS, coefficients: getCoefficientConfig(db) };
+  return {
+    algorithmVersion: ALGORITHM_VERSION,
+    cpkThresholds: getThresholds(db),
+    coefficients: getCoefficientConfig(db),
+  };
 }
 
 /** Current evaluation settings, so offline results match the server. */

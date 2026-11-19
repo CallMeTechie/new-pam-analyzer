@@ -7,7 +7,7 @@ import type { Db } from '../db/index.js';
 import { companies, machines, results } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse } from '../http.js';
 import { parseStoredFile } from '../services/ingest.js';
-import { getCoefficientConfigVersion } from '../services/settings.js';
+import { getCoefficientConfigVersion, getThresholds } from '../services/settings.js';
 
 export const resultRoutes = new Hono<AppEnv>();
 
@@ -149,12 +149,18 @@ resultRoutes.get('/:id', (c) => {
   const row = loadResult(c, db);
   const { parsed } = parseStoredFile(row, c.get('config').timeZone);
   const versioned = getCoefficientConfigVersion(db, row.configVersion);
+  const thresholds = getThresholds(db);
   const analysis = analyzePamFile(parsed, {
     config: versioned.config as CoefficientConfig,
+    thresholds,
     ...(row.coefficientSource === 'manual' ? { coefficient: row.coefficient } : {}),
   });
   const meta = db
-    .select({ companyName: companies.name, line: machines.line })
+    .select({
+      companyName: companies.name,
+      companyLogoVersion: sql<number | null>`${companies.logoUpdatedAt}`,
+      line: machines.line,
+    })
     .from(results)
     .leftJoin(companies, eq(results.companyId, companies.id))
     .leftJoin(machines, eq(results.machineId, machines.id))
@@ -165,6 +171,7 @@ resultRoutes.get('/:id', (c) => {
       id: row.id,
       companyId: row.companyId,
       companyName: meta?.companyName ?? null,
+      companyLogoVersion: meta?.companyLogoVersion ?? null,
       line: meta?.line ?? null,
       fileName: row.fileName,
       fileSize: row.fileSize,
@@ -182,6 +189,7 @@ resultRoutes.get('/:id', (c) => {
     analysis,
     /** Configuration the result was evaluated with, so the UI can recompute with another coefficient. */
     config: versioned.config,
+    thresholds,
   });
 });
 

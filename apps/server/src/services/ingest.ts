@@ -3,6 +3,7 @@ import {
   type AnalysisResult,
   analyzePamFile,
   type CoefficientConfig,
+  type CpkThresholds,
   PamParseError,
   type ParsedPamFile,
   parsePamFile,
@@ -36,6 +37,7 @@ export interface IngestOutcome {
 export interface IngestContext {
   source: Source;
   config: VersionedConfig;
+  thresholds: CpkThresholds;
   maxFileBytes: number;
   timeZone: string;
   /** Company the result belongs to; `null` only for unassigned uploads by service staff. */
@@ -134,7 +136,10 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
   }
   if (parsed.measurements.length === 0) return { ...base, status: 'rejected', reason: 'no_measurements' };
 
-  const analysis = analyzePamFile(parsed, { config: ctx.config.config as CoefficientConfig });
+  const analysis = analyzePamFile(parsed, {
+    config: ctx.config.config as CoefficientConfig,
+    thresholds: ctx.thresholds,
+  });
   const { row, shafts } = metricColumns(parsed, analysis, ctx.config.version);
   const h = parsed.header;
 
