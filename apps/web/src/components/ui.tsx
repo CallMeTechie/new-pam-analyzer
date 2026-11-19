@@ -76,7 +76,16 @@ export function PartsBar({
   );
 }
 
-export function ResultListRow({ row, showCompany }: { row: ResultRow; showCompany?: boolean }) {
+export function ResultListRow({
+  row,
+  showCompany,
+  extra,
+}: {
+  row: ResultRow;
+  showCompany?: boolean;
+  /** Additional status at the end of the row, e.g. the upload state in the app. */
+  extra?: ReactNode;
+}) {
   const { date, t } = useI18n();
   const scope = useScope();
   return (
@@ -95,6 +104,7 @@ export function ResultListRow({ row, showCompany }: { row: ResultRow; showCompan
         {date(row.testDate)}
       </span>
       <RatingPill rating={row.rating} value={row.cpkXY} />
+      {extra}
     </Link>
   );
 }

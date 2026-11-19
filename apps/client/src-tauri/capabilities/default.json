@@ -1,0 +1,22 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permissions of the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "opener:allow-reveal-item-in-dir",
+    "sql:default",
+    "sql:allow-execute",
+    "process:allow-restart",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://*" }, { "url": "http://*" }, { "url": "https://*:*" }, { "url": "http://*:*" }]
+    },
+    {
+      "identifier": "opener:allow-open-path",
+      "allow": [{ "path": "$APPCONFIG" }, { "path": "$APPCONFIG/**" }]
+    }
+  ]
+}

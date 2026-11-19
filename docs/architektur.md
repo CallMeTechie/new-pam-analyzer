@@ -27,7 +27,7 @@
 | Datenbank | SQLite (Drizzle ORM) | ca. 100.000 Datensätze, wenige Schreibzugriffe; eine Datei, einfache Backups |
 | Server | Node.js mit Hono im Docker-Container | Ein Image, Daten auf Volume `/data` |
 | Mandanten | Firmen; Benutzer, API-Keys, Maschinen und Ergebnisse gehören zu einer Firma | FUJI Service sieht alle Firmen, Firmen nur sich selbst |
-| Apps | Tauri 2 (Windows, Android, iOS) | Gemeinsame Web-Oberfläche, kleine Installer; mobil notfalls Capacitor |
+| Apps | Tauri 2 (Windows fertig, Android und iOS folgen) | Gemeinsame Web-Oberfläche, kleine Installer; mobil notfalls Capacitor. Details: [App](app.md) |
 | Gespeichert wird | Originaldatei (komprimiert) + Kennzahlen als Spalten | Diagramme werden bei Bedarf berechnet; Neuberechnung jederzeit möglich |
 
 ## Sprachen
@@ -53,7 +53,7 @@
   Geräte-Token. Keys und Tokens werden nur als Hash gespeichert und sind widerrufbar.
 - Doppelte Dateien werden je Firma über den SHA-256-Hash des Inhalts erkannt; ein erneuter Upload ist folgenlos.
 - Die Apps sammeln Uploads offline in einer Warteschlange.
-- Die Apps bringen die Standard-Koeffizienten mit und holen den aktuellen Stand vom Server.
+- Die Apps bringen die Standard-Koeffizienten mit und holen den aktuellen Stand, die Bewertungsgrenzen und die Zeitzone der Maschinen vom Server.
 - Jedes Ergebnis speichert die Version der Berechnung (`ALGORITHM_VERSION`) und den verwendeten Koeffizienten.
 
 ## Daten aus dem Alt-System

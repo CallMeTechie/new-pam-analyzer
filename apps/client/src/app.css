@@ -1,0 +1,286 @@
+/* Additions for the Windows app; everything else comes from the web interface (styles.css). */
+
+.client .sidebar {
+  height: 100vh;
+}
+.client .nav a .badge {
+  margin-left: auto;
+}
+.client .menu-toggle {
+  display: none;
+}
+
+/* Compact drop area above the list */
+.dropzone.compact {
+  grid-template-columns: auto minmax(0, 1fr);
+  justify-items: start;
+  align-items: center;
+  text-align: left;
+  padding: 18px 22px;
+  gap: 16px;
+}
+.dropzone.compact .icon-circle {
+  width: 46px;
+  height: 46px;
+}
+.dropzone.compact .dz-text {
+  display: grid;
+  gap: 2px;
+}
+.dropzone.compact b {
+  font-size: 15.5px;
+}
+
+/* Whole window while files are dragged over it */
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+.drop-overlay > div {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 26px 34px;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow);
+}
+.drop-overlay b {
+  font-size: 17px;
+  color: var(--fg);
+}
+
+/* Upload state */
+.upchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.up-uploaded {
+  background: var(--exc-soft);
+  color: var(--exc);
+}
+.up-queued {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.up-local {
+  background: var(--surface-3);
+  color: var(--fg-2);
+}
+.up-rejected {
+  background: var(--crit-soft);
+  color: var(--crit);
+}
+
+/* Connection card in the sidebar */
+.conn-card {
+  margin: auto 16px 16px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  display: grid;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.conn-card b {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  color: var(--fg);
+}
+.conn-host {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot-on {
+  background: var(--exc-fill);
+}
+.dot-off {
+  background: #a3a8b1;
+}
+.dot-wait {
+  background: var(--warn-fill);
+}
+.dot-error {
+  background: var(--crit-fill);
+}
+
+/* Notices with actions */
+.notice:has(.notice-actions) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.notice-actions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.notice.success > svg {
+  color: var(--exc);
+}
+.reject-list {
+  font-size: 13px;
+}
+
+/* Definition lists */
+.kv {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 18px;
+  margin: 0;
+  font-size: 14px;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* Upload queue */
+.queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+.queue li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+.queue li:first-child {
+  border-top: 0;
+}
+.queue .mono {
+  overflow-wrap: anywhere;
+}
+.queue-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.queue-empty {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--exc);
+  font-weight: 600;
+}
+
+/* Update channel */
+.radio-cards {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.radio-cards label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 11px 13px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.radio-cards label.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.radio-cards input {
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+.radio-cards span {
+  display: grid;
+  gap: 2px;
+}
+.radio-cards small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+/* Rating levels (read only) */
+.levels {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+.level {
+  border-radius: var(--r-md);
+  padding: 12px;
+  background: var(--rs);
+  color: var(--rc);
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.table .num {
+  text-align: right;
+}
+
+/* Update dialog */
+.update-notes {
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: var(--font);
+  font-size: 13.5px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+}
+.beta-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+@media print {
+  .drop-overlay,
+  .conn-card {
+    display: none !important;
+  }
+}

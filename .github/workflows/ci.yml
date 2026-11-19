@@ -27,6 +27,28 @@ jobs:
         run: |
           pnpm --filter @pam/web exec playwright install --with-deps chromium
           pnpm --filter @pam/web e2e
+      - name: End-to-end tests (app in the browser preview)
+        run: pnpm --filter @pam/client e2e
+
+  app:
+    # Compiles the native part of the app; the Windows installer is built by app.yml on release tags.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libgtk-3-dev librsvg2-dev libayatana-appindicator3-dev libssl-dev
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/client/src-tauri
+      - name: Clippy
+        working-directory: apps/client/src-tauri
+        run: |
+          mkdir -p ../dist
+          cargo clippy --locked -- -D warnings
 
   docker:
     runs-on: ubuntu-latest

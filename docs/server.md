@@ -121,7 +121,7 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `GET/POST /api/users`, `PATCH/DELETE /api/users/:id` | Benutzer |
 | `GET/POST /api/api-keys`, `PATCH/DELETE /api/api-keys/:id` | API-Keys mit verbundenen Geräten |
 | `DELETE /api/devices/:id` | Gerät trennen |
-| `POST /api/app/connect`, `GET /api/app/config`, `DELETE /api/app/connection` | Für die Apps |
+| `POST /api/app/connect`, `GET /api/app/config`, `DELETE /api/app/connection` | Für die Apps: Verbinden, Koeffizienten, Bewertungsgrenzen und Zeitzone der Maschinen, Trennen ([App](app.md)) |
 | `POST /api/uploads` | Dateien hochladen |
 | `GET /api/results` | Liste mit Suche `q`, Filtern `family`, `rating`, `from`, `to`, `machineNo`, `companyId`, Sortierung und Seiten |
 | `GET /api/results/:id` | Vollständige Auswertung mit Messpunkten, neu berechnet aus der Originaldatei |

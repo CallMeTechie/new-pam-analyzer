@@ -193,7 +193,20 @@ export function onUnauthorized(listener: Listener): () => void {
   return () => unauthorizedListeners.delete(listener);
 }
 
+/**
+ * Answers API requests without a server, e.g. from the local data of the Windows app. It receives
+ * the path without `/api` and throws `ApiError` for errors.
+ */
+export type ApiTransport = (method: string, path: string, body?: unknown) => Promise<unknown>;
+let transport: ApiTransport | null = null;
+
+/** Routes all API requests to `next` instead of the server (`null` restores the server). */
+export function setApiTransport(next: ApiTransport | null): void {
+  transport = next;
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  if (transport) return (await transport(method, path, body)) as T;
   const init: RequestInit = { method, credentials: 'same-origin', headers: {} };
   if (body instanceof FormData) init.body = body;
   else if (body !== undefined) {

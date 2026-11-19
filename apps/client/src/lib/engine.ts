@@ -1,0 +1,458 @@
+import { type CoefficientConfig, CPK_THRESHOLDS, type CpkThresholds, DEFAULT_CONFIG } from '@pam/core';
+import type { Platform, UpdateInfo } from '../platform/types';
+import {
+  analyze,
+  evaluate,
+  expandInput,
+  type InputFile,
+  metrics,
+  parseFile,
+  type RejectReason,
+  sha256Hex,
+} from './evaluate';
+import { uploadBody } from './multipart';
+import type { Channel, Connection, EvalConfig, LocalResult } from './types';
+
+export const DEFAULT_EVAL: EvalConfig = {
+  coefficients: DEFAULT_CONFIG,
+  version: 'default',
+  thresholds: CPK_THRESHOLDS,
+  timeZone: null,
+  source: 'default',
+  fetchedAt: null,
+};
+
+/** Upload batch size; the server evaluates each file again. */
+const BATCH = 10;
+const RETRY_MS = 60_000;
+const CONFIG_REFRESH_MS = 30 * 60_000;
+
+export type ServerState = 'off' | 'online' | 'offline' | 'revoked';
+
+export interface ImportSummary {
+  created: number[];
+  duplicates: number[];
+  rejected: { name: string; reason: RejectReason }[];
+}
+
+export interface EngineState {
+  ready: boolean;
+  rows: LocalResult[];
+  config: EvalConfig;
+  connection: Connection | null;
+  server: ServerState;
+  syncing: boolean;
+  channel: Channel;
+  locale: string | null;
+  update: UpdateInfo | null;
+  updateChecked: number | null;
+}
+
+/** Error from the server or the network, with the server's language-neutral code. */
+export class ServerError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Normalizes what the user typed as server address: scheme, no trailing slash. */
+export function normalizeServer(input: string): string {
+  let s = input.trim();
+  if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
+  const url = new URL(s);
+  return `${url.protocol}//${url.host}${url.pathname.replace(/\/+$/, '')}`;
+}
+
+/** Coefficients as the server sends them: the configuration and its version. */
+interface ServerCoefficients {
+  version: string;
+  config: CoefficientConfig;
+}
+
+interface ServerConfig {
+  coefficients: ServerCoefficients;
+  thresholds: CpkThresholds;
+  timeZone?: string;
+}
+
+const sameConfig = (a: EvalConfig, b: ServerConfig) =>
+  a.version === b.coefficients.version &&
+  a.timeZone === (b.timeZone ?? null) &&
+  JSON.stringify(a.coefficients) === JSON.stringify(b.coefficients.config) &&
+  JSON.stringify(a.thresholds) === JSON.stringify(b.thresholds);
+
+/**
+ * The app's state and work: importing and evaluating files, the local history, the connection to
+ * the server and the upload queue. React reads it through `useEngine`.
+ */
+export class Engine {
+  private state: EngineState = {
+    ready: false,
+    rows: [],
+    config: DEFAULT_EVAL,
+    connection: null,
+    server: 'off',
+    syncing: false,
+    channel: 'stable',
+    locale: null,
+    update: null,
+    updateChecked: null,
+  };
+  private listeners = new Set<() => void>();
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private syncRunning: Promise<void> | null = null;
+
+  constructor(readonly platform: Platform) {}
+
+  get snapshot(): EngineState {
+    return this.state;
+  }
+  subscribe = (listener: () => void): (() => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+  private set(patch: Partial<EngineState>) {
+    this.state = { ...this.state, ...patch };
+    for (const l of this.listeners) l();
+  }
+  private get store() {
+    return this.platform.store;
+  }
+
+  async init(): Promise<void> {
+    const [rows, config, connection, channel, locale] = await Promise.all([
+      this.store.all(),
+      this.store.setting<EvalConfig>('config'),
+      this.store.setting<Connection>('connection'),
+      this.store.setting<Channel>('channel'),
+      this.store.setting<string>('locale'),
+    ]);
+    const token = connection ? await this.platform.secret.get() : null;
+    this.set({
+      ready: true,
+      rows,
+      config: config ? { ...DEFAULT_EVAL, ...config } : DEFAULT_EVAL,
+      connection: connection && token ? connection : null,
+      server: connection && token ? 'online' : 'off',
+      channel: channel ?? 'stable',
+      locale,
+    });
+    if (this.state.connection) {
+      void this.refreshConfig().catch(() => {});
+      void this.sync();
+    }
+  }
+
+  async setLocale(locale: string): Promise<void> {
+    await this.store.setSetting('locale', locale);
+    this.set({ locale });
+  }
+
+  async setChannel(channel: Channel): Promise<void> {
+    await this.store.setSetting('channel', channel);
+    this.set({ channel, update: null, updateChecked: null });
+  }
+
+  // ---------- files ----------
+
+  /** Evaluates and stores files; ZIP archives are opened, duplicates are recognised by content. */
+  async importFiles(input: InputFile[]): Promise<ImportSummary> {
+    const summary: ImportSummary = { created: [], duplicates: [], rejected: [] };
+    const files: InputFile[] = [];
+    for (const f of input) {
+      const e = expandInput(f);
+      files.push(...e.files);
+      for (const name of e.skipped) summary.rejected.push({ name, reason: 'unsupported_type' });
+    }
+    const queued = this.state.connection !== null;
+    for (const file of files) {
+      const hash = await sha256Hex(file.bytes);
+      const existing = await this.store.byHash(hash);
+      if (existing) {
+        summary.duplicates.push(existing.id);
+        continue;
+      }
+      const importedAt = Date.now();
+      const result = evaluate(file, this.state.config, importedAt);
+      if (!result.ok) {
+        summary.rejected.push({ name: file.name, reason: result.reason });
+        continue;
+      }
+      const row: Omit<LocalResult, 'id'> = {
+        sha256: hash,
+        fileName: file.name,
+        filePath: file.path,
+        fileSize: file.bytes.length,
+        fileModifiedAt: file.lastModified,
+        importedAt,
+        ...metrics(result.parsed, result.analysis),
+        upload: queued ? 'queued' : 'local',
+        uploadError: null,
+        uploadedAt: null,
+        serverResultId: null,
+      };
+      summary.created.push(await this.store.insert(row, file.bytes));
+    }
+    this.set({ rows: await this.store.all() });
+    if (queued && summary.created.length) void this.sync();
+    return summary;
+  }
+
+  /** Evaluates all stored files again, e.g. after the server changed coefficients or thresholds. */
+  private async reevaluateAll(): Promise<void> {
+    for (const r of this.state.rows) {
+      try {
+        const bytes = await this.store.file(r.id);
+        const parsed = parseFile(bytes, r.fileName, r.fileModifiedAt, r.importedAt, this.state.config.timeZone);
+        await this.store.update(r.id, metrics(parsed, analyze(parsed, this.state.config)));
+      } catch {
+        // keep the previous values of a file that cannot be read
+      }
+    }
+    this.set({ rows: await this.store.all() });
+  }
+
+  // ---------- server ----------
+
+  private async call<T>(
+    path: string,
+    init: {
+      method: 'GET' | 'POST' | 'DELETE';
+      json?: unknown;
+      body?: Uint8Array;
+      contentType?: string;
+      token?: string | null;
+      server?: string;
+    },
+  ): Promise<T> {
+    const server = init.server ?? this.state.connection?.server;
+    if (!server) throw new ServerError(0, 'not_connected', 'Not connected.');
+    const headers: Record<string, string> = { accept: 'application/json' };
+    const token = init.token === undefined ? await this.platform.secret.get() : init.token;
+    if (token) headers.authorization = `Bearer ${token}`;
+    let body: string | Uint8Array | undefined;
+    if (init.json !== undefined) {
+      body = JSON.stringify(init.json);
+      headers['content-type'] = 'application/json';
+    } else if (init.body) {
+      body = init.body;
+      if (init.contentType) headers['content-type'] = init.contentType;
+    }
+    const res = await this.platform.request(`${server}/api${path}`, {
+      method: init.method,
+      headers,
+      ...(body === undefined ? {} : { body }),
+    });
+    if (res.status === 0) throw new ServerError(0, 'network_error', res.text || 'The server cannot be reached.');
+    if (res.status === 204) return undefined as T;
+    let data: unknown = null;
+    try {
+      data = res.text ? JSON.parse(res.text) : null;
+    } catch {
+      throw new ServerError(res.status, 'not_pam_server', 'The address does not answer like a PAM Analyzer server.');
+    }
+    if (res.status >= 400) {
+      const err = (data as { error?: { code?: string; message?: string } } | null)?.error;
+      throw new ServerError(res.status, err?.code ?? 'internal_error', err?.message ?? `HTTP ${res.status}`);
+    }
+    return data as T;
+  }
+
+  private async installId(): Promise<string> {
+    let id = await this.store.setting<string>('installId');
+    if (!id) {
+      id = crypto.randomUUID();
+      await this.store.setSetting('installId', id);
+    }
+    return id;
+  }
+
+  /** Connects with an API key of the company and the user's e-mail and password. */
+  async connect(input: {
+    server: string;
+    apiKey: string;
+    email: string;
+    password: string;
+    deviceName: string;
+  }): Promise<void> {
+    let server: string;
+    try {
+      server = normalizeServer(input.server);
+    } catch {
+      throw new ServerError(0, 'invalid_server', 'Invalid server address.');
+    }
+    const res = await this.call<{
+      token: string;
+      userName: string;
+      companyName: string;
+      locale: string;
+      cpkThresholds: CpkThresholds;
+      coefficients: ServerCoefficients;
+      timeZone?: string;
+    }>('/app/connect', {
+      method: 'POST',
+      server,
+      token: null,
+      json: {
+        apiKey: input.apiKey.trim(),
+        email: input.email.trim(),
+        password: input.password,
+        installId: await this.installId(),
+        deviceName: input.deviceName.trim(),
+        platform: this.platform.os,
+        appVersion: this.platform.version,
+      },
+    });
+    await this.platform.secret.set(res.token);
+    const connection: Connection = {
+      server,
+      deviceName: input.deviceName.trim(),
+      userName: res.userName,
+      companyName: res.companyName,
+      connectedAt: Date.now(),
+      lastSyncAt: Date.now(),
+    };
+    await this.store.setSetting('connection', connection);
+    // Everything evaluated on this PC so far goes to the server as well.
+    for (const r of this.state.rows) if (r.upload === 'local') await this.store.update(r.id, { upload: 'queued' });
+    this.set({ connection, server: 'online', rows: await this.store.all() });
+    await this.applyConfig({
+      coefficients: res.coefficients,
+      thresholds: res.cpkThresholds,
+      ...(res.timeZone ? { timeZone: res.timeZone } : {}),
+    });
+    void this.sync();
+  }
+
+  /** Frees the device slot on the server (if reachable) and forgets the token. */
+  async disconnect(): Promise<void> {
+    try {
+      if (this.state.server !== 'revoked') await this.call('/app/connection', { method: 'DELETE' });
+    } catch {
+      // the administrator can still remove the device on the web
+    }
+    await this.platform.secret.clear();
+    await this.store.setSetting('connection', null);
+    for (const r of this.state.rows) if (r.upload === 'queued') await this.store.update(r.id, { upload: 'local' });
+    if (this.timer) clearTimeout(this.timer);
+    this.set({ connection: null, server: 'off', rows: await this.store.all() });
+  }
+
+  private async applyConfig(next: ServerConfig): Promise<void> {
+    const changed = !sameConfig(this.state.config, next);
+    const config: EvalConfig = {
+      coefficients: next.coefficients.config,
+      version: next.coefficients.version,
+      thresholds: next.thresholds,
+      timeZone: next.timeZone ?? null,
+      source: 'server',
+      fetchedAt: Date.now(),
+    };
+    await this.store.setSetting('config', config);
+    this.set({ config });
+    if (changed) await this.reevaluateAll();
+  }
+
+  async refreshConfig(): Promise<void> {
+    const res = await this.call<{ coefficients: ServerCoefficients; cpkThresholds: CpkThresholds; timeZone?: string }>(
+      '/app/config',
+      { method: 'GET' },
+    );
+    await this.applyConfig({
+      coefficients: res.coefficients,
+      thresholds: res.cpkThresholds,
+      ...(res.timeZone ? { timeZone: res.timeZone } : {}),
+    });
+  }
+
+  private schedule(ms: number) {
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = setTimeout(() => void this.sync(), ms);
+  }
+
+  /** Uploads the queue; on network errors it tries again a minute later. */
+  sync(): Promise<void> {
+    if (!this.syncRunning) {
+      this.syncRunning = this.runSync().finally(() => {
+        this.syncRunning = null;
+      });
+    }
+    return this.syncRunning;
+  }
+
+  private async runSync(): Promise<void> {
+    const connection = this.state.connection;
+    if (!connection || this.state.server === 'revoked') return;
+    this.set({ syncing: true });
+    try {
+      if (!connection.lastSyncAt || Date.now() - connection.lastSyncAt > CONFIG_REFRESH_MS) await this.refreshConfig();
+      for (;;) {
+        const batch = this.state.rows.filter((r) => r.upload === 'queued').slice(0, BATCH);
+        if (batch.length === 0) break;
+        const files = await Promise.all(
+          batch.map(async (r) => ({
+            name: r.fileName,
+            bytes: await this.store.file(r.id),
+            lastModified: r.fileModifiedAt,
+          })),
+        );
+        const { body, contentType } = uploadBody(files);
+        const res = await this.call<{ results: { status: string; resultId?: number; reason?: string }[] }>('/uploads', {
+          method: 'POST',
+          body,
+          contentType,
+        });
+        const now = Date.now();
+        for (const [i, r] of batch.entries()) {
+          const outcome = res.results[i];
+          if (outcome && outcome.status !== 'rejected') {
+            await this.store.update(r.id, {
+              upload: 'uploaded',
+              uploadedAt: now,
+              uploadError: null,
+              serverResultId: outcome.resultId ?? null,
+            });
+          } else {
+            await this.store.update(r.id, { upload: 'rejected', uploadError: outcome?.reason ?? 'unreadable' });
+          }
+        }
+        this.set({ rows: await this.store.all() });
+      }
+      const updated = { ...connection, lastSyncAt: Date.now() };
+      await this.store.setSetting('connection', updated);
+      this.set({ connection: updated, server: 'online' });
+      this.schedule(CONFIG_REFRESH_MS);
+    } catch (error) {
+      if (error instanceof ServerError && error.status === 401) {
+        // Token revoked or device removed by the administrator.
+        this.set({ server: 'revoked' });
+      } else {
+        this.set({ server: 'offline' });
+        this.schedule(RETRY_MS);
+      }
+    } finally {
+      this.set({ syncing: false });
+    }
+  }
+
+  /** Puts a rejected file back into the queue, e.g. after the server was updated. */
+  async retry(id: number): Promise<void> {
+    await this.store.update(id, { upload: this.state.connection ? 'queued' : 'local', uploadError: null });
+    this.set({ rows: await this.store.all() });
+    void this.sync();
+  }
+
+  // ---------- updates ----------
+
+  async checkUpdate(): Promise<UpdateInfo | null> {
+    const updates = this.platform.updates;
+    if (!updates) return null;
+    const update = await updates.check(this.state.channel);
+    this.set({ update, updateChecked: Date.now() });
+    return update;
+  }
+}

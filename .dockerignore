@@ -13,3 +13,4 @@ apps/web/e2e
 apps/web/test
 **/.e2e-data
 **/test-results
+apps/client

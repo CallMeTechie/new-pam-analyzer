@@ -54,12 +54,14 @@ appRoutes.post('/connect', async (c) => {
     .innerJoin(companies, eq(users.companyId, companies.id))
     .where(eq(users.id, userId))
     .get();
-  return c.json({ token, deviceId, ...info, ...appConfig(c.get('db')) }, 201);
+  return c.json({ token, deviceId, ...info, ...appConfig(c.get('db'), c.get('config').timeZone) }, 201);
 });
 
-function appConfig(db: AppEnv['Variables']['db']) {
+function appConfig(db: AppEnv['Variables']['db'], timeZone: string) {
   return {
     algorithmVersion: ALGORITHM_VERSION,
+    /** Time zone of the machines, for test dates taken from file dates (since app 0.1). */
+    timeZone,
     cpkThresholds: getThresholds(db),
     coefficients: getCoefficientConfig(db),
   };
@@ -69,7 +71,7 @@ function appConfig(db: AppEnv['Variables']['db']) {
 appRoutes.get('/config', (c) => {
   const auth = requireAuth(c);
   if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
-  return c.json(appConfig(c.get('db')));
+  return c.json(appConfig(c.get('db'), c.get('config').timeZone));
 });
 
 /** The app disconnects itself and frees its slot. */
