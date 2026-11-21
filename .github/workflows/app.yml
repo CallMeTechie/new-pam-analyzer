@@ -51,8 +51,13 @@ jobs:
         run: |
           if [ -n "$INPUT" ]; then tag="app-v${INPUT#app-v}"; else tag="$GITHUB_REF_NAME"; fi
           if gh release view "$tag" > /dev/null 2>&1; then
-            echo "::error::Release $tag exists already."
-            exit 1
+            # A draft left by a cancelled run is replaced; a published release is never touched.
+            if [ "$(gh release view "$tag" --json isDraft --jq .isDraft)" = "true" ]; then
+              gh release delete "$tag" --yes
+            else
+              echo "::error::Release $tag exists already."
+              exit 1
+            fi
           fi
           version=$(node .github/scripts/app-release.mjs version "$tag")
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
@@ -139,7 +144,7 @@ jobs:
           export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           code="${{ needs.prepare.outputs.code }}"
           pnpm --filter @pam/client tauri android build --apk --config "{\"bundle\":{\"android\":{\"versionCode\":$code}}}"
-      - name: Build bundle (Google Play, updated by Play)
+      - name: Build bundle (Google Play, updated by Play; contains mapping.txt for R8)
         run: |
           export NDK_HOME="$ANDROID_NDK_LATEST_HOME"
           code="${{ needs.prepare.outputs.code }}"
@@ -157,6 +162,8 @@ jobs:
           mkdir -p dist-android
           cp "$(ls $out/apk/universal/release/*.apk | head -n 1)" "dist-android/PAM-Analyzer_${v}_android.apk"
           cp "$(ls $out/bundle/universalRelease/*.aab | head -n 1)" "dist-android/PAM-Analyzer_${v}_android.aab"
+          # Deobfuscation file of the bundle (R8), needed by Google Play for readable crash reports.
+          cp "$out/mapping/universalRelease/mapping.txt" "dist-android/PAM-Analyzer_${v}_android-mapping.txt"
           pnpm --filter @pam/client exec tauri signer sign "$PWD/dist-android/PAM-Analyzer_${v}_android.apk"
           gh release upload "${{ needs.prepare.outputs.tag }}" dist-android/*
       - id: play
@@ -171,7 +178,9 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.callmetechie.pamanalyzer
           releaseFiles: dist-android/*.aab
-          track: ${{ needs.prepare.outputs.beta == 'true' && 'beta' || 'production' }}
+          mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
+          # Closed test ("alpha") until the app is public; set the repository variable PLAY_TRACK to change it.
+          track: ${{ vars.PLAY_TRACK || 'alpha' }}
           status: completed
 
   publish:

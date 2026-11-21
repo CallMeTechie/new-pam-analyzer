@@ -3,6 +3,10 @@
 # ---- Build: install, compile, keep only production dependencies ----
 FROM node:22-bookworm-slim AS build
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH CI=true
+# better-sqlite3 normally downloads a prebuilt binary; if that is not possible it compiles itself.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
 RUN corepack enable
 WORKDIR /src
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
