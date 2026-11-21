@@ -1,6 +1,6 @@
 {
   "name": "@pam/client",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "PAM Analyzer app for Windows (Android and iOS later)",
   "private": true,
   "type": "module",
