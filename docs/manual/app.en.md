@@ -11,7 +11,7 @@ The start page. A click on the area **Drag PAM files here or click to choose** o
 
 With several files the area shows the progress ("12 of 40"). Afterwards a short message at the bottom right tells how many results are new, which files were already there and which could not be read; it disappears by itself after a few seconds. The same file is recognised by its content and not stored twice.
 
-Below the area only the results of the **current calendar week** are listed. Older ones are under **Results**.
+Below the area only the measurements with a test date in the **current calendar week** are listed. Older ones are under **Results**.
 
 ### Customer and test date
 
@@ -50,7 +50,7 @@ The password is not stored, only a device token in the Windows Credential Manage
 - The app takes over **coefficients and rating limits** from the server. When the server changes them, the app rates all results on this device again.
 - **Disconnect** frees the device slot of the API key. The results stay on the device.
 
-Every result shows its state: **Uploaded**, **Waiting for upload**, **Only on this PC** or **Not accepted** (with the reason; "Try again" under Settings → Server). A click on the connection state at the bottom left opens this page.
+Every result shows its state: **Uploaded**, **Waiting for upload**, **Only on this device** or **Not accepted** (with the reason; "Try again" under Settings → Server). A click on the connection state at the bottom left opens this page.
 
 ## Settings
 

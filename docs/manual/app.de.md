@@ -11,7 +11,7 @@ Die Startseite. Ein Klick auf die Fläche **PAM-Dateien hierher ziehen oder klic
 
 Bei mehreren Dateien zeigt die Fläche den Fortschritt („12 von 40“). Danach meldet ein kurzer Hinweis unten rechts, wie viele Ergebnisse neu sind, welche Dateien schon da waren und welche nicht lesbar sind; er verschwindet nach einigen Sekunden von selbst. Dieselbe Datei wird am Inhalt erkannt und nicht doppelt gespeichert.
 
-Unter der Fläche stehen nur die Ergebnisse der **laufenden Kalenderwoche**. Ältere finden Sie unter **Auswertungen**.
+Unter der Fläche stehen nur die Messungen mit Prüfdatum in der **laufenden Kalenderwoche**. Ältere finden Sie unter **Auswertungen**.
 
 ### Kunde und Prüfdatum
 
@@ -50,7 +50,7 @@ Das Passwort wird nicht gespeichert, nur ein Geräte-Token in der Windows-Anmeld
 - **Koeffizienten und Bewertungsgrenzen** übernimmt die App vom Server. Ändert der Server sie, bewertet die App alle Ergebnisse auf dem Gerät neu.
 - **Trennen** gibt den Geräteplatz des API-Keys wieder frei. Die Ergebnisse bleiben auf dem Gerät.
 
-Jedes Ergebnis zeigt seinen Stand: **Hochgeladen**, **Warteschlange**, **Nur auf diesem PC** oder **Nicht angenommen** (mit Grund; „Erneut versuchen“ unter Einstellungen → Server). Ein Klick auf den Verbindungsstatus unten links öffnet diese Seite.
+Jedes Ergebnis zeigt seinen Stand: **Hochgeladen**, **Warteschlange**, **Nur auf diesem Gerät** oder **Nicht angenommen** (mit Grund; „Erneut versuchen“ unter Einstellungen → Server). Ein Klick auf den Verbindungsstatus unten links öffnet diese Seite.
 
 ## Einstellungen
 

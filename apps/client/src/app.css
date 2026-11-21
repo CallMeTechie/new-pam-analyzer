@@ -6,6 +6,9 @@
 .client .nav a .badge {
   margin-left: auto;
 }
+.client .sidebar .nav {
+  padding-top: 16px;
+}
 .client .menu-toggle {
   display: none;
 }
@@ -894,5 +897,19 @@ a.conn-card:hover {
   }
   .hero .gauge {
     width: 100%;
+  }
+}
+
+/* Windows: the sidebar stays visible in narrow windows too (the web hides it behind a menu) */
+@media (max-width: 960px) {
+  .client:not(.mobile) .sidebar-col {
+    width: auto;
+    border-right: 1px solid var(--line);
+  }
+  .client:not(.mobile) .sidebar {
+    position: sticky;
+    width: 216px;
+    transform: none;
+    box-shadow: none;
   }
 }
