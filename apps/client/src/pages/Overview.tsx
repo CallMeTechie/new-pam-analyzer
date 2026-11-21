@@ -20,6 +20,9 @@ export function isoWeek(d: Date): { week: number; monday: Date; sunday: Date } {
   return { week, monday, sunday };
 }
 
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 /** Click or drag files onto it; shows the progress of a running import. */
 export function DropZone() {
   const { t, int } = useI18n();
@@ -67,7 +70,7 @@ export function DropZone() {
   );
 }
 
-/** Start page: add files, and what was evaluated this calendar week. */
+/** Start page: add files, and what was tested this calendar week. */
 export function Overview() {
   const { t, date } = useI18n();
   const [s] = useEngine();
@@ -75,12 +78,11 @@ export function Overview() {
   const rows = useMemo(
     () =>
       s.rows
-        .filter((r) => r.importedAt >= monday.getTime() && r.importedAt <= sunday.getTime())
-        .sort((a, b) => b.importedAt - a.importedAt || b.id - a.id),
+        // Tested this calendar week (the test date is local machine time, `YYYY-MM-DD HH:mm:ss`).
+        .filter((r) => r.testDate.slice(0, 10) >= iso(monday) && r.testDate.slice(0, 10) <= iso(sunday))
+        .sort((a, b) => b.testDate.localeCompare(a.testDate) || b.id - a.id),
     [s.rows, monday, sunday],
   );
-  const iso = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   return (
     <Page title={t('client.nav.overview')}>
       <DropZone />

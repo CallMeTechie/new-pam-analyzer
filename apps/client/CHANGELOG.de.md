@@ -1,5 +1,14 @@
 # Änderungen der App
 
+## 0.3.2
+
+### Geändert
+- Texte sprechen von „diesem Gerät“ statt „diesem PC“ und passen damit auch zu Android.
+- Die Übersicht zeigt die Messungen mit Prüfdatum in der laufenden Kalenderwoche, nicht mehr alles, was diese Woche importiert wurde.
+
+### Behoben
+- Windows: Der erste Eintrag der Seitenleiste hat wieder Abstand nach oben.
+
 ## 0.3.1
 
 ### Geändert

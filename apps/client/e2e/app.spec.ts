@@ -28,7 +28,7 @@ async function open(page: Page, files: string[], keep = false) {
 test('evaluates files offline: overview, toast, grouping, head history, result', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Overview' })).toBeVisible();
-  await expect(page.getByText('Nothing evaluated this week yet')).toBeVisible();
+  await expect(page.getByText('No tests this week yet')).toBeVisible();
   await expect(page.getByTestId('connection')).toContainText('Not connected');
   await expect(page.locator('.sidebar .brand')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open files' })).toHaveCount(0);
@@ -38,6 +38,8 @@ test('evaluates files offline: overview, toast, grouping, head history, result',
   await expect(dialog).toBeVisible();
   await expect(dialog.getByText('Applies to all 3 new results.')).toBeVisible();
   await dialog.getByLabel('Customer').fill('Sample Works');
+  // The overview lists what was tested this week; the fixtures carry older test dates.
+  await dialog.getByText('Today', { exact: false }).click();
   await dialog.getByRole('button', { name: 'Apply' }).click();
   await expect(page.locator('.toast', { hasText: '3 new results' })).toBeVisible();
   // This week's results on the overview.

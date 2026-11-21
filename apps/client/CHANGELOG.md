@@ -1,5 +1,14 @@
 # Changelog of the app
 
+## 0.3.2
+
+### Changed
+- Texts say "this device" instead of "this PC", so they also fit Android.
+- The overview lists the measurements with a test date in the current calendar week, no longer everything imported this week.
+
+### Fixed
+- Windows: the first entry of the sidebar has its top spacing again.
+
 ## 0.3.1
 
 ### Changed
