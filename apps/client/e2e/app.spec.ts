@@ -13,6 +13,9 @@ const fixture = (family: string, index: number) =>
 
 /** Clicks the drop area and chooses files; skips the customer question unless `keep` is set. */
 async function open(page: Page, files: string[], keep = false) {
+  // Earlier messages may still be shown; only the one of this import counts.
+  for (const close of await page.locator('.toast-close').all()) await close.click();
+  await expect(page.locator('.toast')).toHaveCount(0);
   const chooser = page.waitForEvent('filechooser');
   await page.getByTestId('dropzone').click();
   await (await chooser).setFiles(files);
