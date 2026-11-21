@@ -886,3 +886,13 @@ a.conn-card:hover {
   border-color: var(--line-2);
   background: var(--surface-3);
 }
+
+/* Narrow result area (phones, the result half of foldables and tablets): rating below the facts */
+@container (max-width: 659px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .hero .gauge {
+    width: 100%;
+  }
+}
