@@ -1,5 +1,13 @@
 # Changelog of the app
 
+## 0.3.1
+
+### Changed
+- Android: package name `com.pamanalyzer.client` (Google Play). An APK installed from GitHub before stays as a separate app and can be uninstalled.
+
+### Fixed
+- On foldables and tablets the Cpk value and the rating overlapped on the result page.
+
 ## 0.3.0
 
 ### Added

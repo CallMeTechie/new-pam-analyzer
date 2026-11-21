@@ -26,7 +26,8 @@ android {
     namespace = "com.callmetechie.pamanalyzer"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.callmetechie.pamanalyzer"
+        // Package name in Google Play; differs from the namespace (Kotlin package) and the Windows identifier.
+        applicationId = "com.pamanalyzer.client"
         minSdk = 24
         targetSdk = 37
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()

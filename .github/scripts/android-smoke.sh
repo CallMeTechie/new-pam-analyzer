@@ -2,10 +2,10 @@
 # Installs the debug APK in the emulator, starts it and waits for the frontend's ready marker.
 set -u
 APK="$1"
-PKG=com.callmetechie.pamanalyzer
+PKG=com.pamanalyzer.client
 adb install -r "$APK"
 adb logcat -c
-adb shell am start -W -n "$PKG/.MainActivity"
+adb shell am start -W -n "$PKG/com.callmetechie.pamanalyzer.MainActivity"
 for i in $(seq 1 60); do
   if adb logcat -d | grep -q "PAM Analyzer ready: android"; then
     adb logcat -d | grep -E "PAM Analyzer ready|AndroidRuntime" | head -20
