@@ -15,6 +15,13 @@
       "when": 1795078178746,
       "tag": "0001_company_logo",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795290590923,
+      "tag": "0002_result_customer",
+      "breakpoints": true
     }
   ]
 }

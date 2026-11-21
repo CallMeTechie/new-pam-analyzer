@@ -1,6 +1,16 @@
 # Änderungen
 
-Alle wichtigen Änderungen am PAM Analyzer. Versionen nach [Semantic Versioning](https://semver.org).
+## 0.6.0 – 21.11.2026
+
+### Neu
+- Ergebnisse haben einen Kunden. Er wird beim Upload je Datei mitgegeben (`customer`) oder später gesetzt; die Suche findet ihn.
+- Das Prüfdatum kann von Hand angegeben werden (`testDate` beim Upload, Quelle „von Hand gesetzt“).
+- `GET /api/results/customers` liefert die bisher verwendeten Kunden für die Autovervollständigung der Apps.
+- `PATCH /api/results/:id` ändert Kunde und Prüfdatum.
+- Neues Logo, gleich in Web, Windows und Android.
+
+### Geändert
+- „Made with ♥ by CallMeTechie“ verweist auf LinkedIn.
 
 ## 0.5.0 – 19.11.2026
 

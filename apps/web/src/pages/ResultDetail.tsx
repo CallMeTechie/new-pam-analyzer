@@ -624,6 +624,7 @@ export function ResultDetail() {
     { k: t('fact.holders'), v: int(result.shafts.length) },
     { k: t('fact.tested'), v: dateTime(data.result.testDate) },
     ...(data.result.line ? [{ k: t('fact.line'), v: data.result.line }] : []),
+    ...(data.result.customer ? [{ k: t('fact.customer'), v: data.result.customer }] : []),
     // Coefficient and components have their own box on screen; the printout shows them here.
     { k: t('fact.coef'), v: `±${result.coefficient} µm · ${coefMode}`, cls: 'print-only' },
     {

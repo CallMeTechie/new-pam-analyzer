@@ -81,9 +81,15 @@ export function ResultListRow({
   showCompany,
   extra,
   selected,
+  to,
+  count,
 }: {
   row: ResultRow;
   showCompany?: boolean;
+  /** Link target instead of the result (e.g. the head history). */
+  to?: string;
+  /** Number of measurements of this head, shown as a badge. */
+  count?: number;
   /** Additional status at the end of the row, e.g. the upload state in the app. */
   extra?: ReactNode;
   /** Shown next to the list (app on tablets). */
@@ -93,16 +99,22 @@ export function ResultListRow({
   const scope = useScope();
   return (
     <Link
-      to={scope.link(`/results/${row.id}`)}
+      to={scope.link(to ?? `/results/${row.id}`)}
       className={selected ? 'result-row selected' : 'result-row'}
       {...(selected ? { 'aria-current': 'true' as const } : {})}
     >
       <FamilyIcon family={row.machineFamily} />
       <span className="rr-main">
-        <b>{headLabel(row, t('fact.sn'))}</b>
+        <b>
+          {headLabel(row, t('fact.sn'))}
+          {count !== undefined && count > 1 && (
+            <span className="count-badge">{t('results.measurements', { n: count })}</span>
+          )}
+        </b>
         <span>
           {machineLabel(row.machineNo, t('machine.sn'))}
           {row.line ? ` · ${row.line}` : ''}
+          {row.customer ? ` · ${row.customer}` : ''}
           {showCompany ? ` · ${row.companyName ?? t('company.unassigned')}` : ''}
         </span>
       </span>

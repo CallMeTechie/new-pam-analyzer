@@ -122,7 +122,7 @@ function ProfileMenu() {
 export function Credit() {
   const { t } = useI18n();
   return (
-    <a className="credit" href="https://github.com/CallMeTechie" target="_blank" rel="noreferrer">
+    <a className="credit" href="https://www.linkedin.com/in/ma-backes/" target="_blank" rel="noreferrer">
       {t('credit.madeWith')}
       <span className="heart" role="img" aria-label={t('credit.love')}>
         ♥
@@ -228,6 +228,17 @@ export function Layout() {
 
 const MenuContext = createContext<() => void>(() => {});
 
+/**
+ * Extra controls of a page, set by the apps: back to the previous page, or close and enlarge when
+ * the page is shown as a side panel.
+ */
+export interface PageChrome {
+  back?: () => void;
+  close?: () => void;
+  expand?: () => void;
+}
+export const PageChromeContext = createContext<PageChrome>({});
+
 /** Top bar with title and actions, followed by the page content. */
 export function Page({
   title,
@@ -243,6 +254,7 @@ export function Page({
 }) {
   const { t } = useI18n();
   const openMenu = useContext(MenuContext);
+  const chrome = useContext(PageChromeContext);
   useEffect(() => {
     document.title = `${title} · PAM Analyzer`;
   }, [title]);
@@ -258,11 +270,39 @@ export function Page({
         >
           <Icon name="menu" />
         </button>
+        {chrome.back && (
+          <button type="button" className="btn page-back" onClick={chrome.back}>
+            <Icon name="arrowLeft" size={16} />
+            <span className="label-sm-hide">{t('common.back')}</span>
+          </button>
+        )}
+        {chrome.close && (
+          <button
+            type="button"
+            className="btn icon ghost page-close"
+            aria-label={t('common.close')}
+            title={t('common.close')}
+            onClick={chrome.close}
+          >
+            <Icon name="close" size={16} />
+          </button>
+        )}
         <h1 className="title-with-info">
           {title}
           {info && <InfoTip text={info} />}
         </h1>
         {actions}
+        {chrome.expand && (
+          <button
+            type="button"
+            className="btn icon"
+            aria-label={t('common.expand')}
+            title={t('common.expand')}
+            onClick={chrome.expand}
+          >
+            <Icon name="expand" size={16} />
+          </button>
+        )}
       </header>
       <main className="content">{children}</main>
     </>

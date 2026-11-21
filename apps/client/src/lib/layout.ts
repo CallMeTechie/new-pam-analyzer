@@ -28,6 +28,19 @@ export function useLayout(): Layout {
   return wide ? 'rail' : 'bottom';
 }
 
+/** True while the window is at least `px` wide. */
+export function useMinWidth(px: number): boolean {
+  const [ok, setOk] = useState(() => window.innerWidth >= px);
+  useEffect(() => {
+    const query = window.matchMedia(`(min-width: ${px}px)`);
+    const update = () => setOk(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, [px]);
+  return ok;
+}
+
 /**
  * Tabletop mode of foldables (half open, hinge horizontal): the upper half shows the charts,
  * the lower half the controls. Sets the class `tabletop` and the hinge position on <html>.
@@ -48,4 +61,20 @@ export function usePosture(): Posture {
     }
   }, [posture]);
   return posture;
+}
+
+/** Applies the chosen appearance (light, dark or like the system) to the page and the window. */
+export function useTheme(): void {
+  const [s, engine] = useEngine();
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-color-scheme: dark)');
+    const apply = () => {
+      const dark = s.theme === 'dark' || (s.theme === 'system' && query.matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    };
+    apply();
+    query.addEventListener('change', apply);
+    void engine.platform.setWindowTheme?.(s.theme === 'system' ? null : s.theme);
+    return () => query.removeEventListener('change', apply);
+  }, [s.theme, engine]);
 }

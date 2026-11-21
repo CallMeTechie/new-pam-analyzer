@@ -2,9 +2,10 @@ import { Channel as IpcChannel, invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { appConfigDir } from '@tauri-apps/api/path';
 import { getCurrentWebview } from '@tauri-apps/api/webview';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { open } from '@tauri-apps/plugin-dialog';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
-import { openPath, revealItemInDir } from '@tauri-apps/plugin-opener';
+import { openPath, openUrl, revealItemInDir } from '@tauri-apps/plugin-opener';
 import Database from '@tauri-apps/plugin-sql';
 import type { InputFile } from '../lib/evaluate';
 import { sqlStore } from '../lib/store';
@@ -105,6 +106,8 @@ export async function tauriPlatform(version: string): Promise<Platform> {
       await openPath(await appConfigDir());
     },
     defaultDeviceName: () => invoke<string>('device_name'),
+    setWindowTheme: (theme) => getCurrentWindow().setTheme(theme),
+    openUrl: (url) => openUrl(url),
     updates: {
       check: (channel) => invoke<UpdateInfo | null>('update_check', { channel }),
       async install(onProgress) {

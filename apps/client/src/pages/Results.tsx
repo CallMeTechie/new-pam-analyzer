@@ -1,80 +1,130 @@
 import { Icon } from '@web/components/Icon';
 import { Page } from '@web/components/Layout';
-import { Empty, Notice, ResultListRow } from '@web/components/ui';
+import { Empty, ResultListRow } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import type { Family, Rating } from '@web/lib/api';
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
-import { ImportBanner, UploadChip } from '../components';
+import { type ReactNode, useMemo, useState } from 'react';
+import { UploadChip } from '../components';
 import { toRow } from '../lib/evaluate';
+import type { LocalResult } from '../lib/types';
 import { useEngine } from '../lib/useEngine';
-import { useImport } from '../shell';
 
 const FAMILIES: (Family | '')[] = ['', 'nxt', 'nxtr', 'aimex'];
 const RATINGS: Rating[] = ['critical', 'warning', 'good', 'excellent'];
+const GROUPINGS = ['date', 'customer', 'list'] as const;
+export type Grouping = (typeof GROUPINGS)[number];
 const PAGE = 100;
+const GROUPING_KEY = 'pam-grouping';
 
-/** Local history: every file evaluated on this PC, newest test first. */
+function storedGrouping(): Grouping {
+  try {
+    const v = localStorage.getItem(GROUPING_KEY);
+    return GROUPINGS.includes(v as Grouping) ? (v as Grouping) : 'date';
+  } catch {
+    return 'date';
+  }
+}
+
+/** One entry per head (type + serial): the newest measurement and how many there are. */
+export interface HeadEntry {
+  latest: LocalResult;
+  count: number;
+}
+
+const newestFirst = (a: LocalResult, b: LocalResult) => b.testDate.localeCompare(a.testDate) || b.id - a.id;
+
+/** Groups the results by head; heads without serial number stay single. Newest first. */
+export function byHead(rows: LocalResult[]): HeadEntry[] {
+  const map = new Map<string, HeadEntry>();
+  for (const r of [...rows].sort(newestFirst)) {
+    const key = r.headSerial ? `${r.headType}|${r.headSerial}` : `#${r.id}`;
+    const e = map.get(key);
+    if (e) e.count++;
+    else map.set(key, { latest: r, count: 1 });
+  }
+  return [...map.values()];
+}
+
+/** Sections for the chosen grouping, in display order. */
+export function sections(
+  entries: HeadEntry[],
+  grouping: Grouping,
+  noCustomer: string,
+): { key: string; label: string; entries: HeadEntry[] }[] {
+  if (grouping === 'list') return [{ key: 'all', label: '', entries }];
+  const map = new Map<string, HeadEntry[]>();
+  for (const e of entries) {
+    const key = grouping === 'date' ? e.latest.testDate.slice(0, 10) : (e.latest.customer ?? '');
+    map.set(key, [...(map.get(key) ?? []), e]);
+  }
+  // Entries come newest first, so customers keep the order of their last measurement.
+  const keys = [...map.keys()];
+  if (grouping === 'date') keys.sort((a, b) => b.localeCompare(a));
+  else keys.sort((a, b) => Number(!a) - Number(!b));
+  return keys.map((key) => ({ key, label: key || noCustomer, entries: map.get(key) ?? [] }));
+}
+
+/** Local history: every evaluated file, one row per head, grouped by date or customer. */
 export function Results({ compact = false, selectedId = null }: { compact?: boolean; selectedId?: number | null }) {
-  const { t, int } = useI18n();
-  const [state, engine] = useEngine();
-  const touch = engine.platform.formFactor === 'mobile';
-  const navigate = useNavigate();
-  const { pick, busy, last, clearLast, over } = useImport();
+  const { t, int, date } = useI18n();
+  const [state] = useEngine();
   const [q, setQ] = useState('');
   const [family, setFamily] = useState<Family | ''>('');
   const [rating, setRating] = useState<Rating | ''>('');
+  const [grouping, setGroupingState] = useState<Grouping>(storedGrouping);
   const [limit, setLimit] = useState(PAGE);
+  const setGrouping = (g: Grouping) => {
+    setGroupingState(g);
+    try {
+      localStorage.setItem(GROUPING_KEY, g);
+    } catch {
+      // only a convenience
+    }
+  };
 
-  const filtered = useMemo(() => {
+  const entries = useMemo(() => {
     const words = q.trim().toLowerCase().split(/\s+/).filter(Boolean);
-    return state.rows
-      .filter((r) => !family || r.machineFamily === family)
-      .filter((r) => !rating || r.rating === rating)
-      .filter((r) => {
-        if (!words.length) return true;
-        const text = `${r.headType} ${r.headSerial} ${r.machineNo} ${r.fileName} ${r.toolType ?? ''}`.toLowerCase();
-        return words.every((w) => text.includes(w));
-      })
-      .sort((a, b) => b.testDate.localeCompare(a.testDate) || b.id - a.id);
+    return byHead(
+      state.rows
+        .filter((r) => !family || r.machineFamily === family)
+        .filter((r) => !rating || r.rating === rating)
+        .filter((r) => {
+          if (!words.length) return true;
+          const text =
+            `${r.headType} ${r.headSerial} ${r.machineNo} ${r.fileName} ${r.toolType ?? ''} ${r.customer ?? ''}`.toLowerCase();
+          return words.every((w) => text.includes(w));
+        }),
+    );
   }, [state.rows, q, family, rating]);
+  const groups = useMemo(() => {
+    let left = limit;
+    return sections(entries, grouping, t('client.results.noCustomer'))
+      .map((g) => {
+        const shown = g.entries.slice(0, Math.max(0, left));
+        left -= shown.length;
+        return { ...g, shown };
+      })
+      .filter((g) => g.shown.length > 0);
+  }, [entries, grouping, limit, t]);
   const any = q || family || rating;
 
-  return (
-    <Page
-      title={t('client.nav.results')}
-      actions={
-        <button
-          type="button"
-          className={`btn primary${touch ? ' fab' : ''}`}
-          onClick={() => void pick()}
-          disabled={busy}
-        >
-          <Icon name={touch ? 'plus' : 'folder'} size={16} />
-          <span className={compact ? 'fab-label' : undefined}>{t('client.open')}</span>
-        </button>
+  const row = (e: HeadEntry): ReactNode => (
+    <ResultListRow
+      key={e.latest.id}
+      row={toRow(e.latest)}
+      selected={e.latest.id === selectedId}
+      count={e.count}
+      {...(e.count > 1 ? { to: `/results/${e.latest.id}/history` } : {})}
+      extra={
+        state.connection || e.latest.upload !== 'local' ? (
+          <UploadChip state={e.latest.upload} reason={e.latest.uploadError} />
+        ) : null
       }
-    >
-      {!touch && (
-        <section className={`dropzone compact${over ? ' over' : ''}`} data-testid="dropzone">
-          <span className="icon-circle">
-            <Icon name="upload" size={22} />
-          </span>
-          <span className="dz-text">
-            <b>{busy ? t('client.drop.busy') : over ? t('client.drop.release') : t('client.drop.title')}</b>
-            <span className="muted">{t('client.drop.hint')}</span>
-          </span>
-        </section>
-      )}
-      {touch && busy && <Notice kind="info" title={t('client.drop.busy')} />}
-      {last && (
-        <ImportBanner
-          summary={last}
-          onClose={clearLast}
-          {...(last.created.length === 1 ? { onOpen: () => navigate(`/results/${last.created[0]}`) } : {})}
-        />
-      )}
+    />
+  );
 
+  return (
+    <Page title={t('client.nav.results')}>
       {state.rows.length > 0 && (
         <section className="search-card" role="search">
           <label className="search-box">
@@ -83,7 +133,7 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
             <input
               type="search"
               value={q}
-              placeholder={t('results.searchPlaceholder')}
+              placeholder={t('client.results.searchPlaceholder')}
               onChange={(e) => setQ(e.target.value)}
             />
           </label>
@@ -131,7 +181,7 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
         <>
           <div className="pager">
             <span>
-              {t('results.count', { n: filtered.length, total: int(filtered.length) })}
+              {t('client.results.count', { n: entries.length, heads: int(entries.length) })}
               {any && (
                 <>
                   {' · '}
@@ -149,35 +199,45 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
                 </>
               )}
             </span>
+            <div
+              className={`seg${compact ? ' seg-sm' : ''}`}
+              role="radiogroup"
+              aria-label={t('client.results.grouping')}
+            >
+              {GROUPINGS.map((g) => (
+                <button key={g} type="button" role="radio" aria-checked={grouping === g} onClick={() => setGrouping(g)}>
+                  {t(`client.results.by.${g}`)}
+                </button>
+              ))}
+            </div>
           </div>
-          {filtered.length === 0 ? (
+          {entries.length === 0 ? (
             <Empty title={t('results.noMatch')}>
               <p>{t('results.noMatchHint')}</p>
             </Empty>
+          ) : grouping === 'list' ? (
+            <div className="rows">{groups[0]?.shown.map(row)}</div>
           ) : (
-            <div className="rows">
-              {filtered.slice(0, limit).map((r) => (
-                <ResultListRow
-                  key={r.id}
-                  row={toRow(r)}
-                  selected={r.id === selectedId}
-                  extra={
-                    state.connection || r.upload !== 'local' ? (
-                      <UploadChip state={r.upload} reason={r.uploadError} />
-                    ) : null
-                  }
-                />
+            <div className="groups" data-testid={`groups-${grouping}`}>
+              {groups.map((g) => (
+                <section key={g.key} className="group">
+                  <h3 className="group-h">
+                    <span>{grouping === 'date' ? date(g.key) : g.label}</span>
+                    <span className="muted">{t('client.results.groupCount', { n: g.entries.length })}</span>
+                  </h3>
+                  <div className="rows">{g.shown.map(row)}</div>
+                </section>
               ))}
             </div>
           )}
-          {filtered.length > limit && (
+          {entries.length > limit && (
             <button
               type="button"
               className="btn"
               style={{ alignSelf: 'center' }}
               onClick={() => setLimit((l) => l + PAGE)}
             >
-              {t('client.more', { n: filtered.length - limit })}
+              {t('client.more', { n: entries.length - limit })}
             </button>
           )}
         </>

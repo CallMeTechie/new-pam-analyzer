@@ -3,7 +3,7 @@ import type { Store } from '../lib/store';
 import type { Channel } from '../lib/types';
 
 export interface HttpRequest {
-  method: 'GET' | 'POST' | 'DELETE';
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
   body?: string | Uint8Array;
 }
@@ -55,6 +55,10 @@ export interface Platform {
   dataLocation(): Promise<string>;
   openDataLocation(): Promise<void>;
   defaultDeviceName(): Promise<string>;
+  /** Title bar and system dialogs in light or dark (`null` follows the system). */
+  setWindowTheme?(theme: 'light' | 'dark' | null): Promise<void>;
+  /** Opens a link in the default browser. */
+  openUrl?(url: string): Promise<void>;
   /** Android print dialog (the WebView has no `window.print`). */
   print?(): Promise<void>;
   /** Scans a QR code with the camera, e.g. the API key; `null` when cancelled. */

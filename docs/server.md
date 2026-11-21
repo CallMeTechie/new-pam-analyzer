@@ -91,13 +91,16 @@ Firma. Eine Firma ist die **Service-Firma** (FUJI Service); ihre Mitglieder sehe
 
 Kopfzeilen-Zeitstempel (NXT-R) → Änderungsdatum der Datei → Upload-Zeitpunkt. Das
 Änderungsdatum kommt aus `File.lastModified` (Browser, als Feld `lastModified` je Datei), aus dem
-Eintrag im ZIP-Archiv oder von der App. `dateSource` im Ergebnis sagt, woher das Datum stammt.
+Eintrag im ZIP-Archiv oder von der App. Gibt der Techniker das Prüfdatum selbst an (Feld
+`testDate` beim Upload oder `PATCH /api/results/:id`), gilt dieses (`dateSource: manual`).
+`dateSource` im Ergebnis sagt, woher das Datum stammt.
 
 ## Upload
 
 `POST /api/uploads` als `multipart/form-data` mit `files` (eine oder mehrere `.dat`- oder
-ZIP-Dateien, auch verschachtelt), optional `lastModified` je Datei und – nur für FUJI Service –
-`companyId`. Jede Datei wird ausgewertet und mit Originaldatei (gzip) und Kennzahlen gespeichert.
+ZIP-Dateien, auch verschachtelt), optional je Datei `lastModified`, `customer` (Kunde, höchstens
+120 Zeichen) und `testDate` (`YYYY-MM-DD HH:mm[:ss]`, Ortszeit der Maschinen) und – nur für FUJI
+Service – `companyId`. Kunde und Prüfdatum gelten für alle Dateien eines ZIP-Archivs. Jede Datei wird ausgewertet und mit Originaldatei (gzip) und Kennzahlen gespeichert.
 Antwort je Datei: `created`, `duplicate` (gleicher Inhalt in derselben Firma) oder `rejected` mit
 Grund; nicht unterstützte Dateien stehen unter `skipped`.
 
@@ -123,7 +126,9 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `DELETE /api/devices/:id` | Gerät trennen |
 | `POST /api/app/connect`, `GET /api/app/config`, `DELETE /api/app/connection` | Für die Apps: Verbinden, Koeffizienten, Bewertungsgrenzen und Zeitzone der Maschinen, Trennen ([App](app.md)) |
 | `POST /api/uploads` | Dateien hochladen |
-| `GET /api/results` | Liste mit Suche `q`, Filtern `family`, `rating`, `from`, `to`, `machineNo`, `companyId`, Sortierung und Seiten |
+| `GET /api/results` | Liste mit Suche `q` (auch Kunde), Filtern `family`, `rating`, `from`, `to`, `machineNo`, `companyId`, Sortierung und Seiten |
+| `GET /api/results/customers` | Bisher verwendete Kunden (Suche `q`, `companyId`), zuletzt geprüfte zuerst |
+| `PATCH /api/results/:id` | Kunde und Prüfdatum ändern; `testDate: null` stellt das Datum aus der Datei wieder her |
 | `GET /api/results/:id` | Vollständige Auswertung mit Messpunkten, neu berechnet aus der Originaldatei |
 | `GET /api/results/:id/history` | Alle Ergebnisse desselben Kopfes in derselben Firma |
 | `GET /api/results/:id/file` | Originaldatei |

@@ -1,17 +1,18 @@
 import { Icon } from '@web/components/Icon';
-import { Page } from '@web/components/Layout';
+import { Page, PageChromeContext } from '@web/components/Layout';
 import { useI18n } from '@web/i18n';
 import type { ResultDetail as Detail } from '@web/lib/api';
 import { ScopeProvider } from '@web/lib/scope';
 import { HeadHistory } from '@web/pages/HeadHistory';
 import { ResultDetail, ResultDetailContext } from '@web/pages/ResultDetail';
 import { useState } from 'react';
-import { Link, Outlet, Route, Routes, useMatch } from 'react-router';
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate } from 'react-router';
+import { AssignDialog } from './assign';
 import { UploadChip } from './components';
-import { useLayout } from './lib/layout';
+import { useLayout, useMinWidth } from './lib/layout';
 import { useEngine } from './lib/useEngine';
+import { Overview } from './pages/Overview';
 import { Results } from './pages/Results';
-import { Server } from './pages/Server';
 import { Settings } from './pages/Settings';
 import { Shell } from './shell';
 
@@ -20,10 +21,24 @@ function DetailActions({ detail }: { detail: Detail }) {
   const { t } = useI18n();
   const [s, engine] = useEngine();
   const [missing, setMissing] = useState(false);
+  const [edit, setEdit] = useState(false);
   const row = s.rows.find((r) => r.id === detail.result.id);
   if (!row) return null;
   return (
     <>
+      <button type="button" className="btn" onClick={() => setEdit(true)} title={t('client.assign.edit')}>
+        <Icon name="edit" size={16} />
+        <span className="label-sm-hide">{t('client.assign.edit')}</span>
+      </button>
+      {edit && (
+        <AssignDialog
+          ids={[row.id]}
+          title={t('client.assign.title')}
+          initialCustomer={row.customer ?? ''}
+          edit
+          onClose={() => setEdit(false)}
+        />
+      )}
       {(s.connection || row.upload !== 'local') && <UploadChip state={row.upload} reason={row.uploadError} />}
       {row.filePath && engine.platform.kind === 'tauri' && (
         <button
@@ -55,15 +70,60 @@ function useDetailOptions() {
   };
 }
 
+/** From this window width (a maximized window on a laptop or larger) results open beside the list. */
+export const PANEL = 1400;
+
 /**
  * Results: the list, a result or the head history. Tablets and unfolded foldables show the list
- * next to the result.
+ * next to the result; on Windows a wide window slides the result in from the right (at most half
+ * the width), a narrow one opens it as its own page.
  */
 function ResultsArea() {
   const { t } = useI18n();
   const layout = useLayout();
+  const wide = useMinWidth(PANEL);
+  const navigate = useNavigate();
+  const { search } = useLocation();
   const detail = useMatch('/results/:id/*');
-  if (layout !== 'rail') return detail ? <Outlet /> : <Results />;
+  const full = new URLSearchParams(search).has('full');
+  const back = () => (window.history.length > 1 ? navigate(-1) : navigate('/results'));
+
+  if (layout === 'desktop') {
+    if (!detail) return <Results />;
+    if (!wide || full) {
+      return (
+        <PageChromeContext.Provider value={{ back }}>
+          <Outlet />
+        </PageChromeContext.Provider>
+      );
+    }
+    return (
+      <div className="split panel">
+        <div className="split-list">
+          <Results compact selectedId={Number(detail.params.id)} />
+        </div>
+        <div className="split-detail" key={detail.params.id}>
+          <PageChromeContext.Provider
+            value={{
+              close: () => navigate('/results'),
+              expand: () => navigate(`${detail.pathname}?full`),
+            }}
+          >
+            <Outlet />
+          </PageChromeContext.Provider>
+        </div>
+      </div>
+    );
+  }
+  if (layout !== 'rail') {
+    return detail ? (
+      <PageChromeContext.Provider value={{ back }}>
+        <Outlet />
+      </PageChromeContext.Provider>
+    ) : (
+      <Results />
+    );
+  }
   return (
     <div className="split">
       <div className="split-list">
@@ -104,12 +164,13 @@ export function App() {
       <ResultDetailContext.Provider value={detailOptions}>
         <Routes>
           <Route element={<Shell />}>
-            <Route element={<ResultsArea />}>
+            <Route index element={<Overview />} />
+            <Route path="results" element={<ResultsArea />}>
               <Route index element={null} />
-              <Route path="results/:id" element={<ResultDetail />} />
-              <Route path="results/:id/history" element={<HeadHistory />} />
+              <Route path=":id" element={<ResultDetail />} />
+              <Route path=":id/history" element={<HeadHistory />} />
             </Route>
-            <Route path="server" element={<Server />} />
+            <Route path="server" element={<Navigate to="/settings?tab=server" replace />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<NotFound />} />
           </Route>

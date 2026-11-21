@@ -11,7 +11,7 @@ import {
   sha256Hex,
 } from './evaluate';
 import { uploadBody } from './multipart';
-import type { Channel, Connection, EvalConfig, LocalResult } from './types';
+import type { Channel, Connection, DateChoice, EvalConfig, LocalResult, Theme } from './types';
 
 export const DEFAULT_EVAL: EvalConfig = {
   coefficients: DEFAULT_CONFIG,
@@ -29,6 +29,22 @@ const CONFIG_REFRESH_MS = 30 * 60_000;
 
 export type ServerState = 'off' | 'online' | 'offline' | 'revoked';
 
+export interface ImportProgress {
+  done: number;
+  total: number;
+  /** File being evaluated. */
+  name: string;
+}
+
+/** Local machine time `YYYY-MM-DD HH:mm:ss` of a date. */
+/** The later of two `YYYY-MM-DD HH:mm:ss` timestamps. */
+const later = (a: string, b: string): string => (a > b ? a : b);
+
+export function machineTime(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
 export interface ImportSummary {
   created: number[];
   duplicates: number[];
@@ -43,6 +59,7 @@ export interface EngineState {
   server: ServerState;
   syncing: boolean;
   channel: Channel;
+  theme: Theme;
   locale: string | null;
   update: UpdateInfo | null;
   updateChecked: number | null;
@@ -98,6 +115,7 @@ export class Engine {
     server: 'off',
     syncing: false,
     channel: 'stable',
+    theme: 'system',
     locale: null,
     update: null,
     updateChecked: null,
@@ -124,12 +142,13 @@ export class Engine {
   }
 
   async init(): Promise<void> {
-    const [rows, config, connection, channel, locale] = await Promise.all([
+    const [rows, config, connection, channel, locale, theme] = await Promise.all([
       this.store.all(),
       this.store.setting<EvalConfig>('config'),
       this.store.setting<Connection>('connection'),
       this.store.setting<Channel>('channel'),
       this.store.setting<string>('locale'),
+      this.store.setting<Theme>('theme'),
     ]);
     const token = connection ? await this.platform.secret.get() : null;
     this.set({
@@ -139,6 +158,7 @@ export class Engine {
       connection: connection && token ? connection : null,
       server: connection && token ? 'online' : 'off',
       channel: channel ?? 'stable',
+      theme: theme ?? 'system',
       locale,
     });
     if (this.state.connection) {
@@ -152,6 +172,11 @@ export class Engine {
     this.set({ locale });
   }
 
+  async setTheme(theme: Theme): Promise<void> {
+    await this.store.setSetting('theme', theme);
+    this.set({ theme });
+  }
+
   async setChannel(channel: Channel): Promise<void> {
     await this.store.setSetting('channel', channel);
     this.set({ channel, update: null, updateChecked: null });
@@ -160,7 +185,7 @@ export class Engine {
   // ---------- files ----------
 
   /** Evaluates and stores files; ZIP archives are opened, duplicates are recognised by content. */
-  async importFiles(input: InputFile[]): Promise<ImportSummary> {
+  async importFiles(input: InputFile[], onProgress?: (p: ImportProgress) => void): Promise<ImportSummary> {
     const summary: ImportSummary = { created: [], duplicates: [], rejected: [] };
     const files: InputFile[] = [];
     for (const f of input) {
@@ -169,7 +194,10 @@ export class Engine {
       for (const name of e.skipped) summary.rejected.push({ name, reason: 'unsupported_type' });
     }
     const queued = this.state.connection !== null;
-    for (const file of files) {
+    for (const [i, file] of files.entries()) {
+      onProgress?.({ done: i, total: files.length, name: file.name });
+      // Let the window paint the progress between files.
+      if (i % 5 === 0) await new Promise((r) => setTimeout(r, 0));
       const hash = await sha256Hex(file.bytes);
       const existing = await this.store.byHash(hash);
       if (existing) {
@@ -190,6 +218,8 @@ export class Engine {
         fileModifiedAt: file.lastModified,
         importedAt,
         ...metrics(result.parsed, result.analysis),
+        customer: null,
+        metaDirty: false,
         upload: queued ? 'queued' : 'local',
         uploadError: null,
         uploadedAt: null,
@@ -197,6 +227,7 @@ export class Engine {
       };
       summary.created.push(await this.store.insert(row, file.bytes));
     }
+    onProgress?.({ done: files.length, total: files.length, name: '' });
     this.set({ rows: await this.store.all() });
     if (queued && summary.created.length) void this.sync();
     return summary;
@@ -208,7 +239,13 @@ export class Engine {
       try {
         const bytes = await this.store.file(r.id);
         const parsed = parseFile(bytes, r.fileName, r.fileModifiedAt, r.importedAt, this.state.config.timeZone);
-        await this.store.update(r.id, metrics(parsed, analyze(parsed, this.state.config)));
+        const m = metrics(parsed, analyze(parsed, this.state.config));
+        // A test date set by hand stays.
+        if (r.dateSource === 'manual') {
+          m.testDate = r.testDate;
+          m.dateSource = 'manual';
+        }
+        await this.store.update(r.id, m);
       } catch {
         // keep the previous values of a file that cannot be read
       }
@@ -221,7 +258,7 @@ export class Engine {
   private async call<T>(
     path: string,
     init: {
-      method: 'GET' | 'POST' | 'DELETE';
+      method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
       json?: unknown;
       body?: Uint8Array;
       contentType?: string;
@@ -415,6 +452,8 @@ export class Engine {
               uploadedAt: now,
               uploadError: null,
               serverResultId: outcome.resultId ?? null,
+              // A file that was on the server already keeps its customer there; send ours.
+              metaDirty: outcome.status === 'duplicate' && Boolean(r.customer || r.dateSource === 'manual'),
             });
           } else {
             await this.store.update(r.id, { upload: 'rejected', uploadError: outcome?.reason ?? 'unreadable' });
@@ -422,6 +461,21 @@ export class Engine {
         }
         this.set({ rows: await this.store.all() });
       }
+      // Customer or test date changed after the upload.
+      for (const r of this.state.rows.filter((x) => x.metaDirty && x.upload === 'uploaded' && x.serverResultId)) {
+        try {
+          await this.call(`/results/${r.serverResultId}`, {
+            method: 'PATCH',
+            json: { customer: r.customer ?? null, testDate: r.dateSource === 'manual' ? r.testDate : null },
+          });
+          await this.store.update(r.id, { metaDirty: false });
+        } catch (error) {
+          // The result was deleted on the server: nothing to update.
+          if (error instanceof ServerError && error.status === 404) await this.store.update(r.id, { metaDirty: false });
+          else throw error;
+        }
+      }
+      this.set({ rows: await this.store.all() });
       const updated = { ...connection, lastSyncAt: Date.now() };
       await this.store.setSetting('connection', updated);
       this.set({ connection: updated, server: 'online' });
@@ -437,6 +491,71 @@ export class Engine {
     } finally {
       this.set({ syncing: false });
     }
+  }
+
+  // ---------- customer and test date ----------
+
+  /**
+   * Customer and test date for results, e.g. after an import. `date`: from the file (the parsed
+   * date), today, or a chosen day (keeping the time of day from the file).
+   */
+  async assign(ids: number[], input: { customer: string | null; date: DateChoice }): Promise<void> {
+    const customer = input.customer?.replace(/\s+/g, ' ').trim() || null;
+    for (const id of ids) {
+      const r = await this.store.get(id);
+      if (!r) continue;
+      const patch: Partial<LocalResult> = { customer };
+      if (input.date.kind === 'today') {
+        patch.testDate = machineTime(new Date());
+        patch.dateSource = 'manual';
+      } else if (input.date.kind === 'date') {
+        const time = r.testDate.slice(11) || '12:00:00';
+        patch.testDate = `${input.date.date} ${time}`;
+        patch.dateSource = 'manual';
+      } else if (r.dateSource === 'manual') {
+        const bytes = await this.store.file(id);
+        const parsed = parseFile(bytes, r.fileName, r.fileModifiedAt, r.importedAt, this.state.config.timeZone);
+        patch.testDate = parsed.header.testDate ?? r.testDate;
+        patch.dateSource = parsed.header.dateSource;
+      }
+      // Already on the server: send the change with the next sync.
+      if (r.upload === 'uploaded') patch.metaDirty = true;
+      await this.store.update(id, patch);
+    }
+    this.set({ rows: await this.store.all() });
+    if (this.state.connection) void this.sync();
+  }
+
+  /** Customer names for autocompletion: used on this PC and, when connected, on the server. */
+  async customerSuggestions(query = ''): Promise<string[]> {
+    const q = query.trim().toLowerCase();
+    const counts = new Map<string, { n: number; last: string }>();
+    for (const r of this.state.rows) {
+      if (!r.customer) continue;
+      const c = counts.get(r.customer) ?? { n: 0, last: '' };
+      counts.set(r.customer, { n: c.n + 1, last: later(r.testDate, c.last) });
+    }
+    if (this.state.connection && this.state.server !== 'revoked') {
+      try {
+        const res = await this.call<{ items: { name: string; results: number; lastTest: string }[] }>(
+          `/results/customers${q ? `?q=${encodeURIComponent(q)}` : ''}`,
+          { method: 'GET' },
+        );
+        for (const c of res.items) {
+          const local = counts.get(c.name);
+          counts.set(c.name, {
+            n: (local?.n ?? 0) + c.results,
+            last: later(local?.last ?? '', c.lastTest),
+          });
+        }
+      } catch {
+        // offline: names from this PC only
+      }
+    }
+    return [...counts.entries()]
+      .filter(([name]) => !q || name.toLowerCase().includes(q))
+      .sort((a, b) => b[1].last.localeCompare(a[1].last) || a[0].localeCompare(b[0]))
+      .map(([name]) => name);
   }
 
   /** Puts a rejected file back into the queue, e.g. after the server was updated. */

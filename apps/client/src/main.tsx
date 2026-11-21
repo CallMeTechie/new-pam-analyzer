@@ -1,5 +1,5 @@
 import { I18nProvider } from '@web/i18n';
-import { setApiTransport } from '@web/lib/api';
+import { notifyDataChanged, setApiTransport } from '@web/lib/api';
 import { AuthProvider, useAuth } from '@web/lib/auth';
 import { setThresholds } from '@web/lib/thresholds';
 import { StrictMode, useEffect } from 'react';
@@ -13,6 +13,7 @@ import { localTransport } from './lib/transport';
 import { EngineContext, useEngine } from './lib/useEngine';
 import { browserPlatform } from './platform/browser';
 import type { Platform } from './platform/types';
+import { ToastProvider } from './toast';
 
 const inTauri = '__TAURI_INTERNALS__' in window;
 
@@ -52,6 +53,25 @@ async function start() {
     window.print = () => void print();
   }
   setApiTransport(localTransport(engine));
+  // Result pages reload when results change (customer, date, upload state).
+  let rows = engine.snapshot.rows;
+  engine.subscribe(() => {
+    if (engine.snapshot.rows === rows) return;
+    rows = engine.snapshot.rows;
+    notifyDataChanged();
+  });
+  // Links to web pages (e.g. the credit in the footer) open in the default browser; the app's
+  // own window only shows the app.
+  if (platform.openUrl) {
+    const open = platform.openUrl;
+    document.addEventListener('click', (e) => {
+      const a = (e.target as Element | null)?.closest?.('a[href]');
+      const href = a?.getAttribute('href') ?? '';
+      if (!/^https?:\/\//i.test(href)) return;
+      e.preventDefault();
+      void open(href);
+    });
+  }
   await engine.init();
   // Marker for the Android emulator test in CI (shows up in logcat).
   console.info(`PAM Analyzer ready: ${platform.os} ${platform.version}, ${engine.snapshot.rows.length} results`);
@@ -77,7 +97,9 @@ async function start() {
         <HashRouter>
           <I18nProvider loadCatalogs={loadCatalogs}>
             <AuthProvider>
-              <Gate />
+              <ToastProvider>
+                <Gate />
+              </ToastProvider>
             </AuthProvider>
           </I18nProvider>
         </HashRouter>

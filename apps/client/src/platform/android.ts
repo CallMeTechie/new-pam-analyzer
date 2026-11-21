@@ -2,6 +2,7 @@ import { addPluginListener, Channel as IpcChannel, invoke } from '@tauri-apps/ap
 import { appConfigDir } from '@tauri-apps/api/path';
 import { Format, scan } from '@tauri-apps/plugin-barcode-scanner';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import { openUrl } from '@tauri-apps/plugin-opener';
 import Database from '@tauri-apps/plugin-sql';
 import type { InputFile } from '../lib/evaluate';
 import { sqlStore } from '../lib/store';
@@ -90,6 +91,7 @@ export async function androidPlatform(version: string): Promise<Platform> {
     openDataLocation: async () => {},
     defaultDeviceName: () => pam<{ name: string }>('deviceName').then((r) => r.name),
     print: () => pam('printPage'),
+    openUrl: (url) => openUrl(url),
     async scanQr() {
       try {
         const res = await scan({ windowed: false, formats: [Format.QRCode] });

@@ -53,6 +53,25 @@ const sameCompany = (column: typeof results.companyId | typeof machines.companyI
 
 const decoder = new TextDecoder('utf-8');
 
+/** Customer names: trimmed, single spaces, at most 120 characters; empty → none. */
+export function cleanCustomer(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const v = value.replace(/\s+/g, ' ').trim().slice(0, 120);
+  return v || undefined;
+}
+
+/** Test date set by the user, `YYYY-MM-DD HH:mm(:ss)`; anything else is ignored. */
+export function cleanTestDate(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/.exec(value.trim());
+  if (!m) return undefined;
+  const [, y, mo, d, h, mi, sec = '00'] = m;
+  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(h), Number(mi), Number(sec)));
+  if (Number.isNaN(date.getTime()) || date.getUTCDate() !== Number(d) || Number(h) > 23 || Number(mi) > 59)
+    return undefined;
+  return `${y}-${mo}-${d} ${h}:${mi}:${sec}`;
+}
+
 /** Parses a stored file again exactly as on upload. */
 export function parseStoredFile(
   row: { fileGz: Buffer; fileName: string; fileModifiedAt: Date | null; createdAt: Date },
@@ -174,8 +193,9 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
         machineFamily: h.machineFamily,
         headType: h.headType,
         headSerial: h.headSerial,
-        testDate: h.testDate ?? '',
-        dateSource: h.dateSource,
+        testDate: file.testDate ?? h.testDate ?? '',
+        dateSource: file.testDate ? 'manual' : h.dateSource,
+        customer: file.customer ?? null,
         companyId: ctx.companyId,
         machineId: machine.id,
         source: ctx.source,
@@ -201,8 +221,8 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
     headSerial: h.headSerial,
     cpkXY: analysis.head.cpkXY,
     rating: analysis.head.rating,
-    testDate: h.testDate,
-    dateSource: h.dateSource,
+    testDate: file.testDate ?? h.testDate,
+    dateSource: file.testDate ? 'manual' : h.dateSource,
     failed: analysis.failedMeasurements,
     warnings: parsed.warnings.map((w) => w.code),
   };
