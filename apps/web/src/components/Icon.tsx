@@ -30,6 +30,7 @@ const PATHS = {
   arrowRight: 'M5 12h14M12 5l7 7-7 7',
   history: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 3',
   device: 'M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zM11 18h2',
+  expand: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7',
   camera:
     'M3 8a2 2 0 0 1 2-2h2l2-3h6l2 3h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
   printer: 'M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z',
@@ -56,21 +57,34 @@ export function Icon({ name, size = 18, stroke = 2 }: { name: IconName; size?: n
   );
 }
 
-export function Logo({ size = 20 }: { size?: number }) {
+/** App logo: crosshair with tolerance square and measuring points (same in the web, Windows and Android). */
+export function Logo({ size = 38 }: { size?: number }) {
   return (
-    <span className="logo">
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
+    <svg className="logo" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
+      <defs>
+        <linearGradient id="pam-logo-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2b4cf2" />
+          <stop offset="1" stopColor="#1630a8" />
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="15" fill="url(#pam-logo-g)" />
+      <rect
+        x="17"
+        y="17"
+        width="30"
+        height="30"
+        rx="3"
         fill="none"
-        stroke="#ffffff"
-        strokeWidth="2.2"
-        aria-hidden="true"
-      >
-        <circle cx="12" cy="12" r="8" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    </span>
+        stroke="#fff"
+        strokeOpacity=".55"
+        strokeWidth="2.4"
+        strokeDasharray="4 3"
+      />
+      <path d="M32 9v12M32 43v12M9 32h12M43 32h12" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+      <circle cx="32" cy="32" r="4.6" fill="#fff" />
+      <circle cx="26" cy="27" r="2" fill="#7fe0b1" />
+      <circle cx="37" cy="36.5" r="2" fill="#7fe0b1" />
+      <circle cx="36" cy="26" r="1.8" fill="#ffd166" />
+    </svg>
   );
 }

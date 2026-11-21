@@ -1,6 +1,21 @@
 # Changelog of the app
 
-Changes to the PAM Analyzer app for Windows. Versions follow [Semantic Versioning](https://semver.org); beta versions carry `-beta.N`.
+## 0.3.0
+
+### Added
+- New start page "Overview": a click on the area opens the file dialog; below are the results of the current calendar week.
+- After an import the app asks for the customer (with suggestions from earlier customers) and the test date (from the file, today or another date). Both can be changed on the result with "Customer & date" and are sent to the server.
+- Progress while importing many files; after the import a short message at the bottom right.
+- Results by date, by customer or as a list. A head with several measurements is listed once and opens its head history first.
+- Windows: in a wide window the result slides in next to the list, with three holders per row.
+- Dark mode (light, dark or like the system).
+- Back button on the result and the head history.
+- New logo, the same for Windows, the installer and Android.
+
+### Changed
+- "Server" is now a tab of the settings; a click on the connection state opens it.
+- The button "Open files" is gone; the sidebar no longer shows a second logo.
+- Links (e.g. "Made with ♥ by CallMeTechie") open in the default browser.
 
 ## 0.2.0
 
@@ -10,7 +25,7 @@ Changes to the PAM Analyzer app for Windows. Versions follow [Semantic Versionin
 - Android: bottom navigation on phones and folded foldables; list and result side by side on tablets and unfolded foldables; tabletop mode of foldables shows the charts above the hinge.
 - Android: the result page shows overview, charts and holders as tabs; tapping a holder enlarges it.
 - Android: API key and server address can be scanned as QR code from the web.
-- Android: the APK from GitHub updates itself in the channels Stable and Beta; the version from Google Play is updated by Play.
+- Android: updates come through Google Play.
 
 ## 0.1.0
 

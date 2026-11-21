@@ -6,7 +6,7 @@ import { canReadCompany, currentUser, readScope, requireAdmin, requireAuth } fro
 import type { Db } from '../db/index.js';
 import { companies, machines, results } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse } from '../http.js';
-import { parseStoredFile } from '../services/ingest.js';
+import { cleanCustomer, cleanTestDate, parseStoredFile } from '../services/ingest.js';
 import { getCoefficientConfigVersion, getThresholds } from '../services/settings.js';
 
 export const resultRoutes = new Hono<AppEnv>();
@@ -27,6 +27,7 @@ export const listColumns = {
   toolType: results.toolType,
   toolSerial: results.toolSerial,
   h08mVariant: results.h08mVariant,
+  customer: results.customer,
   testDate: results.testDate,
   dateSource: results.dateSource,
   cpkX: results.cpkX,
@@ -63,6 +64,7 @@ function searchFilter(q: string): SQL | undefined {
         field(results.headType),
         field(results.toolSerial),
         field(results.fileName),
+        field(results.customer),
         field(machines.line),
         field(companies.name),
         field(sql`${results.headType} || ' ' || ${results.headSerial}`),
@@ -131,6 +133,33 @@ resultRoutes.get('/', (c) => {
   return c.json({ items, total, page: query.page, pageSize: query.pageSize });
 });
 
+/** Customer names used so far, for autocompletion in the app; `q` filters. */
+resultRoutes.get('/customers', (c) => {
+  const auth = requireAuth(c);
+  const query = parse(
+    z.object({ q: z.string().max(120).optional(), companyId: z.coerce.number().int().positive().optional() }),
+    c.req.query(),
+  );
+  const db = c.get('db');
+  const term = query.q?.trim();
+  const rows = db
+    .select({ name: results.customer, n: count(), last: sql<string>`max(${results.testDate})` })
+    .from(results)
+    .where(
+      and(
+        isNull(results.deletedAt),
+        sql`${results.customer} is not null`,
+        scopeFilter(readScope(auth, query.companyId)),
+        term ? sql`${results.customer} like ${`%${escapeLike(term)}%`} escape '\\'` : undefined,
+      ),
+    )
+    .groupBy(results.customer)
+    .orderBy(desc(sql`max(${results.testDate})`))
+    .limit(50)
+    .all();
+  return c.json({ items: rows.map((r) => ({ name: r.name ?? '', results: r.n, lastTest: r.last })) });
+});
+
 function loadResult(c: Context<AppEnv>, db: Db) {
   const auth = requireAuth(c);
   const id = idParam(c);
@@ -173,6 +202,7 @@ resultRoutes.get('/:id', (c) => {
       companyName: meta?.companyName ?? null,
       companyLogoVersion: meta?.companyLogoVersion ?? null,
       line: meta?.line ?? null,
+      customer: row.customer,
       fileName: row.fileName,
       fileSize: row.fileSize,
       testDate: row.testDate,
@@ -191,6 +221,43 @@ resultRoutes.get('/:id', (c) => {
     config: versioned.config,
     thresholds,
   });
+});
+
+/**
+ * Customer and test date of a result, e.g. entered in the app after the upload.
+ * `testDate: null` returns to the date from the file.
+ */
+resultRoutes.patch('/:id', async (c) => {
+  const db = c.get('db');
+  const row = loadResult(c, db);
+  const body = parse(
+    z.object({
+      customer: z.string().max(200).nullable().optional(),
+      testDate: z.string().max(40).nullable().optional(),
+    }),
+    await jsonBody(c),
+  );
+  const patch: Partial<typeof results.$inferInsert> = {};
+  if (body.customer !== undefined) patch.customer = cleanCustomer(body.customer) ?? null;
+  if (body.testDate === null) {
+    const { parsed } = parseStoredFile(row, c.get('config').timeZone);
+    patch.testDate = parsed.header.testDate ?? row.testDate;
+    patch.dateSource = parsed.header.dateSource;
+  } else if (body.testDate !== undefined) {
+    const testDate = cleanTestDate(body.testDate);
+    if (!testDate) throw new HttpError(400, 'invalid_request', 'testDate must be YYYY-MM-DD HH:mm:ss.');
+    patch.testDate = testDate;
+    patch.dateSource = 'manual';
+  }
+  if (Object.keys(patch).length) db.update(results).set(patch).where(eq(results.id, row.id)).run();
+  const updated = db
+    .select(listColumns)
+    .from(results)
+    .leftJoin(companies, eq(results.companyId, companies.id))
+    .leftJoin(machines, eq(results.machineId, machines.id))
+    .where(eq(results.id, row.id))
+    .get();
+  return c.json({ result: updated });
 });
 
 /** Original `.dat` file. */

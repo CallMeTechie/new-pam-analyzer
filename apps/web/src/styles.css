@@ -121,6 +121,75 @@ textarea {
 }
 
 /* Ratings */
+/*
+ * Dark mode of the apps (Settings → Appearance). The web interface stays light: it never sets
+ * data-theme. Printouts are always light.
+ */
+:root[data-theme="dark"] {
+  --bg: #101318;
+  --surface: #181c23;
+  --surface-2: #1f242d;
+  --surface-3: #262c36;
+  --fg: #e8ebf0;
+  --fg-2: #b3bac6;
+  --muted: #8b93a1;
+  --faint: #6f7785;
+  --line: #262b34;
+  --line-2: #343a47;
+  --accent: #7b93ff;
+  --accent-hover: #93a6ff;
+  --accent-soft: #232b4d;
+  --crit: #ff7b7b;
+  --crit-soft: #3b1d20;
+  --warn: #f3b25a;
+  --warn-soft: #3a2a14;
+  --good: #8aa0ff;
+  --good-soft: #232b4d;
+  --exc: #4fd08f;
+  --exc-soft: #16352a;
+  --fam-nxt: #8aa0ff;
+  --fam-nxt-soft: #232b4d;
+  --fam-nxtr: #c4a5ff;
+  --fam-nxtr-soft: #2f2447;
+  --fam-aimex: #f3b25a;
+  --fam-aimex-soft: #3a2a14;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 14px rgba(0, 0, 0, 0.25);
+  color-scheme: dark;
+}
+@media print {
+  :root[data-theme="dark"] {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f5f6f8;
+    --surface-3: #eef0f3;
+    --fg: #0f1115;
+    --fg-2: #4b5563;
+    --muted: #6b7280;
+    --faint: #8a919c;
+    --line: #ebedf0;
+    --line-2: #dfe2e7;
+    --accent: #2b4cf2;
+    --accent-hover: #1f3bd1;
+    --accent-soft: #eaefff;
+    --crit: #c62a2f;
+    --crit-soft: #fdecec;
+    --warn: #b45309;
+    --warn-soft: #fef3e2;
+    --good: #2b4cf2;
+    --good-soft: #eaefff;
+    --exc: #17804f;
+    --exc-soft: #e6f6ee;
+    --fam-nxt: #2b4cf2;
+    --fam-nxt-soft: #eaefff;
+    --fam-nxtr: #7c3aed;
+    --fam-nxtr-soft: #f2e9ff;
+    --fam-aimex: #b45309;
+    --fam-aimex-soft: #fef3e2;
+    --shadow: 0 1px 2px rgba(15, 17, 21, 0.04), 0 4px 14px rgba(15, 17, 21, 0.04);
+    color-scheme: light;
+  }
+}
+
 .r-critical {
   --rc: var(--crit);
   --rf: var(--crit-fill);
@@ -212,12 +281,7 @@ textarea {
   color: var(--fg);
 }
 .logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  background: linear-gradient(135deg, #5b6cff, #b34bff);
-  display: grid;
-  place-items: center;
+  display: block;
   flex: none;
 }
 .brand b {
@@ -266,7 +330,7 @@ textarea {
   color: var(--fg);
 }
 .nav a[aria-current="page"] {
-  background: #f1f2f4;
+  background: var(--surface-3);
   box-shadow: inset -3px 0 0 var(--accent);
 }
 .nav a .badge {
@@ -629,7 +693,7 @@ textarea {
   overflow: hidden;
 }
 .card.dashed {
-  border: 1px dashed #c9cfd8;
+  border: 1px dashed var(--line-2);
 }
 .card-h {
   display: flex;
@@ -1240,7 +1304,7 @@ table.table {
 
 /* Upload */
 .dropzone {
-  border: 2px dashed #c9cfd8;
+  border: 2px dashed var(--line-2);
   border-radius: var(--r-xl);
   background: var(--surface);
   padding: 48px 24px;
@@ -1967,7 +2031,7 @@ svg circle.pt {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 .login-art {
-  background: linear-gradient(150deg, #1b2bd6 0%, #5b4cff 55%, #b34bff 100%);
+  background: linear-gradient(150deg, #2b4cf2 0%, #1d3bd0 55%, #1630a8 100%);
   color: #fff;
   padding: 48px;
   display: flex;

@@ -1,46 +1,65 @@
-# Handbuch der App (Windows und Android)
+# Handbuch der App
 
 Die App wertet PAM-Dateien von NXT, NXT-R und AIMEX direkt auf diesem PC aus, auch ohne Netz. Sie rechnet mit demselben Rechenkern wie der Server und kommt deshalb zu denselben Ergebnissen.
 
-## Dateien auswerten
+## Übersicht
 
-- **Dateien öffnen**: wählt eine oder mehrere `.dat`-Dateien oder ZIP-Archive.
+Die Startseite. Ein Klick auf die Fläche **PAM-Dateien hierher ziehen oder klicken zum Auswählen** öffnet die Dateiauswahl (eine oder mehrere `.dat`-Dateien oder ZIP-Archive). Weitere Wege:
+
 - **Drag & Drop**: Dateien auf das Fenster ziehen, egal auf welcher Seite.
 - **Doppelklick** auf eine `.dat`-Datei im Explorer öffnet sie in der App, auch wenn die App schon läuft.
 
-Jede Datei wird sofort ausgewertet und unter **Auswertungen** gespeichert. Dieselbe Datei wird am Inhalt erkannt und nicht doppelt gespeichert. Nicht lesbare Dateien werden mit Grund gemeldet.
+Bei mehreren Dateien zeigt die Fläche den Fortschritt („12 von 40“). Danach meldet ein kurzer Hinweis unten rechts, wie viele Ergebnisse neu sind, welche Dateien schon da waren und welche nicht lesbar sind; er verschwindet nach einigen Sekunden von selbst. Dieselbe Datei wird am Inhalt erkannt und nicht doppelt gespeichert.
+
+Unter der Fläche stehen nur die Ergebnisse der **laufenden Kalenderwoche**. Ältere finden Sie unter **Auswertungen**.
+
+### Kunde und Prüfdatum
+
+Nach dem Import fragt die App einmal für alle neuen Ergebnisse:
+
+- **Kunde**: Die App schlägt beim Tippen bisher verwendete Kunden vor (von diesem Gerät und, wenn verbunden, vom Server). Ein neuer Kunde wird einfach eingetippt.
+- **Prüfdatum**: das Datum aus der Datei übernehmen (Standard), das heutige Datum oder ein anderes Datum.
+
+**Überspringen** lässt beides offen. Kunde und Datum lassen sich später im Ergebnis über **Kunde & Datum** ändern; verbunden werden die Änderungen auch an den Server übertragen.
 
 ## Auswertungen
 
-Die Liste zeigt alle Ergebnisse auf diesem PC, das neueste Prüfdatum zuerst. Suche nach Kopftyp, Seriennummer, Maschine oder Dateiname; Filter nach Maschinenfamilie und Bewertung.
+Alle Ergebnisse auf diesem Gerät, umschaltbar:
 
-Die Ergebnisseite ist dieselbe wie im Web: Head, Total, Koeffizient zum Verstellen, Gesamtdiagramme, Einzelansicht je Holder und **Drucken**. **Kopf-Historie** zeigt alle Messungen desselben Kopfes auf diesem PC. **Im Explorer zeigen** öffnet den Ordner der Originaldatei.
+- **Nach Datum**: je Prüftag eine Gruppe, der neueste Tag oben.
+- **Nach Kunde**: je Kunde eine Gruppe, sortiert nach der letzten Messung; Ergebnisse ohne Kunde stehen am Ende unter „Ohne Kunde“.
+- **Liste**: alle Köpfe ohne Gruppen.
+
+Hat ein Kopf mehrere Messungen, steht er nur einmal da, mit der Anzahl („3 Messungen“). Ein Klick darauf öffnet zuerst die **Kopf-Historie** mit der neuesten Messung oben; von dort geht es zum einzelnen Ergebnis. Die Suche findet Kopftyp, Seriennummer, Maschine, Kunde und Dateiname; Filter nach Maschinenfamilie und Bewertung.
+
+Die Ergebnisseite ist dieselbe wie im Web: Head, Total, Koeffizient zum Verstellen, Gesamtdiagramme, Einzelansicht je Holder und **Drucken**. **Zurück** führt zur vorherigen Seite. **Im Explorer zeigen** öffnet den Ordner der Originaldatei.
+
+Bei einem breiten, z. B. maximierten Fenster gleitet das Ergebnis von rechts herein und belegt höchstens die halbe Breite; die Liste bleibt daneben bedienbar. Die Holder stehen dann zu dritt nebeneinander. **✕** schließt das Ergebnis, **⤢** zeigt es als ganze Seite. Bei einem schmalen Fenster öffnet sich das Ergebnis als eigene Seite.
 
 ## Server
 
-Verbunden lädt die App jede Datei zusätzlich zum Server hoch. Zum Verbinden brauchen Sie:
+Techniker und Kunden können die App mit einem **FUJI PAM Server** verbinden. Die App lädt dann jede Datei zusätzlich zum Server hoch, wo die Ergebnisse auch im Web zur Verfügung stehen. Kunden können außerdem einen **eigenen Server** erwerben und die Ergebnisse in ihre eigene Umgebung hochladen.
 
-- die **Serveradresse**, z. B. `https://pam.example.com`,
-- einen **API-Key** Ihrer Firma (legt der Firmen-Admin im Web unter „Team & API-Keys“ an),
-- Ihre **E-Mail-Adresse** und Ihr **Passwort** aus dem Web.
+Für den Zugang (Serveradresse, API-Key und Benutzerkonto) wenden Sie sich bitte an Ihren **FUJI-Servicerepräsentanten**. Verbunden wird in den **Einstellungen** unter **Server**.
 
-Das Passwort wird nicht gespeichert, nur ein Geräte-Token in der Windows-Anmeldeinformationsverwaltung. Wer noch das Startpasswort hat, ändert es zuerst im Web.
+Das Passwort wird nicht gespeichert, nur ein Geräte-Token in der Windows-Anmeldeinformationsverwaltung bzw. im geschützten Speicher von Android.
 
 - Hochgeladen wird immer die **Originaldatei**; der Server rechnet selbst und ist maßgeblich.
 - Ist der Server nicht erreichbar, sammelt die App die Dateien in der **Warteschlange** und versucht es jede Minute erneut.
 - Beim Verbinden werden auch alle bisher nur lokal ausgewerteten Dateien hochgeladen.
-- **Koeffizienten und Bewertungsgrenzen** übernimmt die App vom Server. Ändert der Server sie, bewertet die App alle Ergebnisse auf dem PC neu.
-- **Trennen** gibt den Geräteplatz des API-Keys wieder frei. Die Ergebnisse bleiben auf dem PC.
+- **Koeffizienten und Bewertungsgrenzen** übernimmt die App vom Server. Ändert der Server sie, bewertet die App alle Ergebnisse auf dem Gerät neu.
+- **Trennen** gibt den Geräteplatz des API-Keys wieder frei. Die Ergebnisse bleiben auf dem Gerät.
 
-Die Spalte rechts in der Liste zeigt je Ergebnis: **Hochgeladen**, **Warteschlange**, **Nur auf diesem PC** oder **Nicht angenommen** (mit Grund; „Erneut versuchen“ unter Server).
+Jedes Ergebnis zeigt seinen Stand: **Hochgeladen**, **Warteschlange**, **Nur auf diesem PC** oder **Nicht angenommen** (mit Grund; „Erneut versuchen“ unter Einstellungen → Server). Ein Klick auf den Verbindungsstatus unten links öffnet diese Seite.
 
 ## Einstellungen
 
-- **Allgemein**: Sprache, Update-Kanal, Speicherort der Daten.
+- **Allgemein**: Sprache, Darstellung (Hell, Dunkel oder wie im System), Update-Kanal, Speicherort der Daten.
+- **Server**: verbinden, Warteschlange, trennen.
 - **Koeffizienten** und **Bewertung**: nur zum Ansehen. Verbunden kommen sie vom Server, sonst gelten die Standardwerte.
 - **Handbuch** und **Version** (Änderungsliste der App).
 
-## Updates
+## Updates (Windows)
 
 Die App sucht bei jedem Start nach einer neuen Version und meldet sie mit den Änderungen. **Jetzt aktualisieren** lädt das Update, prüft seine Signatur, installiert es und startet die App neu. Die Daten auf dem PC bleiben erhalten.
 
@@ -53,7 +72,7 @@ Wer von Beta auf Stable zurückwechselt, behält seine Version, bis eine neuere 
 
 Die App läuft auf Smartphones, Tablets und Foldables und kann dasselbe wie unter Windows.
 
-- **Dateien:** über „Öffnen“ (Android-Dateiauswahl, auch USB-Stick und Cloud-Apps), über
+- **Dateien:** durch Antippen der Fläche in der Übersicht (Android-Dateiauswahl, auch USB-Stick und Cloud-Apps), über
   **Teilen → PAM Analyzer** in einer anderen App (Dateimanager, E-Mail, Teams …) oder durch
   Antippen einer `.dat` im Dateimanager („Öffnen mit PAM Analyzer“).
 - **Handy:** Navigation unten. Das Ergebnis zeigt die Reiter Übersicht, Diagramme und Holder;
@@ -62,18 +81,19 @@ Die App läuft auf Smartphones, Tablets und Foldables und kann dasselbe wie unte
 - **Foldable halb aufgeklappt (Tischmodus):** Diagramme oben, Bedienung unten.
 - **Drucken:** öffnet den Android-Druckdialog; dort auch **Als PDF speichern**.
 - **Server verbinden:** wie unter Windows. Den API-Key kann man scannen: Beim Anlegen zeigt das
-  Web einen QR-Code, in der App unter Server auf das Kamera-Symbol tippen.
-- **Updates:** Die APK von GitHub sucht beim Start nach Updates (Kanäle Stable und Beta). Beim
-  ersten Update fragt Android, ob PAM Analyzer Apps installieren darf; danach genügt
-  „Jetzt aktualisieren“. Die Version aus Google Play aktualisiert Play.
+  Web einen QR-Code, in der App unter Einstellungen → Server auf das Kamera-Symbol tippen.
+- **Updates:** installiert Google Play automatisch.
 
-### Installation (APK)
+### Installation (Google Play)
 
-Unter den Releases des Projekts auf GitHub `PAM-Analyzer_<Version>_android.apk` herunterladen
-und öffnen. Android fragt einmal, ob der Browser bzw. Dateimanager Apps installieren darf.
+Die App wird über den **Google Play Store** installiert. Zurzeit befindet sie sich in einem **geschlossenen Test**. Um sie laden zu können:
 
-## Installation
+1. Wenden Sie sich an Ihren **FUJI-Servicerepräsentanten** und bitten Sie um Aufnahme ins Testprogramm.
+2. Geben Sie dabei die **E-Mail-Adresse des Google-Kontos** an, das auf dem Smartphone oder Tablet mit dem Play Store verbunden ist, auf dem Sie die App nutzen möchten.
+3. Nach der Freischaltung erhalten Sie einen Link zur App im Play Store; dort **Installieren** antippen.
 
-Den Installer gibt es unter den Releases des Projekts auf GitHub (`PAM.Analyzer_<Version>_x64-setup.exe`). Weil er kein gekauftes Code-Signing-Zertifikat hat, warnt Windows SmartScreen beim ersten Start: **Weitere Informationen → Trotzdem ausführen**. Die App wird für den angemeldeten Benutzer installiert; Administratorrechte sind nicht nötig.
+## Installation (Windows)
+
+Den Installer (`PAM Analyzer_<Version>_x64-setup.exe`) erhalten Sie von Ihrem **FUJI-Servicerepräsentanten**. Starten Sie ihn und folgen Sie den Schritten. Die App wird für den angemeldeten Benutzer installiert; Administratorrechte sind nicht nötig. Neue Versionen installiert die App danach selbst (siehe Updates).
 
 Die Daten liegen unter `%APPDATA%\com.callmetechie.pamanalyzer`.

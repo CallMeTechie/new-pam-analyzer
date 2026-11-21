@@ -6,7 +6,7 @@ import { readScope, requireAuth } from '../auth/middleware.js';
 import { companies } from '../db/schema.js';
 import { type AppEnv, HttpError, notFound } from '../http.js';
 import { expandUpload, MAX_FILES, type SkippedFile, type UploadFile } from '../services/archive.js';
-import { type IngestOutcome, ingestFile } from '../services/ingest.js';
+import { cleanCustomer, cleanTestDate, type IngestOutcome, ingestFile } from '../services/ingest.js';
 import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 export const uploadRoutes = new Hono<AppEnv>();
@@ -15,6 +15,8 @@ export const uploadRoutes = new Hono<AppEnv>();
  * Upload of `.dat` files and ZIP archives as `multipart/form-data`:
  * - `files`: one or more files,
  * - `lastModified`: optional, per file in the same order, milliseconds since 1970 (`File.lastModified`),
+ * - `customer`, `testDate`: optional, per file in the same order (app: customer where the head
+ *   was measured, test date chosen by the technician as `YYYY-MM-DD HH:mm:ss`),
  * - `companyId`: only for service staff; without it the result stays unassigned.
  */
 uploadRoutes.post(
@@ -41,6 +43,8 @@ uploadRoutes.post(
     const files = list(form.files).filter((f): f is File => f instanceof File);
     if (files.length === 0) throw new HttpError(400, 'no_files', 'No files were uploaded.');
     const modified = list(form.lastModified).map((v) => (typeof v === 'string' ? Number(v) : Number.NaN));
+    const customers = list(form.customer).map(cleanCustomer);
+    const testDates = list(form.testDate).map(cleanTestDate);
 
     const requested = typeof form.companyId === 'string' && form.companyId ? Number(form.companyId) : null;
     const companyId = readScope(auth, requested);
@@ -61,7 +65,16 @@ uploadRoutes.post(
         ...(Number.isFinite(ms) && ms > 0 ? { lastModified: new Date(ms) } : {}),
       };
       const result = expandUpload(upload, { maxFileBytes: config.maxFileBytes, timeZone: config.timeZone });
-      expanded.push(...result.files);
+      // Customer and test date of an upload apply to every file in it (also inside a ZIP archive).
+      const customer = customers[i];
+      const testDate = testDates[i];
+      expanded.push(
+        ...result.files.map((f) => ({
+          ...f,
+          ...(customer ? { customer } : {}),
+          ...(testDate ? { testDate } : {}),
+        })),
+      );
       skipped.push(...result.skipped);
     }
     if (expanded.length > MAX_FILES) {

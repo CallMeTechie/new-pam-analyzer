@@ -29,13 +29,15 @@ export interface ResultRow {
   machineNo: string;
   machineFamily: Family;
   line: string | null;
+  /** Customer where the head was measured (app). */
+  customer: string | null;
   headType: string;
   headSerial: string;
   toolType: string | null;
   toolSerial: string | null;
   h08mVariant: string | null;
   testDate: string;
-  dateSource: 'header' | 'file_modified' | 'upload' | 'unknown';
+  dateSource: 'header' | 'file_modified' | 'upload' | 'manual' | 'unknown';
   cpkX: number | null;
   cpkY: number | null;
   cpkXY: number | null;
@@ -57,6 +59,7 @@ export interface ResultDetail {
     companyName: string | null;
     companyLogoVersion: number | null;
     line: string | null;
+    customer: string | null;
     fileName: string;
     fileSize: number;
     testDate: string;
@@ -201,6 +204,17 @@ export type ApiTransport = (method: string, path: string, body?: unknown) => Pro
 let transport: ApiTransport | null = null;
 
 /** Routes all API requests to `next` instead of the server (`null` restores the server). */
+const changeListeners = new Set<() => void>();
+
+/** Pages loaded with `useApi` reload when the data behind them changed elsewhere (used by the app). */
+export function notifyDataChanged(): void {
+  for (const l of changeListeners) l();
+}
+export function onDataChanged(listener: () => void): () => void {
+  changeListeners.add(listener);
+  return () => changeListeners.delete(listener);
+}
+
 export function setApiTransport(next: ApiTransport | null): void {
   transport = next;
 }

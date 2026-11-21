@@ -1,5 +1,4 @@
 import { Icon } from '@web/components/Icon';
-import { Page } from '@web/components/Layout';
 import { Field, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import { type FormEvent, useEffect, useState } from 'react';
@@ -222,45 +221,41 @@ function Connected() {
   );
 }
 
-export function Server() {
+/** Settings tab: connect, or the connection with its upload queue. */
+export function ServerSettings() {
   const { t } = useI18n();
   const [s, engine] = useEngine();
   const [confirm, setConfirm] = useState(false);
+  if (!s.connection) return <ConnectForm />;
   return (
-    <Page
-      title={t('client.nav.server')}
-      actions={
-        s.connection && (
+    <div className="stack">
+      <div className="toolbar">
+        {s.server !== 'revoked' && (
+          <button type="button" className="btn" disabled={s.syncing} onClick={() => void engine.sync()}>
+            <Icon name="upload" size={16} />
+            {s.syncing ? t('client.server.syncing') : t('client.server.syncNow')}
+          </button>
+        )}
+        {confirm ? (
           <>
-            {s.server !== 'revoked' && (
-              <button type="button" className="btn" disabled={s.syncing} onClick={() => void engine.sync()}>
-                <Icon name="upload" size={16} />
-                {s.syncing ? t('client.server.syncing') : t('client.server.syncNow')}
-              </button>
-            )}
-            {confirm ? (
-              <>
-                <button
-                  type="button"
-                  className="btn danger"
-                  onClick={() => void engine.disconnect().then(() => setConfirm(false))}
-                >
-                  {t('client.server.disconnectConfirm')}
-                </button>
-                <button type="button" className="btn" onClick={() => setConfirm(false)}>
-                  {t('common.cancel')}
-                </button>
-              </>
-            ) : (
-              <button type="button" className="btn danger" onClick={() => setConfirm(true)}>
-                {t('client.server.disconnect')}
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn danger"
+              onClick={() => void engine.disconnect().then(() => setConfirm(false))}
+            >
+              {t('client.server.disconnectConfirm')}
+            </button>
+            <button type="button" className="btn" onClick={() => setConfirm(false)}>
+              {t('common.cancel')}
+            </button>
           </>
-        )
-      }
-    >
-      {s.connection ? <Connected /> : <ConnectForm />}
-    </Page>
+        ) : (
+          <button type="button" className="btn danger" onClick={() => setConfirm(true)}>
+            {t('client.server.disconnect')}
+          </button>
+        )}
+      </div>
+      <Connected />
+    </div>
   );
 }

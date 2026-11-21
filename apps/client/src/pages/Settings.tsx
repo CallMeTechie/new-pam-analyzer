@@ -4,15 +4,17 @@ import { Markdown } from '@web/components/Markdown';
 import { Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import manualDe from '../../../../docs/manual/app.de.md?raw';
 import manualEn from '../../../../docs/manual/app.en.md?raw';
 import changelogDe from '../../CHANGELOG.de.md?raw';
 import changelogEn from '../../CHANGELOG.md?raw';
-import type { Channel } from '../lib/types';
+import type { Channel, Theme } from '../lib/types';
 import { useEngine } from '../lib/useEngine';
 import { useUpdates } from '../shell';
+import { ServerSettings } from './Server';
 
-const TABS = ['general', 'coefficients', 'rating', 'manual', 'version'] as const;
+const TABS = ['general', 'server', 'coefficients', 'rating', 'manual', 'version'] as const;
 type Tab = (typeof TABS)[number];
 
 function General() {
@@ -24,14 +26,36 @@ function General() {
     void engine.platform.dataLocation().then(setLocation);
   }, [engine]);
   const channels: Channel[] = ['stable', 'beta'];
+  const themes: Theme[] = ['light', 'dark', 'system'];
   return (
-    <div className="grid-2">
+    <div className="grid-2 settings-grid">
       <section className="card stack">
         <h2>{t('app.language')}</h2>
         <p className="muted">{t('client.settings.languageText')}</p>
         <div>
           <LanguageSwitch />
         </div>
+      </section>
+      <section className="card stack">
+        <h2>{t('client.settings.appearance')}</h2>
+        <p className="muted">{t('client.settings.appearanceText')}</p>
+        <fieldset className="radio-cards">
+          <legend className="sr-only">{t('client.settings.appearance')}</legend>
+          {themes.map((k) => (
+            <label key={k} className={s.theme === k ? 'on' : ''}>
+              <input
+                type="radio"
+                name="theme"
+                value={k}
+                checked={s.theme === k}
+                onChange={() => void engine.setTheme(k)}
+              />
+              <span>
+                <b>{t(`client.theme.${k}`)}</b>
+              </span>
+            </label>
+          ))}
+        </fieldset>
       </section>
       <section className="card stack">
         <h2>{t('client.settings.updates')}</h2>
@@ -192,17 +216,24 @@ function RatingTab() {
 
 export function Settings() {
   const { t, locale } = useI18n();
-  const [tab, setTab] = useState<Tab>('general');
+  const [s] = useEngine();
+  const attention = s.rows.filter((r) => r.upload === 'rejected').length + (s.server === 'revoked' ? 1 : 0);
+  const [params, setParams] = useSearchParams();
+  const asked = params.get('tab') as Tab | null;
+  const tab: Tab = asked && TABS.includes(asked) ? asked : 'general';
+  const setTab = (k: Tab) => setParams(k === 'general' ? {} : { tab: k }, { replace: true });
   return (
     <Page title={t('client.nav.settings')}>
       <div className="tabs" role="tablist" aria-label={t('client.nav.settings')}>
         {TABS.map((k) => (
           <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
             {t(`client.settings.tab.${k}`)}
+            {k === 'server' && attention > 0 && <span className="badge">{attention}</span>}
           </button>
         ))}
       </div>
       {tab === 'general' && <General />}
+      {tab === 'server' && <ServerSettings />}
       {tab === 'coefficients' && <Coefficients />}
       {tab === 'rating' && <RatingTab />}
       {tab === 'manual' && (

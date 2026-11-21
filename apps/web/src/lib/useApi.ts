@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, api } from './api';
+import { ApiError, api, onDataChanged } from './api';
 
 export interface ApiState<T> {
   data: T | null;
@@ -40,5 +40,6 @@ export function useApi<T>(path: string | null): ApiState<T> {
   }, [path, tick]);
 
   const reload = useCallback(() => setTick((n) => n + 1), []);
+  useEffect(() => onDataChanged(reload), [reload]);
   return { data, error, loading, reload };
 }

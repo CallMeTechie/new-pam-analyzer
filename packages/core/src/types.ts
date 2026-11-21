@@ -8,7 +8,8 @@ export type Angle = 0 | 90 | 180 | 270;
  * Herkunft des Prüfdatums. Reihenfolge: Zeitstempel in der Kopfzeile, Änderungsdatum der Datei,
  * Upload-Zeitpunkt; ohne alle drei `unknown`.
  */
-export type DateSource = 'header' | 'file_modified' | 'upload' | 'unknown';
+/** `manual`: set by the user in the app, e.g. when the file date is wrong (never set by the parser). */
+export type DateSource = 'header' | 'file_modified' | 'upload' | 'manual' | 'unknown';
 
 export type H08mVariant = 'ceramic' | 'glass';
 

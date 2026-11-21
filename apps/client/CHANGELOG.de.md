@@ -1,6 +1,21 @@
 # Änderungen der App
 
-Änderungen an der PAM-Analyzer-App für Windows. Versionen nach [Semantic Versioning](https://semver.org); Beta-Versionen tragen `-beta.N`.
+## 0.3.0
+
+### Neu
+- Neue Startseite „Übersicht“: Ein Klick auf die Fläche öffnet die Dateiauswahl; darunter stehen die Ergebnisse der laufenden Kalenderwoche.
+- Nach dem Import fragt die App nach Kunde (mit Vorschlägen aus bisherigen Kunden) und Prüfdatum (aus der Datei, heute oder ein anderes Datum). Beides lässt sich im Ergebnis über „Kunde & Datum“ ändern und wird an den Server übertragen.
+- Fortschritt beim Import vieler Dateien; nach dem Import ein kurzer Hinweis unten rechts.
+- Auswertungen nach Datum, nach Kunde oder als Liste. Ein Kopf mit mehreren Messungen steht nur einmal da und öffnet zuerst seine Kopf-Historie.
+- Windows: Bei breitem Fenster gleitet das Ergebnis neben der Liste herein, mit drei Holdern je Zeile.
+- Dunkelmodus (Hell, Dunkel oder wie im System).
+- Zurück-Knopf auf Ergebnis und Kopf-Historie.
+- Neues Logo, gleich für Windows, Installer und Android.
+
+### Geändert
+- „Server“ ist jetzt ein Reiter der Einstellungen; ein Klick auf den Verbindungsstatus öffnet ihn.
+- Der Knopf „Dateien öffnen“ entfällt; die Seitenleiste zeigt kein zweites Logo mehr.
+- Links (z. B. „Made with ♥ by CallMeTechie“) öffnen sich im Standardbrowser.
 
 ## 0.2.0
 
@@ -10,7 +25,7 @@
 - Android: Navigation unten auf Handys und zugeklappten Foldables; Liste und Ergebnis nebeneinander auf Tablets und aufgeklappten Foldables; im Tischmodus von Foldables stehen die Diagramme über dem Falz.
 - Android: Die Ergebnisseite zeigt Übersicht, Diagramme und Holder als Reiter; Antippen vergrößert einen Holder.
 - Android: API-Key und Serveradresse lassen sich als QR-Code aus dem Web scannen.
-- Android: Die APK von GitHub aktualisiert sich selbst in den Kanälen Stable und Beta; die Version aus Google Play aktualisiert Play.
+- Android: Updates kommen über Google Play.
 
 ## 0.1.0
 

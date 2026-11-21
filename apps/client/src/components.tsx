@@ -1,6 +1,6 @@
 import { Icon, type IconName } from '@web/components/Icon';
 import { useI18n } from '@web/i18n';
-import type { ImportSummary } from './lib/engine';
+import { Link } from 'react-router';
 import type { UploadState } from './lib/types';
 import { useEngine } from './lib/useEngine';
 
@@ -31,53 +31,6 @@ export function UploadChip({ state, reason }: { state: UploadState; reason?: str
   );
 }
 
-/** Result of opening or dropping files. */
-export function ImportBanner({
-  summary,
-  onOpen,
-  onClose,
-}: {
-  summary: ImportSummary;
-  onOpen?: () => void;
-  onClose(): void;
-}) {
-  const { t } = useI18n();
-  const created = summary.created.length;
-  const parts = [
-    created ? t('client.import.created', { n: created }) : '',
-    summary.duplicates.length ? t('client.import.duplicates', { n: summary.duplicates.length }) : '',
-    summary.rejected.length ? t('client.import.rejected', { n: summary.rejected.length }) : '',
-  ].filter(Boolean);
-  const kind = created ? 'success' : summary.rejected.length ? 'error' : 'info';
-  return (
-    <div className={`notice ${kind}`} role="status">
-      <Icon name={created ? 'checkCircle' : kind === 'error' ? 'warning' : 'info'} size={20} />
-      <div>
-        <b>{parts.join(' · ') || t('client.import.nothing')}</b>
-        {summary.rejected.length > 0 && (
-          <ul className="reject-list">
-            {summary.rejected.slice(0, 5).map((r) => (
-              <li key={r.name}>
-                <span className="mono">{r.name}</span>: {reasonText(t, r.reason)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-      <span className="notice-actions">
-        {onOpen && (
-          <button type="button" className="btn small" onClick={onOpen}>
-            {t('client.import.open')}
-          </button>
-        )}
-        <button type="button" className="btn small ghost icon" aria-label={t('common.close')} onClick={onClose}>
-          <Icon name="close" size={14} />
-        </button>
-      </span>
-    </div>
-  );
-}
-
 /** Connection state at the bottom of the sidebar. */
 export function ConnectionCard() {
   const { t } = useI18n();
@@ -102,13 +55,13 @@ export function ConnectionCard() {
     }
   }
   return (
-    <div className="conn-card" data-testid="connection">
+    <Link to="/settings?tab=server" className="conn-card" data-testid="connection">
       <b>
         <span className={`dot dot-${dot}`} />
         {title}
       </b>
       {s.connection && <span className="conn-host">{new URL(s.connection.server).host}</span>}
       <span>{text}</span>
-    </div>
+    </Link>
   );
 }

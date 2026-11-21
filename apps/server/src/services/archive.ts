@@ -5,6 +5,10 @@ export interface UploadFile {
   bytes: Uint8Array;
   /** Modification date of the original file (browser `File.lastModified`, ZIP entry date, app). */
   lastModified?: Date;
+  /** Customer where the head was measured (app). */
+  customer?: string;
+  /** Test date set by the user (`YYYY-MM-DD HH:mm:ss`); replaces the date from the file. */
+  testDate?: string;
 }
 
 export interface SkippedFile {

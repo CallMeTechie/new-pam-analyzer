@@ -162,6 +162,8 @@ export const results = sqliteTable(
     toolType: text('tool_type'),
     toolSerial: text('tool_serial'),
     h08mVariant: text('h08m_variant'),
+    /** Customer (plant) where the head was measured, entered by the technician in the app. */
+    customer: text('customer'),
     /** Local machine time `YYYY-MM-DD HH:mm:ss`: header timestamp, file modification date or upload time. */
     testDate: text('test_date').notNull(),
     dateSource: text('date_source').notNull(),
@@ -203,6 +205,7 @@ export const results = sqliteTable(
     index('results_sha_idx').on(t.sha256),
     index('results_test_date_idx').on(t.testDate),
     index('results_created_idx').on(t.createdAt),
+    index('results_customer_idx').on(t.companyId, t.customer),
   ],
 );
 

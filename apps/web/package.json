@@ -1,6 +1,6 @@
 {
   "name": "@pam/web",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "PAM Analyzer web interface",
   "private": true,
   "type": "module",

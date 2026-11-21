@@ -35,6 +35,11 @@ export interface LocalResult {
   componentStatus: string;
   warnings: number;
 
+  /** Customer where the head was measured (entered after the import). */
+  customer?: string | null;
+  /** Customer or test date changed after the upload; sent to the server with the next sync. */
+  metaDirty?: boolean;
+
   upload: UploadState;
   /** Language-neutral reason when the server rejected the file. */
   uploadError: string | null;
@@ -64,3 +69,7 @@ export interface Connection {
 }
 
 export type Channel = 'stable' | 'beta';
+export type Theme = 'system' | 'light' | 'dark';
+
+/** How the test date of imported files is set (dialog after the import). */
+export type DateChoice = { kind: 'file' } | { kind: 'today' } | { kind: 'date'; date: string };
