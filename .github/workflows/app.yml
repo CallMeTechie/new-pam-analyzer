@@ -51,8 +51,13 @@ jobs:
         run: |
           if [ -n "$INPUT" ]; then tag="app-v${INPUT#app-v}"; else tag="$GITHUB_REF_NAME"; fi
           if gh release view "$tag" > /dev/null 2>&1; then
-            echo "::error::Release $tag exists already."
-            exit 1
+            # A draft left by a cancelled run is replaced; a published release is never touched.
+            if [ "$(gh release view "$tag" --json isDraft --jq .isDraft)" = "true" ]; then
+              gh release delete "$tag" --yes
+            else
+              echo "::error::Release $tag exists already."
+              exit 1
+            fi
           fi
           version=$(node .github/scripts/app-release.mjs version "$tag")
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
