@@ -1,5 +1,10 @@
 # Änderungen der App
 
+## 0.3.3
+
+### Geändert
+- Android: Neue Versionen werden automatisch an Google Play übertragen.
+
 ## 0.3.2
 
 ### Geändert

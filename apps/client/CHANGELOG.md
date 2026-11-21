@@ -1,5 +1,10 @@
 # Changelog of the app
 
+## 0.3.3
+
+### Changed
+- Android: new versions are sent to Google Play automatically.
+
 ## 0.3.2
 
 ### Changed
