@@ -1,5 +1,13 @@
 # Änderungen der App
 
+## 0.3.1
+
+### Geändert
+- Android: Paketname `com.pamanalyzer.client` (Google Play). Eine bisher aus GitHub installierte APK bleibt als eigene App bestehen und kann deinstalliert werden.
+
+### Behoben
+- Auf Foldables und Tablets überlappten sich in der Ergebnisansicht Cpk-Wert und Bewertung.
+
 ## 0.3.0
 
 ### Neu

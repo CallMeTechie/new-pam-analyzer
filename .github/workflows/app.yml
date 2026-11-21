@@ -176,7 +176,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.callmetechie.pamanalyzer
+          packageName: com.pamanalyzer.client
           releaseFiles: dist-android/*.aab
           mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
           # Closed test ("alpha") until the app is public; set the repository variable PLAY_TRACK to change it.
