@@ -1,4 +1,4 @@
-import { Icon } from '@web/components/Icon';
+import { Icon, Logo } from '@web/components/Icon';
 import { Credit, LanguageSwitch } from '@web/components/Layout';
 import { Modal, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
@@ -230,7 +230,7 @@ function UpdateProvider({ children }: { children: ReactNode }) {
 
 // ---------- layout ----------
 
-function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
+function NavItems({ variant }: { variant: 'desktop' | 'bottom' | 'rail' }) {
   const { t, int } = useI18n();
   const [s] = useEngine();
   const attention = s.rows.filter((r) => r.upload === 'rejected').length + (s.server === 'revoked' ? 1 : 0);
@@ -240,14 +240,18 @@ function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
   // With a result open, "Results" in the rail slides the list in instead of leaving the result.
   const onResult = /^\/results\/\d+/.test(pathname);
   const badge = (n: number) => (n > 0 ? <span className="badge">{int(n)}</span> : null);
+  // The Windows rail shows icons only; the label stays for screen readers and as tooltip.
+  const label = (text: string) => <span className={variant === 'desktop' ? 'sr-only' : undefined}>{text}</span>;
+  const tip = (text: string) => (variant === 'desktop' ? { title: text } : {});
   return (
     <>
-      <NavLink to="/" end>
+      <NavLink to="/" end {...tip(t('client.nav.overview'))}>
         <Icon name="dashboard" />
-        <span>{t('client.nav.overview')}</span>
+        {label(t('client.nav.overview'))}
       </NavLink>
       <Link
         to="/results"
+        {...tip(t('client.nav.results'))}
         aria-current={onResults ? 'page' : undefined}
         {...(variant === 'rail' && onResult ? { 'aria-expanded': drawer.open, 'aria-controls': 'results-drawer' } : {})}
         onClick={(e) => {
@@ -257,12 +261,11 @@ function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
         }}
       >
         <Icon name="results" />
-        <span>{t('client.nav.results')}</span>
-        {variant === 'sidebar' && badge(s.rows.length)}
+        {label(t('client.nav.results'))}
       </Link>
-      <NavLink to="/settings">
+      <NavLink to="/settings" {...tip(t('client.nav.settings'))}>
         <Icon name="settings" />
-        <span>{t('client.nav.settings')}</span>
+        {label(t('client.nav.settings'))}
         {badge(attention)}
       </NavLink>
     </>
@@ -279,6 +282,11 @@ export function Shell() {
   const drawer = { open: drawerOpen, setOpen: setDrawerOpen };
   usePosture();
   useTheme();
+  useEffect(() => {
+    const root = document.documentElement;
+    if (layout === 'desktop') root.dataset.skin = 'd';
+    else delete root.dataset.skin;
+  }, [layout]);
   if (layout !== 'desktop') {
     return (
       <ImportProvider>
@@ -307,17 +315,13 @@ export function Shell() {
   return (
     <ImportProvider>
       <UpdateProvider>
-        <div className="app client">
-          <div className="sidebar-col">
-            <aside className="sidebar" id="sidebar">
-              <nav className="nav" aria-label={t('nav.label')}>
-                <div className="nav-section">
-                  <NavItems variant="sidebar" />
-                </div>
-              </nav>
-              <ConnectionCard />
-            </aside>
-          </div>
+        <div className="app client drail">
+          <nav className="drail-nav" aria-label={t('nav.label')}>
+            <Logo size={36} />
+            <NavItems variant="desktop" />
+            <span className="drail-sp" />
+            <ConnectionCard compact />
+          </nav>
           <div className="main">
             <Outlet />
             <footer className="footer">
