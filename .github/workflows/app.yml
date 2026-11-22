@@ -182,8 +182,8 @@ jobs:
           packageName: com.pamanalyzer.client
           releaseFiles: dist-android/*.aab
           mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
-          # Closed test ("alpha") by default; the repository variable PLAY_TRACK changes it (e.g. internal).
-          tracks: ${{ vars.PLAY_TRACK || 'alpha' }}
+          # Internal test by default; the repository variable PLAY_TRACK changes it (alpha = closed test, production).
+          tracks: ${{ vars.PLAY_TRACK || 'internal' }}
           status: completed
       - name: Upload to Google Play as draft
         # As long as the app has not been published in the Play Console, Google accepts draft releases
@@ -197,7 +197,7 @@ jobs:
           packageName: com.pamanalyzer.client
           releaseFiles: dist-android/*.aab
           mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
-          tracks: ${{ vars.PLAY_TRACK || 'alpha' }}
+          tracks: ${{ vars.PLAY_TRACK || 'internal' }}
           status: draft
 
   publish:

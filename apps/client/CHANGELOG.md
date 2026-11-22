@@ -1,5 +1,10 @@
 # Changelog of the app
 
+## 0.3.4
+
+### Changed
+- Android: as long as the app is not yet published in Google Play, each new version is created there as a draft.
+
 ## 0.3.3
 
 ### Changed
