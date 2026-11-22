@@ -77,7 +77,7 @@ Die App läuft auf Smartphones, Tablets und Foldables und kann dasselbe wie unte
   Antippen einer `.dat` im Dateimanager („Öffnen mit PAM Analyzer“).
 - **Handy:** Navigation unten. Das Ergebnis zeigt die Reiter Übersicht, Diagramme und Holder;
   ein Holder lässt sich durch Antippen vergrößern.
-- **Tablet und aufgeklapptes Foldable:** Liste links, Ergebnis rechts.
+- **Tablet und aufgeklapptes Foldable:** Navigation links. Ein Ergebnis nutzt die ganze Breite; ein Tippen auf „Auswertungen“ schiebt die Liste von links herein, die Auswahl eines anderen Ergebnisses oder ein Tippen daneben schließt sie wieder.
 - **Foldable halb aufgeklappt (Tischmodus):** Diagramme oben, Bedienung unten.
 - **Drucken:** öffnet den Android-Druckdialog; dort auch **Als PDF speichern**.
 - **Server verbinden:** wie unter Windows. Den API-Key kann man scannen: Beim Anlegen zeigt das

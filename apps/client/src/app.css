@@ -913,3 +913,58 @@ a.conn-card:hover {
     box-shadow: none;
   }
 }
+
+/* Tablets and unfolded foldables: the result takes the full width; "Results" in the rail slides
+   the list in from the left over the result. */
+.split.drawer {
+  display: block;
+}
+.split.drawer .split-detail {
+  border-left: 0;
+}
+.split.drawer .split-list {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 92px;
+  z-index: 45;
+  width: min(420px, calc(100vw - 92px - 48px));
+  height: auto;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  box-shadow: 12px 0 32px rgb(0 0 0 / 0.18);
+  transform: translateX(calc(-100% - 92px));
+  visibility: hidden;
+  transition:
+    transform 0.24s ease-out,
+    visibility 0s linear 0.24s;
+}
+.split.drawer .split-list.open {
+  transform: none;
+  visibility: visible;
+  transition: transform 0.24s ease-out;
+}
+.drawer-scrim {
+  position: fixed;
+  inset: 0 0 0 92px;
+  z-index: 44;
+  border: 0;
+  padding: 0;
+  background: rgb(0 0 0 / 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.drawer-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.client.mobile.rail .rail-nav {
+  z-index: 46;
+}
+@media (prefers-reduced-motion: reduce) {
+  .split.drawer .split-list,
+  .drawer-scrim {
+    transition: none;
+  }
+}

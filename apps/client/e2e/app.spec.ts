@@ -272,16 +272,32 @@ test.describe('touch layout (Android)', () => {
     await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   });
 
-  test('tablet: list next to the result', async ({ page }) => {
+  test('tablet / unfolded foldable: result full width, list slides in', async ({ page }) => {
     await page.setViewportSize({ width: 1200, height: 800 });
     await page.goto('/?mobile');
     await expect(page.locator('.rail-nav')).toBeVisible();
     await open(page, [fixture('aimex', 2), fixture('nxt', 0)]);
-    await page.locator('.rail-nav').getByRole('link', { name: 'Results' }).click();
-    await expect(page.getByText('Choose a result from the list.')).toBeVisible();
+    const results = page.locator('.rail-nav').getByRole('link', { name: 'Results' });
+    await results.click();
+    await expect(page.locator('a.result-row')).toHaveCount(2);
     await page.locator('a.result-row').first().click();
-    await expect(page.locator('.split-list a.result-row.selected')).toHaveCount(1);
     await expect(page.locator('.split-detail .hero')).toBeVisible();
-    await expect(page.locator('.split-list a.result-row')).toHaveCount(2);
+    // The list is out of the way while working on the result.
+    const drawer = page.locator('#results-drawer');
+    await expect(drawer).toBeHidden();
+    const detailWidth = (await page.locator('.split-detail').boundingBox())?.width ?? 0;
+    expect(detailWidth).toBeGreaterThan(1000);
+    // "Results" in the rail slides the list in; choosing another result closes it again.
+    await results.click();
+    await expect(drawer).toBeVisible();
+    await expect(drawer.locator('a.result-row.selected')).toHaveCount(1);
+    await drawer.locator('a.result-row:not(.selected)').click();
+    await expect(drawer).toBeHidden();
+    await expect(page.locator('.split-detail .hero')).toBeVisible();
+    // Tapping beside the list closes it as well.
+    await results.click();
+    await expect(drawer).toBeVisible();
+    await page.mouse.click(1100, 400);
+    await expect(drawer).toBeHidden();
   });
 });
