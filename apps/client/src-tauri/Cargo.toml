@@ -1,6 +1,6 @@
 [package]
 name = "pam-analyzer"
-version = "0.3.3"
+version = "0.3.4"
 description = "PAM Analyzer app"
 authors = ["CallMeTechie"]
 edition = "2021"

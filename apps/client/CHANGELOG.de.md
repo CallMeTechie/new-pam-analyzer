@@ -1,5 +1,10 @@
 # Änderungen der App
 
+## 0.3.4
+
+### Geändert
+- Android: Solange die App in Google Play noch nicht veröffentlicht ist, wird jede neue Version dort als Entwurf angelegt.
+
 ## 0.3.3
 
 ### Geändert
