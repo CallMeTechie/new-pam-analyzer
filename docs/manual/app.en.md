@@ -77,7 +77,7 @@ The app runs on smartphones, tablets and foldables and can do the same as on Win
   in a file manager ("Open with PAM Analyzer").
 - **Phone:** navigation at the bottom. The result shows the tabs Overview, Charts and Holders;
   tap a holder to enlarge it.
-- **Tablet and unfolded foldable:** list on the left, result on the right.
+- **Tablet and unfolded foldable:** navigation on the left. A result uses the full width; tapping "Results" slides the list in from the left, choosing another result or tapping beside it closes it again.
 - **Foldable half open (tabletop):** charts above, controls below.
 - **Print:** opens the Android print dialog, including **Save as PDF**.
 - **Connect to the server:** as on Windows. The API key can be scanned: the web shows a QR code

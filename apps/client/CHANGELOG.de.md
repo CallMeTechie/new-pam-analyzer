@@ -1,5 +1,10 @@
 # Änderungen der App
 
+## 0.3.5
+
+### Geändert
+- Tablets und aufgeklappte Foldables: Ein geöffnetes Ergebnis nutzt die ganze Breite. Ein Tippen auf „Auswertungen“ in der Navigationsleiste schiebt die Liste von links herein; die Auswahl eines Ergebnisses oder ein Tippen daneben schließt sie wieder.
+
 ## 0.3.4
 
 ### Geändert

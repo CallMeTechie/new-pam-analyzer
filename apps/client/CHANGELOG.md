@@ -1,5 +1,10 @@
 # Changelog of the app
 
+## 0.3.5
+
+### Changed
+- Tablets and unfolded foldables: an open result uses the full width. Tapping "Results" in the navigation rail slides the list in from the left; choosing a result or tapping beside it closes it again.
+
 ## 0.3.4
 
 ### Changed

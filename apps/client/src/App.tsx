@@ -14,7 +14,7 @@ import { useEngine } from './lib/useEngine';
 import { Overview } from './pages/Overview';
 import { Results } from './pages/Results';
 import { Settings } from './pages/Settings';
-import { Shell } from './shell';
+import { Shell, useResultsDrawer } from './shell';
 
 /** Upload state and "Show in Explorer" instead of the web's download button. */
 function DetailActions({ detail }: { detail: Detail }) {
@@ -85,6 +85,7 @@ function ResultsArea() {
   const navigate = useNavigate();
   const { search } = useLocation();
   const detail = useMatch('/results/:id/*');
+  const drawer = useResultsDrawer();
   const full = new URLSearchParams(search).has('full');
   const back = () => (window.history.length > 1 ? navigate(-1) : navigate('/results'));
 
@@ -124,20 +125,23 @@ function ResultsArea() {
       <Results />
     );
   }
+  // Tablets and unfolded foldables: the list alone, or the result over the full width with the
+  // list sliding in from the left ("Results" in the navigation rail).
+  if (!detail) return <Results />;
   return (
-    <div className="split">
-      <div className="split-list">
-        <Results compact selectedId={detail ? Number(detail.params.id) : null} />
+    <div className="split drawer">
+      <button
+        type="button"
+        className={`drawer-scrim${drawer.open ? ' open' : ''}`}
+        aria-label={t('common.close')}
+        tabIndex={drawer.open ? 0 : -1}
+        onClick={() => drawer.setOpen(false)}
+      />
+      <div className={`split-list${drawer.open ? ' open' : ''}`} id="results-drawer" aria-hidden={!drawer.open}>
+        <Results compact selectedId={Number(detail.params.id)} />
       </div>
       <div className="split-detail">
-        {detail ? (
-          <Outlet />
-        ) : (
-          <div className="split-empty">
-            <Icon name="results" size={34} />
-            <span>{t('client.split.empty')}</span>
-          </div>
-        )}
+        <Outlet />
       </div>
     </div>
   );

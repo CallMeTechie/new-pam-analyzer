@@ -20,6 +20,14 @@ interface ImportState {
   over: boolean;
   progress: ImportProgress | null;
 }
+/** Tablets and unfolded foldables: the results list slides in over an open result. */
+interface ResultsDrawer {
+  open: boolean;
+  setOpen(open: boolean): void;
+}
+const ResultsDrawerContext = createContext<ResultsDrawer>({ open: false, setOpen: () => {} });
+export const useResultsDrawer = () => useContext(ResultsDrawerContext);
+
 const ImportContext = createContext<ImportState | null>(null);
 
 export function useImport(): ImportState {
@@ -228,6 +236,9 @@ function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
   const attention = s.rows.filter((r) => r.upload === 'rejected').length + (s.server === 'revoked' ? 1 : 0);
   const { pathname } = useLocation();
   const onResults = pathname.startsWith('/results');
+  const drawer = useResultsDrawer();
+  // With a result open, "Results" in the rail slides the list in instead of leaving the result.
+  const onResult = /^\/results\/\d+/.test(pathname);
   const badge = (n: number) => (n > 0 ? <span className="badge">{int(n)}</span> : null);
   return (
     <>
@@ -235,7 +246,16 @@ function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
         <Icon name="dashboard" />
         <span>{t('client.nav.overview')}</span>
       </NavLink>
-      <Link to="/results" aria-current={onResults ? 'page' : undefined}>
+      <Link
+        to="/results"
+        aria-current={onResults ? 'page' : undefined}
+        {...(variant === 'rail' && onResult ? { 'aria-expanded': drawer.open, 'aria-controls': 'results-drawer' } : {})}
+        onClick={(e) => {
+          if (variant !== 'rail' || !onResult) return;
+          e.preventDefault();
+          drawer.setOpen(!drawer.open);
+        }}
+      >
         <Icon name="results" />
         <span>{t('client.nav.results')}</span>
         {variant === 'sidebar' && badge(s.rows.length)}
@@ -252,27 +272,34 @@ function NavItems({ variant }: { variant: 'sidebar' | 'bottom' | 'rail' }) {
 export function Shell() {
   const { t } = useI18n();
   const layout = useLayout();
+  const { pathname } = useLocation();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // A chosen result (or any other page) closes the list again.
+  useEffect(() => setDrawerOpen(false), [pathname]);
+  const drawer = { open: drawerOpen, setOpen: setDrawerOpen };
   usePosture();
   useTheme();
   if (layout !== 'desktop') {
     return (
       <ImportProvider>
         <UpdateProvider>
-          <div className={`app client mobile ${layout}`}>
-            {layout === 'rail' && (
-              <nav className="rail-nav" aria-label={t('nav.label')}>
-                <NavItems variant="rail" />
-              </nav>
-            )}
-            <div className="main">
-              <Outlet />
+          <ResultsDrawerContext.Provider value={drawer}>
+            <div className={`app client mobile ${layout}`}>
+              {layout === 'rail' && (
+                <nav className="rail-nav" aria-label={t('nav.label')}>
+                  <NavItems variant="rail" />
+                </nav>
+              )}
+              <div className="main">
+                <Outlet />
+              </div>
+              {layout === 'bottom' && (
+                <nav className="bottom-nav" aria-label={t('nav.label')}>
+                  <NavItems variant="bottom" />
+                </nav>
+              )}
             </div>
-            {layout === 'bottom' && (
-              <nav className="bottom-nav" aria-label={t('nav.label')}>
-                <NavItems variant="bottom" />
-              </nav>
-            )}
-          </div>
+          </ResultsDrawerContext.Provider>
         </UpdateProvider>
       </ImportProvider>
     );
