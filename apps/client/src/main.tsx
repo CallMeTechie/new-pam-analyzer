@@ -7,6 +7,8 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router';
 import '@web/styles.css';
 import './app.css';
+import '@fontsource-variable/dm-sans';
+import './skin-d.css';
 import { App } from './App';
 import { Engine } from './lib/engine';
 import { localTransport } from './lib/transport';

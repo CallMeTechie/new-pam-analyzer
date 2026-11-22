@@ -4,7 +4,7 @@ The app evaluates PAM files from NXT, NXT-R and AIMEX directly on this PC, also 
 
 ## Overview
 
-The start page. A click on the area **Drag PAM files here or click to choose** opens the file dialog (one or more `.dat` files or ZIP archives). Other ways:
+The start page. On Windows the narrow icon bar on the left leads to Overview, Results and Settings; the dot at the bottom shows the connection state. The header band shows this week's measurements per day, the Ø Cpk and the number of critical heads; the filters (NXT, NXT-R, AIMEX, critical) narrow the list. On the right are the area for adding files and the server state, below the Cpk trend of the week, the best head and the number of critical heads. A click on the area **Drag PAM files here or click to choose** opens the file dialog (one or more `.dat` files or ZIP archives). Other ways:
 
 - **Drag and drop**: drag files onto the window, on any page.
 - A **double-click** on a `.dat` file in Explorer opens it in the app, also while the app is running.

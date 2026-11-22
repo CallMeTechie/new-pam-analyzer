@@ -32,7 +32,7 @@ export function UploadChip({ state, reason }: { state: UploadState; reason?: str
 }
 
 /** Connection state at the bottom of the sidebar. */
-export function ConnectionCard() {
+export function ConnectionCard({ compact = false, testId = 'connection' }: { compact?: boolean; testId?: string }) {
   const { t } = useI18n();
   const [s] = useEngine();
   const queued = s.rows.filter((r) => r.upload === 'queued').length;
@@ -54,8 +54,19 @@ export function ConnectionCard() {
       text = s.connection.companyName;
     }
   }
+  if (compact) {
+    // Windows rail: a dot with the state as tooltip and for screen readers.
+    return (
+      <Link to="/settings?tab=server" className="conn-dot" data-testid={testId} title={`${title} · ${text}`}>
+        <span className={`dot dot-${dot}`} />
+        <span className="sr-only">
+          {title} {text}
+        </span>
+      </Link>
+    );
+  }
   return (
-    <Link to="/settings?tab=server" className="conn-card" data-testid="connection">
+    <Link to="/settings?tab=server" className="conn-card" data-testid={testId}>
       <b>
         <span className={`dot dot-${dot}`} />
         {title}

@@ -1,5 +1,11 @@
 # Änderungen der App
 
+## 0.4.0
+
+### Neu
+- Windows: neues Design – schmale Symbolleiste statt Seitenleiste, indigoblaues Kopfband auf allen Seiten, Schrift DM Sans, hell und dunkel.
+- Windows-Übersicht als Dashboard: Messungen der Woche je Tag, Ø-Cpk und kritische Köpfe im Kopfband, Filter nach Familie und „kritisch“, rechts Dateien hinzufügen und Serverstatus, Cpk-Verlauf der Woche, bester Kopf und kritische Köpfe als Karten.
+
 ## 0.3.5
 
 ### Geändert

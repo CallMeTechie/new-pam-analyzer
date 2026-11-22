@@ -137,7 +137,7 @@ test('dark mode', async ({ page }) => {
   await page.getByText('Dark', { exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  expect(bg).toBe('rgb(16, 19, 24)');
+  expect(bg).toBe('rgb(22, 24, 41)');
   await page.getByText('Light', { exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
 });

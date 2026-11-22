@@ -4,7 +4,7 @@ Die App wertet PAM-Dateien von NXT, NXT-R und AIMEX direkt auf diesem PC aus, au
 
 ## Übersicht
 
-Die Startseite. Ein Klick auf die Fläche **PAM-Dateien hierher ziehen oder klicken zum Auswählen** öffnet die Dateiauswahl (eine oder mehrere `.dat`-Dateien oder ZIP-Archive). Weitere Wege:
+Die Startseite. Unter Windows führt die schmale Symbolleiste links zu Übersicht, Auswertungen und Einstellungen; der Punkt unten zeigt den Verbindungsstatus. Das Kopfband zeigt die Messungen der laufenden Woche je Tag, den Ø-Cpk und die Zahl kritischer Köpfe; mit den Filtern (NXT, NXT-R, AIMEX, kritisch) lässt sich die Liste eingrenzen. Rechts stehen die Fläche zum Hinzufügen von Dateien und der Serverstatus, darunter der Cpk-Verlauf der Woche, der beste Kopf und die Zahl der kritischen Köpfe. Ein Klick auf die Fläche **PAM-Dateien hierher ziehen oder klicken zum Auswählen** öffnet die Dateiauswahl (eine oder mehrere `.dat`-Dateien oder ZIP-Archive). Weitere Wege:
 
 - **Drag & Drop**: Dateien auf das Fenster ziehen, egal auf welcher Seite.
 - **Doppelklick** auf eine `.dat`-Datei im Explorer öffnet sie in der App, auch wenn die App schon läuft.
