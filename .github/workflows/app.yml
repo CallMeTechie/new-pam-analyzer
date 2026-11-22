@@ -171,10 +171,10 @@ jobs:
         env:
           PLAY: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
         run: echo "enabled=$([ -n "$PLAY" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-      - name: Upload to Google Play
+      - id: play_upload
+        name: Upload to Google Play
         if: steps.play.outputs.enabled == 'true'
-        # A rejected upload (e.g. the very first version of a new app, which Google only accepts in
-        # the Play Console) must not hold back the GitHub release; the job summary shows the error.
+        # A rejected upload must not hold back the GitHub release; the job log shows the error.
         continue-on-error: true
         uses: r0adkll/upload-google-play@v1
         with:
@@ -182,9 +182,23 @@ jobs:
           packageName: com.pamanalyzer.client
           releaseFiles: dist-android/*.aab
           mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
-          # Closed test ("alpha") until the app is public; set the repository variable PLAY_TRACK to change it.
-          track: ${{ vars.PLAY_TRACK || 'alpha' }}
+          # Closed test ("alpha") by default; the repository variable PLAY_TRACK changes it (e.g. internal).
+          tracks: ${{ vars.PLAY_TRACK || 'alpha' }}
           status: completed
+      - name: Upload to Google Play as draft
+        # As long as the app has not been published in the Play Console, Google accepts draft releases
+        # only ("Only releases with status draft may be created on draft app"). The release then
+        # waits in the Play Console for "Review release" / "Roll out".
+        if: steps.play.outputs.enabled == 'true' && steps.play_upload.outcome == 'failure'
+        continue-on-error: true
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.pamanalyzer.client
+          releaseFiles: dist-android/*.aab
+          mappingFile: dist-android/PAM-Analyzer_${{ needs.prepare.outputs.version }}_android-mapping.txt
+          tracks: ${{ vars.PLAY_TRACK || 'alpha' }}
+          status: draft
 
   publish:
     needs: [prepare, windows, android]
