@@ -1,6 +1,6 @@
 {
   "name": "@pam/server",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "PAM Analyzer server: API, storage and web delivery",
   "private": true,
   "type": "module",
@@ -20,10 +20,12 @@
     "drizzle-orm": "~0.44.7",
     "fflate": "~0.8.3",
     "hono": "^4.13.19",
+    "nodemailer": "^7.0.13",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/nodemailer": "^8.0.2",
     "drizzle-kit": "~0.31.11",
     "tsx": "^4.23.15"
   },

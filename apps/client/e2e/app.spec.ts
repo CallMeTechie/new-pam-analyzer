@@ -181,9 +181,8 @@ async function mockServer(page: Page, state: { online: boolean; uploads: number 
     const json = (status: number, body: unknown) =>
       route.fulfill({ status, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify(body) });
     if (path === '/api/app/connect') {
-      const body = req.postDataJSON() as { password: string };
-      if (body.password !== 'secret-password')
-        return json(401, { error: { code: 'invalid_credentials', message: 'wrong' } });
+      const body = req.postDataJSON() as { code: string };
+      if (body.code !== 'K7Q4-M2XP') return json(401, { error: { code: 'invalid_code', message: 'wrong' } });
       return json(201, {
         token: 'pamd_test',
         userName: 'Line Operator',
@@ -193,6 +192,40 @@ async function mockServer(page: Page, state: { online: boolean; uploads: number 
       });
     }
     if (path === '/api/app/config') return json(200, config);
+    if (path === '/api/results') {
+      const row = {
+        id: 41,
+        companyId: 2,
+        companyName: 'Customer A',
+        machineNo: 'M6IIIXNo90008',
+        machineFamily: 'nxt',
+        line: null,
+        headType: 'V12',
+        headSerial: '900026',
+        toolType: null,
+        toolSerial: null,
+        h08mVariant: null,
+        customer: 'Musterwerk Nord',
+        testDate: '2026-11-20 08:15:00',
+        dateSource: 'header',
+        cpkX: 1.1,
+        cpkY: 1.2,
+        cpkXY: 1.05,
+        rating: 'warning',
+        measured: 384,
+        expected: 384,
+        failed: 0,
+        componentStatus: 'ok',
+        warnings: 0,
+        fileName: 'P1.dat',
+        source: 'app',
+        createdAt: '2026-11-20T08:20:00Z',
+        uploadedByName: 'Shift A',
+        deviceName: 'LINE3-PC',
+        deviceId: 9,
+      };
+      return json(200, { items: [row], total: 1 });
+    }
     if (path === '/api/uploads') {
       const count = ((req.postData() ?? '').match(/name="files"/g) ?? []).length;
       state.uploads += count;
@@ -211,12 +244,10 @@ test('server: connect, upload the queue, collect files while offline', async ({ 
   await page.getByTestId('connection').click();
   await expect(page.getByRole('tab', { name: 'Server' })).toHaveAttribute('aria-selected', 'true');
   await page.getByLabel('Server address').fill('pam.test');
-  await page.getByLabel('API key').fill('pam_abcdefghijklmnopqrstuvwxyz');
-  await page.getByLabel('E-mail address').fill('operator@customer-a.test');
-  await page.getByLabel('Password').fill('wrong');
+  await page.getByLabel('Code').fill('ABCD-EFGH');
   await page.getByRole('button', { name: 'Connect' }).click();
-  await expect(page.getByText('E-mail address or password is wrong.')).toBeVisible();
-  await page.getByLabel('Password').fill('secret-password');
+  await expect(page.getByText('The code is invalid, expired or already used.')).toBeVisible();
+  await page.getByLabel('Code').fill('k7q4-m2xp');
   await page.getByRole('button', { name: 'Connect' }).click();
   await expect(page.getByText('Customer A').first()).toBeVisible();
   await expect(page.getByText('All files are uploaded.')).toBeVisible();
@@ -234,6 +265,17 @@ test('server: connect, upload the queue, collect files while offline', async ({ 
   await page.getByRole('button', { name: 'Upload now' }).click();
   await expect(page.getByText('All files are uploaded.')).toBeVisible();
   expect(state.uploads).toBe(2);
+
+  // Results: switch from this device to the results of the whole company on the server.
+  await page.getByRole('link', { name: 'Results' }).first().click();
+  await page.getByRole('radio', { name: 'Server' }).click();
+  await expect(page.getByTestId('server-groups-date')).toBeVisible();
+  await expect(page.locator('.result-row')).toHaveCount(1);
+  await expect(page.locator('.result-row')).toContainText('Shift A · LINE3-PC');
+  await expect(page.locator('.result-row')).toHaveAttribute('href', /#\/results\/s41$/);
+  await page.getByRole('radio', { name: 'This device' }).click();
+  await expect(page.locator('.result-row')).toHaveCount(2);
+  await page.getByTestId('connection').click();
 
   await page.getByRole('button', { name: 'Disconnect' }).click();
   await page.getByRole('button', { name: 'Really disconnect' }).click();

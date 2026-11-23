@@ -11,8 +11,8 @@ The PAM Analyzer evaluates PAM results (`.dat`) of FUJI NXT, NXT-R and AIMEX mac
 
 ## Roles
 
-- **Administrator**: belongs to the service company and manages all companies, users, API keys and settings.
-- **Company admin**: manages the users, API keys, machines and logo of their company.
+- **Administrator**: belongs to the service company and manages all companies, users and settings.
+- **Company admin**: invites members, manages their devices, the machines and the logo of their company.
 - **User**: sees the results of their company and uploads new ones.
 
 Members of the service company see the results of all companies.
@@ -51,18 +51,19 @@ The rating is based on the spread of all components of a holder, not on each com
 
 **Head history** in a result shows all tests of the same head in the company: Cpk XY as a line over time and the list of all tests. A filled dot means "date from the file", a hollow dot "date = upload".
 
-## Companies, team and API keys
+## Companies, team and devices
 
-- **Companies** (service company): create companies, upload logos, manage users, API keys and machines. **Open company view** shows the company exactly as its members see it.
-- **Team & API keys** (company admin): invite members, create API keys, disconnect devices, enter the line of each machine.
-- **API keys** connect the Windows, Android and iOS apps. Every member of the company can use every key of the company. A key allows at most the set number of devices. The key is shown only when it is created.
+- **Companies** (service company): create companies, upload logos, manage users, devices and machines. **Open company view** shows the company exactly as its members see it.
+- **Team** (company admin): invite members, disconnect devices, set the number of devices per member, enter the line of each machine.
+- **Invite member:** enter name, e-mail address and role. You get an **invitation** with QR code, link and code (valid for 7 days, single use). With the link the member chooses a password in the browser; with the QR code they connect their first device in the app. With a mail server configured, the invitation can be sent by e-mail right away. Lost? **Invitation** in the member list creates a new one; the old one stops working.
+- **Connect another device:** each member under **My account**. The QR code shown there is valid for 10 minutes and once. That page also lists your devices and lets you disconnect them.
 
 ## Settings (administrators)
 
 - **Coefficients**: tolerance and expected components per head type, plus the DX tools. Every change is saved as a new version; existing results keep their version.
 - **Rating**: thresholds of the four rating levels.
 - **Languages**: export a language file, translate it and import it again. Missing texts appear in English.
-- **Security & data**: default maximum number of devices for new API keys.
+- **Security & data**: default number of devices per member (a company can set its own limit under Team).
 - **Version**: installed version and changes.
 
 ## Operation

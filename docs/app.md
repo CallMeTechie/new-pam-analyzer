@@ -38,8 +38,13 @@ apps/client
 - **Drucken:** `window.print()` wird auf den Android-Druckdialog umgeleitet (auch „Als PDF
   speichern“).
 - **Token:** EncryptedSharedPreferences mit Schlüssel im Android-Keystore.
-- **QR-Code:** Das Web zeigt einen neuen API-Key zusätzlich als QR-Code
-  (`{"server": "…", "apiKey": "pam_…"}`); die App scannt ihn unter „Server“.
+- **QR-Code:** Einladungen und „Mein Konto → Weiteres Gerät verbinden“ zeigen im Web einen QR-Code
+  mit dem Link `https://<server>/connect/<code>`; die App liest Serveradresse und Code daraus und
+  verbindet sich (`POST /api/app/connect`). Android scannt mit dem Code-Scanner der Google
+  Play-Dienste.
+- **Server-Ergebnisse:** Verbunden zeigt „Auswertungen“ per Umschalter auch die Ergebnisse der Firma
+  vom Server (`GET /api/results` mit dem Geräte-Token), schreibgeschützt; geöffnet werden sie mit
+  der Auswertung des Servers.
 - **Updates:** Die APK von GitHub prüft dieselben Kanäle wie Windows (Eintrag `android` in
   `stable.json`/`beta.json`), lädt die APK, prüft die Signatur (`signature.rs`, gleicher Schlüssel
   wie Windows) und übergibt sie dem Android-Installer. Beim ersten Mal fragt Android, ob die App

@@ -29,6 +29,13 @@
       "when": 1795417078783,
       "tag": "0003_crash_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1795427642028,
+      "tag": "0004_connect_codes",
+      "breakpoints": true
     }
   ]
 }

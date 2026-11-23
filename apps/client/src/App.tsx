@@ -101,7 +101,7 @@ function ResultsArea() {
     return (
       <div className="split panel">
         <div className="split-list">
-          <Results compact selectedId={Number(detail.params.id)} />
+          <Results compact selectedId={detail.params.id ?? null} />
         </div>
         <div className="split-detail" key={detail.params.id}>
           <PageChromeContext.Provider
@@ -138,7 +138,7 @@ function ResultsArea() {
         onClick={() => drawer.setOpen(false)}
       />
       <div className={`split-list${drawer.open ? ' open' : ''}`} id="results-drawer" aria-hidden={!drawer.open}>
-        <Results compact selectedId={Number(detail.params.id)} />
+        <Results compact selectedId={detail.params.id ?? null} />
       </div>
       <div className="split-detail">
         <Outlet />

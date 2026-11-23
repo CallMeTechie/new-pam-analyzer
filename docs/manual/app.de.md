@@ -40,15 +40,16 @@ Bei einem breiten, z. B. maximierten Fenster gleitet das Ergebnis von rechts her
 
 Techniker und Kunden können die App mit einem **FUJI PAM Server** verbinden. Die App lädt dann jede Datei zusätzlich zum Server hoch, wo die Ergebnisse auch im Web zur Verfügung stehen. Kunden können außerdem einen **eigenen Server** erwerben und die Ergebnisse in ihre eigene Umgebung hochladen.
 
-Für den Zugang (Serveradresse, API-Key und Benutzerkonto) wenden Sie sich bitte an Ihren **FUJI-Servicerepräsentanten**. Verbunden wird in den **Einstellungen** unter **Server**.
+Für den Zugang wenden Sie sich bitte an Ihren **FUJI-Servicerepräsentanten** oder den Admin Ihrer Firma: Sie erhalten eine **Einladung** mit QR-Code. Verbunden wird in den **Einstellungen** unter **Server**: **QR-Code scannen** – oder Serveradresse und Code von Hand eingeben. Für ein weiteres Gerät erzeugen Sie den Code selbst im Web unter **Mein Konto → Weiteres Gerät verbinden**. Ein API-Key oder Passwort wird in der App nicht gebraucht.
 
-Das Passwort wird nicht gespeichert, nur ein Geräte-Token in der Windows-Anmeldeinformationsverwaltung bzw. im geschützten Speicher von Android.
+Gespeichert wird nur ein Geräte-Token in der Windows-Anmeldeinformationsverwaltung bzw. im geschützten Speicher von Android.
 
 - Hochgeladen wird immer die **Originaldatei**; der Server rechnet selbst und ist maßgeblich.
 - Ist der Server nicht erreichbar, sammelt die App die Dateien in der **Warteschlange** und versucht es jede Minute erneut.
 - Beim Verbinden werden auch alle bisher nur lokal ausgewerteten Dateien hochgeladen.
 - **Koeffizienten und Bewertungsgrenzen** übernimmt die App vom Server. Ändert der Server sie, bewertet die App alle Ergebnisse auf dem Gerät neu.
-- **Trennen** gibt den Geräteplatz des API-Keys wieder frei. Die Ergebnisse bleiben auf dem Gerät.
+- **Trennen** gibt den Geräteplatz Ihres Kontos wieder frei. Die Ergebnisse bleiben auf dem Gerät.
+- **Auswertungen → Dieses Gerät / Server:** Verbunden zeigt der Umschalter auch die Ergebnisse der ganzen Firma vom Server (alle Geräte und Web-Uploads, mit Angabe, wer sie hochgeladen hat). Sie sind schreibgeschützt; offline sind nur die Ergebnisse des Geräts verfügbar.
 
 Jedes Ergebnis zeigt seinen Stand: **Hochgeladen**, **Warteschlange**, **Nur auf diesem Gerät** oder **Nicht angenommen** (mit Grund; „Erneut versuchen“ unter Einstellungen → Server). Ein Klick auf den Verbindungsstatus unten links öffnet diese Seite.
 
@@ -80,8 +81,9 @@ Die App läuft auf Smartphones, Tablets und Foldables und kann dasselbe wie unte
 - **Tablet und aufgeklapptes Foldable:** Navigation links. Ein Ergebnis nutzt die ganze Breite; ein Tippen auf „Auswertungen“ schiebt die Liste von links herein, die Auswahl eines anderen Ergebnisses oder ein Tippen daneben schließt sie wieder.
 - **Foldable halb aufgeklappt (Tischmodus):** Diagramme oben, Bedienung unten.
 - **Drucken:** öffnet den Android-Druckdialog; dort auch **Als PDF speichern**.
-- **Server verbinden:** wie unter Windows. Den API-Key kann man scannen: Beim Anlegen zeigt das
-  Web einen QR-Code, in der App unter Einstellungen → Server auf das Kamera-Symbol tippen.
+- **Server verbinden:** unter Einstellungen → Server auf **QR-Code scannen** tippen und den QR-Code
+  der Einladung (oder aus „Mein Konto“ im Web) scannen. Der Scanner kommt von den Google Play-Diensten
+  und braucht keine Kamera-Berechtigung der App.
 - **Updates:** installiert Google Play automatisch.
 
 ### Installation (Google Play)

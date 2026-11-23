@@ -50,6 +50,10 @@ export interface ResultRow {
   fileName: string;
   source: 'web' | 'app';
   createdAt: string;
+  /** Who uploaded it and with which app (server lists). */
+  uploadedByName?: string | null;
+  deviceName?: string | null;
+  deviceId?: number | null;
 }
 
 export interface ResultDetail {
@@ -89,7 +93,10 @@ export interface Company {
   disabled: boolean;
   createdAt: string;
   users: number;
-  apiKeys: number;
+  /** Connected apps of all members. */
+  devices: number;
+  /** Devices per user; `null`: the default of the general settings. */
+  maxDevicesPerUser: number | null;
   machines: number;
   results: number;
   lastResultAt: string | null;
@@ -119,6 +126,8 @@ export interface User {
   lastLoginAt: string | null;
   createdAt: string;
   devices: number;
+  /** Open invitation (password not set yet): valid until (ms). */
+  inviteUntil: number | null;
 }
 
 export interface Device {
@@ -133,17 +142,11 @@ export interface Device {
   createdAt: string;
 }
 
-export interface ApiKey {
-  id: number;
-  companyId: number;
-  companyName: string;
-  name: string;
-  prefix: string;
-  maxConnections: number;
-  revoked: boolean;
-  lastUsedAt: string | null;
-  createdAt: string;
-  devices: Device[];
+/** Invitation or "connect device" code: QR code (`url`), link and code to type. */
+export interface IssuedCode {
+  code: string;
+  url: string;
+  expiresAt: string;
 }
 
 export interface Dashboard {

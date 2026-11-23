@@ -27,6 +27,8 @@ export const companies = sqliteTable('companies', {
   logo: blob('logo', { mode: 'buffer' }),
   logoType: text('logo_type'),
   logoUpdatedAt: integer('logo_updated_at', { mode: 'timestamp_ms' }),
+  /** Devices (apps) per user; `null`: the default of the general settings. */
+  maxDevicesPerUser: integer('max_devices_per_user'),
   disabledAt: integer('disabled_at', { mode: 'timestamp_ms' }),
   createdAt: createdAt(),
 });
@@ -68,39 +70,11 @@ export const sessions = sqliteTable(
   (t) => [index('sessions_user_idx').on(t.userId)],
 );
 
-/**
- * API keys of a company for the Windows, Android and iOS apps. Every user of the company can
- * connect a device with any of its keys; a key allows at most `maxConnections` devices at a time.
- */
-export const apiKeys = sqliteTable(
-  'api_keys',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    companyId: integer('company_id')
-      .notNull()
-      .references(() => companies.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
-    /** Visible start of the key, e.g. `pam_Hk4W2c9T`. */
-    prefix: text('prefix').notNull(),
-    /** SHA-256 of the full key. */
-    keyHash: text('key_hash').notNull().unique(),
-    maxConnections: integer('max_connections').notNull(),
-    createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
-    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
-    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
-    createdAt: createdAt(),
-  },
-  (t) => [index('api_keys_company_idx').on(t.companyId)],
-);
-
 /** A device (app installation) connected through an API key by a user. Counts towards the key's limit. */
 export const devices = sqliteTable(
   'devices',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    apiKeyId: integer('api_key_id')
-      .notNull()
-      .references(() => apiKeys.id, { onDelete: 'cascade' }),
     userId: integer('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
@@ -116,7 +90,34 @@ export const devices = sqliteTable(
     disconnectedAt: integer('disconnected_at', { mode: 'timestamp_ms' }),
     createdAt: createdAt(),
   },
-  (t) => [index('devices_key_idx').on(t.apiKeyId), index('devices_user_idx').on(t.userId)],
+  (t) => [index('devices_user_idx').on(t.userId)],
+);
+
+/**
+ * One-time codes that connect an app to a user account, shown as QR code and as text.
+ * - `invite`: created with an invitation (7 days); sets the first password on the web once and
+ *   connects one device once.
+ * - `device`: created by the user under "My account" (10 minutes); connects one device.
+ */
+export const connectCodes = sqliteTable(
+  'connect_codes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    purpose: text('purpose', { enum: ['invite', 'device'] }).notNull(),
+    /** SHA-256 of the normalised code. */
+    codeHash: text('code_hash').notNull().unique(),
+    expiresAt: integer('expires_at', { mode: 'timestamp_ms' }).notNull(),
+    passwordSetAt: integer('password_set_at', { mode: 'timestamp_ms' }),
+    deviceConnectedAt: integer('device_connected_at', { mode: 'timestamp_ms' }),
+    /** Replaced by a newer code of the same purpose. */
+    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+    createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
+    createdAt: createdAt(),
+  },
+  (t) => [index('connect_codes_user_idx').on(t.userId)],
 );
 
 /** Machines are created automatically on upload; a line (section) can be assigned afterwards. */

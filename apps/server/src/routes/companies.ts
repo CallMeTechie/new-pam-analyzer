@@ -41,7 +41,8 @@ function listCompanies(db: Db, onlyId?: number) {
       disabled: sql<boolean>`${companies.disabledAt} is not null`.mapWith(Boolean),
       createdAt: companies.createdAt,
       users: n('users', 'and t.disabled_at is null'),
-      apiKeys: n('api_keys', 'and t.revoked_at is null'),
+      devices: sql<number>`(select count(*) from devices d join users u on u.id = d.user_id where u.company_id = "companies"."id" and d.disconnected_at is null)`,
+      maxDevicesPerUser: companies.maxDevicesPerUser,
       machines: n('machines'),
       results: n('results', 'and t.deleted_at is null'),
       lastResultAt: sql<
@@ -105,6 +106,17 @@ companyRoutes.patch('/:id', async (c) => {
     })
     .where(eq(companies.id, id))
     .run();
+  return c.json({ company: listCompanies(db, id)[0] });
+});
+
+/** Devices per user for a company (company admins for their own company); `null`: the default. */
+companyRoutes.put('/:id/device-limit', async (c) => {
+  const id = idParam(c);
+  requireManage(c, id);
+  const body = parse(z.object({ maxDevicesPerUser: z.number().int().min(1).max(100).nullable() }), await jsonBody(c));
+  const db = c.get('db');
+  if (!db.select({ id: companies.id }).from(companies).where(eq(companies.id, id)).get()) throw notFound('Company');
+  db.update(companies).set({ maxDevicesPerUser: body.maxDevicesPerUser }).where(eq(companies.id, id)).run();
   return c.json({ company: listCompanies(db, id)[0] });
 });
 

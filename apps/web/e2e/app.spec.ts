@@ -14,7 +14,7 @@ const fixture = (family: string, index: number) =>
 /** Default credentials of a new installation, and what the administrator changes them to. */
 const DEFAULT = { email: 'admin@example.com', password: 'admin1234' };
 const ADMIN = { email: 'it@plant.test', password: 'admin-password-e2e' };
-let memberPassword = '';
+let inviteUrl = '';
 
 async function signIn(page: Page, email: string, password: string) {
   await page.goto('/');
@@ -34,7 +34,7 @@ async function changePassword(page: Page, current: string, next: string, newEmai
 
 test.describe.configure({ mode: 'serial' });
 
-test('administrator: first sign-in with default credentials, company, team and API key', async ({ page }) => {
+test('administrator: first sign-in with default credentials, company, team and invitation', async ({ page }) => {
   await signIn(page, DEFAULT.email, DEFAULT.password);
   await changePassword(page, DEFAULT.password, ADMIN.password, ADMIN.email);
   await expect(page.getByText('No results yet')).toBeVisible();
@@ -50,25 +50,27 @@ test('administrator: first sign-in with default credentials, company, team and A
 
   await page.getByRole('link', { name: 'Open company view' }).click();
   await expect(page.getByText('You are viewing Customer A exactly as its members see it.')).toBeVisible();
-  await page.getByRole('link', { name: 'Team & API keys' }).click();
+  await page.getByRole('link', { name: 'Team' }).click();
   await page.getByRole('button', { name: 'Invite member' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Line Operator');
   await page.getByLabel('E-mail address').fill('operator@customer-a.test');
   await page.getByRole('dialog').getByRole('button', { name: 'Invite member' }).click();
-  await expect(page.getByRole('dialog', { name: 'Member invited' })).toBeVisible();
-  memberPassword = (await page.locator('.secret code').textContent()) ?? '';
-  expect(memberPassword).toHaveLength(16);
+  // An invitation (QR code, link, code) instead of an initial password or an API key.
+  const invite = page.getByRole('dialog', { name: 'Invitation for Line Operator' });
+  await expect(invite).toBeVisible();
+  await expect(invite.getByRole('img', { name: 'QR code of the invitation for Line Operator' })).toBeVisible();
+  inviteUrl = (await invite.locator('.secret code').textContent()) ?? '';
+  expect(inviteUrl).toMatch(/\/connect\/[A-Z2-9]{8}$/);
+  await expect(invite.locator('.code-big')).toHaveText(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.getByText('operator@customer-a.test')).toBeVisible();
+  await expect(page.getByText(/Invitation open until/)).toBeVisible();
 
-  await page.getByRole('tab', { name: 'API keys' }).click();
-  await page.getByLabel('Name of the new key').fill('Line 1 tablets');
-  await page.getByLabel('Max. devices').fill('2');
-  await page.getByRole('button', { name: 'Create API key' }).click();
-  await expect(page.getByRole('dialog', { name: 'API key created' })).toBeVisible();
-  await expect(page.locator('.secret code')).toHaveText(/^pam_[\w-]{43}$/);
-  await page.getByRole('button', { name: 'Done' }).click();
-  await expect(page.locator('.key-card')).toContainText('0 / 2');
+  await page.getByRole('tab', { name: 'Devices' }).click();
+  await expect(page.getByText('No apps connected yet')).toBeVisible();
+  await page.getByLabel('Devices per member').fill('2');
+  await page.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByText('Saved')).toBeVisible();
 
   await page.getByRole('link', { name: 'Back to admin view' }).click();
   await expect(page.getByRole('heading', { name: 'Companies', level: 1 })).toBeVisible();
@@ -139,13 +141,26 @@ test('upload, results, search, detail and head history', async ({ page }) => {
 });
 
 test('company member sees only the own company and can switch to German', async ({ page }) => {
-  await signIn(page, 'operator@customer-a.test', memberPassword);
-  await changePassword(page, memberPassword, 'operator-password-1');
+  // The invitation link: choose the password, then sign in.
+  await page.goto(inviteUrl);
+  await expect(page.getByRole('heading', { name: 'Welcome, Line Operator' })).toBeVisible();
+  await page.getByLabel('New password', { exact: true }).fill('operator-password-1');
+  await page.getByLabel('Repeat password').fill('operator-password-1');
+  await page.getByRole('button', { name: 'Set password' }).click();
+  await page.getByRole('link', { name: 'Go to sign-in' }).click();
+  await expect(page.getByLabel('E-mail address')).toHaveValue('operator@customer-a.test');
+  await page.getByLabel('Password', { exact: true }).fill('operator-password-1');
+  await page.getByRole('button', { name: 'Sign in' }).click();
   await expect(
     page.getByRole('heading', { name: 'Customer A' }).or(page.getByText('Latest PAM results of Customer A')),
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Companies' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Team & API keys' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Team' })).toHaveCount(0);
+  // My account: connect another device with a short-lived code.
+  await page.goto('/account');
+  await page.getByRole('button', { name: 'Show code' }).click();
+  await expect(page.getByRole('img', { name: 'QR code to connect a device' })).toBeVisible();
+  await expect(page.getByText(/Valid for \d+:\d\d more minutes/)).toBeVisible();
   // Dashboard: the three latest uploads as cards, below them this and last calendar week.
   await page.getByRole('link', { name: 'Dashboard' }).first().click();
   await expect(page.getByTestId('latest-cards').locator('a')).toHaveCount(3);

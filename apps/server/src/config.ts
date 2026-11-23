@@ -20,6 +20,19 @@ export interface ServerConfig {
   webDir: string;
   /** Name of the service company created on first start. */
   serviceCompanyName: string;
+  /** Optional mail server for invitations; without it the invitation link is handed over by hand. */
+  smtp: SmtpConfig | null;
+}
+
+export interface SmtpConfig {
+  host: string;
+  port: number;
+  /** TLS from the start (port 465); otherwise STARTTLS when the server offers it. */
+  secure: boolean;
+  user: string | null;
+  password: string | null;
+  /** Sender, e.g. `PAM Analyzer <pam@example.com>`. */
+  from: string;
 }
 
 function int(value: string | undefined, fallback: number): number {
@@ -55,5 +68,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     timeZone: validTimeZone(env.TIME_ZONE) ?? 'Europe/Berlin',
     webDir: resolve(env.WEB_DIR ?? './public'),
     serviceCompanyName: env.SERVICE_COMPANY_NAME?.trim() || 'FUJI Service',
+    smtp: env.SMTP_HOST?.trim()
+      ? {
+          host: env.SMTP_HOST.trim(),
+          port: int(env.SMTP_PORT, 587),
+          secure: env.SMTP_SECURE ? env.SMTP_SECURE === 'true' : int(env.SMTP_PORT, 587) === 465,
+          user: env.SMTP_USER?.trim() || null,
+          password: env.SMTP_PASSWORD ?? null,
+          from: env.SMTP_FROM?.trim() || `PAM Analyzer <${env.SMTP_USER?.trim() || 'pam@localhost'}>`,
+        }
+      : null,
   };
 }

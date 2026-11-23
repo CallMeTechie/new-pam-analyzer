@@ -40,15 +40,16 @@ In a wide, e.g. maximized window the result slides in from the right and takes a
 
 Technicians and customers can connect the app to a **FUJI PAM Server**. The app then also uploads every file to the server, where the results are available on the web as well. Customers can also purchase a **server of their own** and upload the results to their own environment.
 
-For access (server address, API key and user account) please contact your **FUJI service representative**. You connect in **Settings** under **Server**.
+For access please contact your **FUJI service representative** or the admin of your company: you receive an **invitation** with a QR code. You connect in **Settings** under **Server**: **Scan QR code** – or enter the server address and code by hand. For another device, create the code yourself on the web under **My account → Connect another device**. The app needs no API key or password.
 
-The password is not stored, only a device token in the Windows Credential Manager or the protected storage of Android.
+Only a device token is stored in the Windows Credential Manager or the protected storage of Android.
 
 - The **original file** is always uploaded; the server evaluates it itself and is authoritative.
 - If the server cannot be reached, the app collects the files in the **upload queue** and tries again every minute.
 - When connecting, all files evaluated only locally so far are uploaded as well.
 - The app takes over **coefficients and rating limits** from the server. When the server changes them, the app rates all results on this device again.
-- **Disconnect** frees the device slot of the API key. The results stay on the device.
+- **Disconnect** frees the device slot of your account. The results stay on the device.
+- **Results → This device / Server:** when connected, the switch also shows the results of the whole company on the server (all devices and web uploads, with who uploaded them). They are read-only; offline only the results on the device are available.
 
 Every result shows its state: **Uploaded**, **Waiting for upload**, **Only on this device** or **Not accepted** (with the reason; "Try again" under Settings → Server). A click on the connection state at the bottom left opens this page.
 
@@ -80,8 +81,9 @@ The app runs on smartphones, tablets and foldables and can do the same as on Win
 - **Tablet and unfolded foldable:** navigation on the left. A result uses the full width; tapping "Results" slides the list in from the left, choosing another result or tapping beside it closes it again.
 - **Foldable half open (tabletop):** charts above, controls below.
 - **Print:** opens the Android print dialog, including **Save as PDF**.
-- **Connect to the server:** as on Windows. The API key can be scanned: the web shows a QR code
-  when the key is created; in the app tap the camera symbol under Settings → Server.
+- **Connect to the server:** under Settings → Server tap **Scan QR code** and scan the QR code of the
+  invitation (or from "My account" on the web). The scanner comes from Google Play services and needs
+  no camera permission of the app.
 - **Updates:** installed automatically by Google Play.
 
 ### Installation (Google Play)

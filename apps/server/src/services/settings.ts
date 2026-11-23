@@ -60,15 +60,17 @@ export function setCoefficientConfig(db: Db, config: CoefficientConfig, userId: 
 
 export const generalSettingsSchema = z.object({
   /** Proposed maximum number of devices for a new API key. */
-  defaultMaxConnections: z.number().int().min(1).max(1000),
+  /** Devices (apps) per user, unless the company sets its own limit. */
+  maxDevicesPerUser: z.number().int().min(1).max(100),
 });
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 
 const GENERAL = 'general';
-export const DEFAULT_GENERAL: GeneralSettings = { defaultMaxConnections: 5 };
+export const DEFAULT_GENERAL: GeneralSettings = { maxDevicesPerUser: 3 };
 
 export function getGeneralSettings(db: Db): GeneralSettings {
-  return { ...DEFAULT_GENERAL, ...read<Partial<GeneralSettings>>(db, GENERAL) };
+  const stored = read<Partial<GeneralSettings> & { defaultMaxConnections?: number }>(db, GENERAL) ?? {};
+  return { maxDevicesPerUser: stored.maxDevicesPerUser ?? DEFAULT_GENERAL.maxDevicesPerUser };
 }
 
 export function setGeneralSettings(db: Db, value: GeneralSettings, userId: number): GeneralSettings {

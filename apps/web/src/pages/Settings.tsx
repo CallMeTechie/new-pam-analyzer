@@ -620,11 +620,11 @@ function Languages() {
 
 function Security() {
   const { t } = useI18n();
-  const { data, error, reload } = useApi<{ defaultMaxConnections: number }>('/settings/general');
+  const { data, error, reload } = useApi<{ maxDevicesPerUser: number }>('/settings/general');
   const [value, setValue] = useState('');
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (data) setValue(String(data.defaultMaxConnections));
+    if (data) setValue(String(data.maxDevicesPerUser));
   }, [data]);
   if (error) return <ErrorNotice error={error} />;
   if (!data) return <Loading />;
@@ -639,12 +639,12 @@ function Security() {
       {saved && <Notice kind="success" title={t('common.saved')} />}
       <div className="form-row">
         <label className="field" style={{ flex: '0 1 280px' }}>
-          {t('settings.defaultMaxConn')}
+          {t('settings.maxDevices')}
           <input
             className="input mono"
             type="number"
             min={1}
-            max={1000}
+            max={100}
             value={value}
             onChange={(e) => setValue(e.target.value)}
           />
@@ -652,9 +652,9 @@ function Security() {
         <button
           type="button"
           className="btn primary"
-          disabled={Number(value) < 1 || Number(value) === data.defaultMaxConnections}
+          disabled={Number(value) < 1 || Number(value) === data.maxDevicesPerUser}
           onClick={async () => {
-            await api.put('/settings/general', { defaultMaxConnections: Number(value) });
+            await api.put('/settings/general', { maxDevicesPerUser: Number(value) });
             setSaved(true);
             reload();
           }}

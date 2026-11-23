@@ -21,7 +21,14 @@ export const SERVER_VERSION: string = (() => {
 /** Public metadata: version and imported language catalogs (also needed on the sign-in page). */
 export const metaRoutes = new Hono<AppEnv>();
 
-metaRoutes.get('/version', (c) => c.json({ version: SERVER_VERSION, algorithmVersion: ALGORITHM_VERSION }));
+metaRoutes.get('/version', (c) =>
+  c.json({
+    version: SERVER_VERSION,
+    algorithmVersion: ALGORITHM_VERSION,
+    /** Invitations can be sent by e-mail. */
+    mail: c.get('config').smtp !== null,
+  }),
+);
 
 metaRoutes.get('/i18n', (c) => c.json({ catalogs: listCatalogs(c.get('db')) }));
 

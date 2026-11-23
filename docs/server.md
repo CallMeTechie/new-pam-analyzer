@@ -24,7 +24,7 @@ die Nummer in `docker-compose.yml` zu ändern und das Projekt neu zu erstellen. 
 |---|---|---|
 | `PORT` | `3000` | Port im Container |
 | `DATA_DIR` | `/data` | Ordner der Datenbank `pam.sqlite` (Volume) |
-| `PUBLIC_URL` | – | Öffentliche Adresse; mit `https://` wird das Sitzungs-Cookie als `Secure` markiert |
+| `PUBLIC_URL` | – | Öffentliche Adresse; mit `https://` wird das Sitzungs-Cookie als `Secure` markiert. Einladungslinks und QR-Codes zeigen auf diese Adresse (sonst auf die, unter der das Web aufgerufen wurde) |
 | `COOKIE_SECURE` | aus `PUBLIC_URL` | Erzwingt `Secure` an (`true`) oder aus (`false`) |
 | `TIME_ZONE` | `Europe/Berlin` | Zeitzone der Maschinen; für Datumsangaben aus ZIP-Archiven und den Upload-Zeitpunkt |
 | `SESSION_TTL_DAYS` | `7` | Gültigkeit einer Anmeldung, verlängert sich bei Nutzung |
@@ -32,6 +32,10 @@ die Nummer in `docker-compose.yml` zu ändern und das Projekt neu zu erstellen. 
 | `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Sperre nach Fehlversuchen |
 | `SERVICE_COMPANY_NAME` | `FUJI Service` | Name der Service-Firma beim ersten Start |
 | `WEB_DIR` | `/app/public` | Gebaute Web-Oberfläche; fehlt der Ordner, läuft nur die API |
+| `SMTP_HOST` | – | Optional: Mailserver für Einladungen per E-Mail. Ohne ihn gibt man Link oder QR-Code selbst weiter |
+| `SMTP_PORT` / `SMTP_SECURE` | `587` / bei Port 465 `true` | Port; `true` = TLS von Anfang an, sonst STARTTLS |
+| `SMTP_USER` / `SMTP_PASSWORD` | – | Anmeldung am Mailserver |
+| `SMTP_FROM` | `PAM Analyzer <SMTP_USER>` | Absender |
 
 **Datenordner:** Der Container startet als root, legt `/data` an, macht den Ordner für den
 Server-Benutzer (uid 1000) beschreibbar und startet den Server dann ohne Root-Rechte. Ein
@@ -57,14 +61,14 @@ nicht aus dem Internet erreichbar machen.
 
 ## Firmen, Rollen und Rechte
 
-Firmen sind die Mandanten. Benutzer, API-Keys, Maschinen und Ergebnisse gehören zu genau einer
+Firmen sind die Mandanten. Benutzer, Geräte, Maschinen und Ergebnisse gehören zu genau einer
 Firma. Eine Firma ist die **Service-Firma** (FUJI Service); ihre Mitglieder sehen alle Firmen.
 
 | | Administrator | Firmen-Admin | Benutzer |
 |---|---|---|---|
 | Ergebnisse sehen, suchen, hochladen | alle Firmen | eigene Firma¹ | eigene Firma¹ |
 | Ergebnisse löschen | alle | eigene Firma | – |
-| Benutzer und API-Keys verwalten | alle Firmen | eigene Firma | – |
+| Benutzer einladen, Geräte verwalten | alle Firmen | eigene Firma | – |
 | Firmen anlegen, Einstellungen | ✓ | – | – |
 
 ¹ Mitglieder der Service-Firma sehen und laden für alle Firmen, unabhängig von ihrer Rolle.
@@ -72,20 +76,35 @@ Firma. Eine Firma ist die **Service-Firma** (FUJI Service); ihre Mitglieder sehe
 - Die Rolle *Administrator* gibt es nur in der Service-Firma; nur Administratoren vergeben sie.
 - Niemand ändert die eigene Rolle oder deaktiviert sich selbst; der letzte Administrator bleibt.
 - Deaktivierte Benutzer oder Firmen verlieren sofort alle Sitzungen und Geräteverbindungen.
-- Neue Benutzer erhalten ein Startpasswort und müssen es bei der ersten Anmeldung ändern. Bis dahin
-  beantwortet der Server alles außer `/api/auth/*` mit `403 password_change_required`, und Apps
-  können sich mit dem Konto nicht verbinden.
+- Neue Benutzer erhalten eine **Einladung** statt eines Startpassworts (siehe unten). Wird beim
+  Anlegen oder Zurücksetzen doch ein Startpasswort vergeben, muss es bei der ersten Anmeldung
+  geändert werden; bis dahin beantwortet der Server alles außer `/api/auth/*` mit
+  `403 password_change_required`.
 
-## API-Keys und Geräte
+## Einladungen und Geräte
 
-1. Firmen-Admin oder FUJI Service legen einen API-Key mit einer **maximalen Anzahl Geräte** an.
-   Der Key wird genau einmal angezeigt.
-2. Die App verbindet sich mit `POST /api/app/connect` (Key, E-Mail, Passwort, Installations-ID,
-   Gerätename, Plattform). Der Benutzer muss zur Firma des Keys gehören.
-3. Die App erhält ein **Geräte-Token** (`pamd_…`) und sendet es als `Authorization: Bearer`.
-4. Ist die Grenze erreicht, antwortet der Server mit `409 connection_limit`. Dieselbe Installation
-   belegt beim erneuten Verbinden keinen weiteren Platz; das alte Token wird dabei ungültig.
-5. Trennen (Firmen-Admin oder App selbst) gibt den Platz frei. Widerruf des Keys trennt alle Geräte.
+Apps verbinden sich mit **Einmal-Codes**, die zu genau einem Benutzerkonto gehören (8 Zeichen, z. B.
+`7KQ4-M2XP`; gespeichert wird nur ein SHA-256-Hash). Der QR-Code im Web enthält den Link
+`https://<server>/connect/<code>`; die App liest Serveradresse und Code daraus.
+
+- **Einladung** (`invite`, 7 Tage): entsteht beim Anlegen eines Benutzers (`POST /api/users`) oder
+  mit `POST /api/users/:id/invite`; eine neue ersetzt die alte. Der Link öffnet die Seite
+  `/connect/<code>`: Dort legt das Mitglied einmal sein Passwort fest
+  (`POST /api/connect/:code/password`). Derselbe Code verbindet einmal ein Gerät.
+- **Weiteres Gerät** (`device`, 10 Minuten): jeder Benutzer unter „Mein Konto“
+  (`POST /api/devices/connect-code`).
+
+1. Die App verbindet sich mit `POST /api/app/connect` (Code, Installations-ID, Gerätename,
+   Plattform) und erhält ein **Geräte-Token** (`pamd_…`), das sie als `Authorization: Bearer` sendet.
+2. Jeder Benutzer darf höchstens die eingestellte Zahl Geräte gleichzeitig verbinden: Standard unter
+   Einstellungen → Sicherheit, je Firma änderbar (`PUT /api/companies/:id/device-limit`). Ist sie
+   erreicht, antwortet der Server mit `409 device_limit`. Dieselbe Installation belegt beim erneuten
+   Verbinden keinen weiteren Platz; das alte Token wird dabei ungültig.
+3. Trennen (Benutzer selbst, Firmen-Admin oder die App) gibt den Platz frei. Deaktivieren des
+   Benutzers oder der Firma trennt alle Geräte.
+
+Server 0.10 hat die früheren API-Keys entfernt. Bereits verbundene Geräte laufen mit ihrem Token
+weiter.
 
 ## Prüfdatum
 
@@ -121,9 +140,11 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `GET /api/auth/session` | Sitzung prüfen, ohne Fehlerstatus |
 | `GET/POST /api/companies`, `GET/PATCH /api/companies/:id` | Firmen (Anlegen, Ändern, Deaktivieren) |
 | `GET /api/companies/:id/machines`, `PATCH /api/machines/:id` | Maschinen einer Firma, Linie setzen |
-| `GET/POST /api/users`, `PATCH/DELETE /api/users/:id` | Benutzer |
-| `GET/POST /api/api-keys`, `PATCH/DELETE /api/api-keys/:id` | API-Keys mit verbundenen Geräten |
-| `DELETE /api/devices/:id` | Gerät trennen |
+| `GET/POST /api/users`, `PATCH/DELETE /api/users/:id` | Benutzer; `POST` legt eine Einladung an (`sendInvite`: per E-Mail) |
+| `POST /api/users/:id/invite` | Neue Einladung (`send`: per E-Mail) |
+| `GET /api/connect/:code`, `POST /api/connect/:code/password` | Seite hinter Einladungs- und Gerätelinks; erstes Passwort setzen |
+| `GET /api/devices`, `POST /api/devices/connect-code`, `DELETE /api/devices/:id` | Eigene Geräte (oder `?companyId=` die der Firma), Code für ein weiteres Gerät, Gerät trennen |
+| `PUT /api/companies/:id/device-limit` | Geräte je Benutzer einer Firma (`null`: Standard) |
 | `POST /api/app/connect`, `GET /api/app/config`, `DELETE /api/app/connection` | Für die Apps: Verbinden, Koeffizienten, Bewertungsgrenzen und Zeitzone der Maschinen, Trennen ([App](app.md)) |
 | `POST /api/uploads` | Dateien hochladen |
 | `GET /api/results` | Liste mit Suche `q` (auch Kunde), Filtern `family`, `rating`, `from`, `to`, `machineNo`, `companyId`, Sortierung und Seiten |
@@ -135,7 +156,7 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `DELETE /api/results/:id`, `POST /api/results/assign` | Löschen (weich), Firma zuordnen |
 | `GET /api/dashboard` | Übersicht: Summen, Ergebnisse je Tag, Bewertungen, neueste Ergebnisse |
 | `GET/PUT /api/settings/coefficients` | Koeffizienten; jede Änderung ist eine neue Version |
-| `GET/PUT /api/settings/general` | Standard-Anzahl Geräte für neue API-Keys |
+| `GET/PUT /api/settings/general` | Standard: Geräte je Benutzer |
 | `GET/PUT /api/settings/rating` | Bewertungsgrenzen; Speichern bewertet alle Ergebnisse neu |
 | `PUT/GET/DELETE /api/companies/:id/logo` | Firmenlogo (PNG, JPEG, WebP, ≤ 512 KB); Firmen-Admin oder Administrator |
 | `GET /api/i18n`, `PUT/DELETE /api/i18n/:code` | Importierte Sprachkataloge (lesen ohne Anmeldung, ändern nur Administratoren) |

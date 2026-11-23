@@ -17,10 +17,9 @@ export interface SessionUser {
   mustChangePassword: boolean;
 }
 
-/** A connected app installation; acts on behalf of its user within the key's company. */
+/** A connected app installation; acts on behalf of its user within the user's company. */
 export interface DevicePrincipal {
   id: number;
-  apiKeyId: number;
   companyId: number;
 }
 

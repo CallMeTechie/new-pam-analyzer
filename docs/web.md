@@ -13,7 +13,7 @@ keine externen Quellen), Akzent Blau, vier Bewertungsfarben.
 | Ergebnis | alle | Messuhr Cpk XY, Boxen HEAD / TOTAL / Koeffizient & Bauteile, Gesamtansicht nach Winkel und Holder, Einzelansicht je Holder; Koeffizient zum Ausprobieren änderbar (wird nicht gespeichert); Originaldatei |
 | Kopf-Historie | alle | Linie Cpk XY über dem Prüfdatum, gefüllter Punkt = Datum aus der Datei, hohler Punkt = Upload-Datum; Liste aller Prüfungen |
 | Hochladen | alle | Dateien, ZIP-Archive und ganze Ordner per Auswahl oder Ziehen; FUJI Service wählt die Firma |
-| Team & API-Keys | Firmen-Admin | Mitglieder einladen und verwalten, API-Keys mit max. Geräten anlegen, Geräte trennen, Linien der Maschinen |
+| Team | Firmen-Admin | Mitglieder einladen (QR-Code, Link, optional E-Mail), Geräte trennen, Geräte je Mitglied, Linien der Maschinen |
 | Firmen | FUJI Service | Firmen anlegen und bearbeiten, Keys, Benutzer, Maschinen; **Firmenansicht öffnen** |
 | Benutzer, Einstellungen | Administrator | Alle Konten; Koeffizienten (versioniert), Bewertung, Sprachen, Standard für max. Geräte |
 
@@ -48,6 +48,7 @@ auf allen Geräten. Fehler des Servers kommen als Code und werden über `error.<
 
 - `pnpm --filter @pam/web test`: Sprachkataloge und Formatierung.
 - `pnpm --filter @pam/web e2e`: Playwright gegen den gebauten Server mit leerer Datenbank:
-  erste Anmeldung mit Passwortwechsel, Firma anlegen, Firmenansicht, Mitglied einladen, API-Key,
-  Upload, Suche, Detail, Kopf-Historie, Anmeldung als Mitglied, Sprachwechsel.
+  erste Anmeldung mit Passwortwechsel, Firma anlegen, Firmenansicht, Mitglied einladen (QR-Code,
+  Link), Geräte je Mitglied, Upload, Suche, Detail, Kopf-Historie, Einladungslink mit Passwort,
+  Anmeldung als Mitglied, Code für ein weiteres Gerät, Sprachwechsel.
   Vorher `pnpm build` ausführen.

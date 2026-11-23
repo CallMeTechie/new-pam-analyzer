@@ -42,6 +42,10 @@ export const listColumns = {
   fileName: results.fileName,
   source: results.source,
   createdAt: results.createdAt,
+  /** Who uploaded it and with which app; the app shows it in its server view. */
+  uploadedByName: sql<string | null>`(select u.name from users u where u.id = ${results.uploadedBy})`,
+  deviceName: sql<string | null>`(select d.name from devices d where d.id = ${results.deviceId})`,
+  deviceId: results.deviceId,
 };
 
 export function scopeFilter(companyId: number | null): SQL | undefined {

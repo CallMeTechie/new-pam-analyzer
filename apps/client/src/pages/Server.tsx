@@ -1,7 +1,7 @@
 import { Icon } from '@web/components/Icon';
 import { Field, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { reasonText, UploadChip } from '../components';
 import { ServerError } from '../lib/engine';
 import { useEngine } from '../lib/useEngine';
@@ -16,17 +16,24 @@ function errorMessage(t: ReturnType<typeof useI18n>['t'], e: unknown): string {
   return text === web ? t('error.internal_error') : text;
 }
 
-/** Content of the QR code shown on the web: `{"server": "…", "apiKey": "pam_…"}` or just the key. */
-export function parseKeyQr(text: string): { apiKey: string; server?: string } | null {
+/**
+ * Content of the QR codes on the web: the link `https://<server>/connect/<code>` of an invitation or
+ * of "My account → Connect another device"; a code typed alone (`7KQ4-M2XP`) works as well.
+ */
+export function parseConnectQr(text: string): { code: string; server?: string } | null {
   const trimmed = text.trim();
-  if (/^pam_[\w-]{10,}$/.test(trimmed)) return { apiKey: trimmed };
+  const bare = trimmed.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (/^[A-Z0-9]{4}-?[A-Z0-9]{4}$/i.test(trimmed)) return { code: `${bare.slice(0, 4)}-${bare.slice(4)}` };
   try {
-    const data = JSON.parse(trimmed) as { apiKey?: unknown; server?: unknown };
-    if (typeof data.apiKey === 'string' && /^pam_[\w-]{10,}$/.test(data.apiKey)) {
-      return { apiKey: data.apiKey, ...(typeof data.server === 'string' ? { server: data.server } : {}) };
+    const url = new URL(trimmed);
+    const match = /\/connect\/([A-Za-z0-9]{8})\/?$/.exec(url.pathname);
+    if ((url.protocol === 'https:' || url.protocol === 'http:') && match?.[1]) {
+      const code = match[1].toUpperCase();
+      const base = url.pathname.slice(0, url.pathname.length - match[0].length);
+      return { code: `${code.slice(0, 4)}-${code.slice(4)}`, server: `${url.origin}${base}` };
     }
   } catch {
-    // not JSON
+    // not a URL
   }
   return null;
 }
@@ -35,8 +42,10 @@ function ConnectForm() {
   const { t } = useI18n();
   const [, engine] = useEngine();
   const [busy, setBusy] = useState(false);
-  const [form, setForm] = useState({ server: '', apiKey: '', email: '', password: '', deviceName: '' });
+  const [form, setForm] = useState({ server: '', code: '', deviceName: '' });
   const [error, setError] = useState<string | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   useEffect(() => {
     void engine.platform
       .defaultDeviceName()
@@ -45,12 +54,11 @@ function ConnectForm() {
   const set = (k: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  async function submit(e: FormEvent) {
-    e.preventDefault();
+  async function connect(values: typeof form) {
     setBusy(true);
     setError(null);
     try {
-      await engine.connect(form);
+      await engine.connect(values);
     } catch (err) {
       setError(errorMessage(t, err));
     } finally {
@@ -58,10 +66,9 @@ function ConnectForm() {
     }
   }
   const complete = Object.values(form).every((v) => v.trim());
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanning, setScanning] = useState(false);
-  /** The web shows the new key as QR code: JSON with server and key, or the key alone. */
-  async function scanKey() {
+
+  /** Scanning the QR code fills server and code and connects right away. */
+  async function scan() {
     setScanError(null);
     let text: string | null = null;
     setScanning(true);
@@ -76,19 +83,48 @@ function ConnectForm() {
       setScanning(false);
     }
     if (!text) return;
-    const parsed = parseKeyQr(text);
+    const parsed = parseConnectQr(text);
     if (!parsed) {
       setScanError(t('client.connect.scanFailed'));
       return;
     }
-    setForm((f) => ({ ...f, apiKey: parsed.apiKey, ...(parsed.server ? { server: parsed.server } : {}) }));
+    const next = { ...form, code: parsed.code, ...(parsed.server ? { server: parsed.server } : {}) };
+    setForm(next);
+    if (next.server.trim() && next.deviceName.trim()) await connect(next);
   }
 
   return (
     <div className="grid-2">
-      <form className="card stack" onSubmit={(e) => void submit(e)}>
+      <form
+        className="card stack"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void connect(form);
+        }}
+      >
         <h2>{t('client.connect.title')}</h2>
         <p className="muted">{t('client.connect.text')}</p>
+        {engine.platform.scanQr && (
+          <>
+            <button
+              type="button"
+              className="btn primary scan-btn"
+              disabled={scanning || busy}
+              onClick={() => void scan()}
+            >
+              {scanning ? (
+                <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
+              ) : (
+                <Icon name="camera" size={20} />
+              )}
+              {scanning ? t('client.connect.scannerLoading') : t('client.connect.scan')}
+            </button>
+            {scanError && <Notice kind="error" title={scanError} />}
+            <div className="or-line">
+              <span>{t('client.connect.or')}</span>
+            </div>
+          </>
+        )}
         <Field label={t('client.connect.server')}>
           {(p) => (
             <input
@@ -101,57 +137,18 @@ function ConnectForm() {
             />
           )}
         </Field>
-        <Field label={t('client.connect.apiKey')} {...(scanError ? { error: scanError } : {})}>
-          {(p) => (
-            <div className="input-with-button">
-              <input
-                {...p}
-                className="input mono"
-                value={form.apiKey}
-                onChange={set('apiKey')}
-                placeholder="pam_…"
-                autoComplete="off"
-              />
-              {engine.platform.scanQr && (
-                <button
-                  type="button"
-                  className="btn"
-                  disabled={scanning}
-                  title={scanning ? t('client.connect.scannerLoading') : undefined}
-                  onClick={() => void scanKey()}
-                >
-                  {scanning ? (
-                    <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
-                  ) : (
-                    <Icon name="camera" size={16} />
-                  )}
-                  <span className="sr-only">{t('client.connect.scan')}</span>
-                </button>
-              )}
-            </div>
-          )}
-        </Field>
-        <Field label={t('field.email')}>
+        <Field label={t('client.connect.code')} hint={t('client.connect.codeHint')}>
           {(p) => (
             <input
               {...p}
-              className="input"
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              autoComplete="username"
-            />
-          )}
-        </Field>
-        <Field label={t('field.password')}>
-          {(p) => (
-            <input
-              {...p}
-              className="input"
-              type="password"
-              value={form.password}
-              onChange={set('password')}
-              autoComplete="current-password"
+              className="input mono code-input"
+              value={form.code}
+              onChange={set('code')}
+              placeholder="XXXX-XXXX"
+              autoComplete="one-time-code"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={12}
             />
           )}
         </Field>
@@ -162,15 +159,21 @@ function ConnectForm() {
         </Field>
         {error && <Notice kind="error" title={error} />}
         <div>
-          <button type="submit" className="btn primary" disabled={busy || !complete}>
+          <button
+            type="submit"
+            className={`btn${engine.platform.scanQr ? '' : ' primary'}`}
+            disabled={busy || !complete}
+          >
             {busy ? t('client.connect.busy') : t('client.connect.submit')}
           </button>
         </div>
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+          {t('client.connect.noSecrets')}
+        </p>
       </form>
       <section className="card stack">
         <h2>{t('client.connect.keyTitle')}</h2>
         <p className="muted">{t('client.connect.keyText')}</p>
-        <Notice kind="info">{t('client.connect.passwordNote')}</Notice>
       </section>
     </div>
   );
