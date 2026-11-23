@@ -1,5 +1,11 @@
 # Änderungen
 
+## 0.7.0 – 23.11.2026
+
+### Geändert
+- Neues Design der Weboberfläche (wie die Windows-App): schmale Symbolleiste statt Seitenleiste (auf dem Handy weiter das ausklappbare Menü mit Beschriftung), indigoblaues Kopfband auf allen Seiten, Schrift DM Sans.
+- Dashboard: Zeitraum, Ergebnisse je Tag und Summe kritischer Ergebnisse im Kopfband; rechts Hochladen und Bewertungen; neueste Ergebnisse als Pastellkarten.
+
 ## 0.6.0 – 21.11.2026
 
 ### Neu

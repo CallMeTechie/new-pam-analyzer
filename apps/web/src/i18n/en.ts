@@ -114,6 +114,8 @@ export const en = {
   'dash.perDayAria': 'Results per day: {n} in the last {days} days',
   'dash.results': 'Results',
   'dash.ratings': 'Ratings · last {n} days',
+  'dash.uploadTitle': 'Upload PAM files',
+  'dash.uploadText': '.dat files or ZIP archives, also several at once',
   'dash.allResults': 'All results',
   'dash.emptyTitle': 'No results yet',
   'dash.emptyText': 'Upload PAM files (.dat) or ZIP archives from the machines to get started.',

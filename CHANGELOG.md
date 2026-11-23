@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 – 2026-11-23
+
+### Changed
+- New design of the web interface (like the Windows app): narrow icon bar instead of the sidebar (phones keep the slide-in menu with labels), indigo header band on every page, DM Sans typeface.
+- Dashboard: period, results per day and the number of critical results in the header band; upload and ratings on the right; latest results as pastel cards.
+
 ## 0.6.0 – 2026-11-21
 
 ### Added

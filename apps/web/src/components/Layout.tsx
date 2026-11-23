@@ -173,7 +173,7 @@ export function Layout() {
       <div className={`scrim${navOpen ? ' open' : ''}`} onClick={() => setNavOpen(false)} aria-hidden="true" />
       <div className="sidebar-col">
         <aside className={`sidebar${navOpen ? ' open' : ''}`} id="sidebar">
-          <Link to={scope.link('/')} className="brand">
+          <Link to={scope.link('/')} className="brand" title="PAM Analyzer">
             <Logo />
             <span>
               <b>PAM Analyzer</b>
@@ -181,7 +181,7 @@ export function Layout() {
             </span>
           </Link>
           {scope.mode === 'company' && scope.companyId !== null && (
-            <div className="sidebar-company">
+            <div className="sidebar-company" title={scope.companyName ?? undefined}>
               <CompanyBadge
                 company={{ id: scope.companyId, name: scope.companyName ?? '', logoVersion: scope.companyLogoVersion }}
                 size={34}
@@ -194,7 +194,7 @@ export function Layout() {
               <div className="nav-section" key={s.label}>
                 <span>{t(s.label)}</span>
                 {s.items.map((item) => (
-                  <NavLink key={item.to} to={item.to} end={item.end ?? false}>
+                  <NavLink key={item.to} to={item.to} end={item.end ?? false} title={t(item.label)}>
                     <Icon name={item.icon} />
                     <span>{t(item.label)}</span>
                   </NavLink>
@@ -227,6 +227,23 @@ export function Layout() {
 }
 
 const MenuContext = createContext<() => void>(() => {});
+
+/** Opens the navigation on narrow screens (pages that draw their own header band use it). */
+export function MenuToggle() {
+  const { t } = useI18n();
+  const openMenu = useContext(MenuContext);
+  return (
+    <button
+      type="button"
+      className="btn icon ghost menu-toggle"
+      aria-label={t('nav.open')}
+      aria-controls="sidebar"
+      onClick={openMenu}
+    >
+      <Icon name="menu" />
+    </button>
+  );
+}
 
 /**
  * Extra controls of a page, set by the apps: back to the previous page, or close and enlarge when
