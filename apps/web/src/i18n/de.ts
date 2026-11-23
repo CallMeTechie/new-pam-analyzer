@@ -118,6 +118,8 @@ export const de: Messages = {
   'dash.perDayAria': 'Ergebnisse pro Tag: {n} in den letzten {days} Tagen',
   'dash.results': 'Ergebnisse',
   'dash.ratings': 'Bewertungen · letzte {n} Tage',
+  'dash.uploadTitle': 'PAM-Dateien hochladen',
+  'dash.uploadText': '.dat-Dateien oder ZIP-Archive, auch mehrere auf einmal',
   'dash.allResults': 'Alle Ergebnisse',
   'dash.emptyTitle': 'Noch keine Ergebnisse',
   'dash.emptyText': 'Laden Sie PAM-Dateien (.dat) oder ZIP-Archive der Maschinen hoch, um zu beginnen.',

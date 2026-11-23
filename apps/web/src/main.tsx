@@ -5,6 +5,10 @@ import { App } from './App';
 import { I18nProvider } from './i18n';
 import { AuthProvider } from './lib/auth';
 import './styles.css';
+import './skin-d.css';
+
+// Design D for the web interface (see skin-d.css).
+document.documentElement.dataset.skin = 'd';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('Missing #root');
