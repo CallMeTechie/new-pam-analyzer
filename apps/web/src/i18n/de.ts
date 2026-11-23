@@ -424,6 +424,12 @@ export const de: Messages = {
   'settings.tab.rating': 'Bewertung',
   'settings.tab.languages': 'Sprachen',
   'settings.tab.security': 'Sicherheit & Daten',
+  'settings.tab.crashes': 'Absturzberichte',
+  'crashes.info':
+    'Stürzt die Windows- oder Android-App ab, speichert sie einen Bericht und sendet ihn, sobald sie mit dem Server verbunden ist.',
+  'crashes.count': { one: '{total} Bericht', other: '{total} Berichte' },
+  'crashes.none': 'Keine Absturzberichte.',
+  'crashes.copy': 'Kopieren',
   'settings.tab.manual': 'Handbuch',
   'settings.tab.version': 'Version',
   'settings.headTypes': 'Kopftypen',
@@ -519,12 +525,10 @@ export const de: Messages = {
   'client.split.empty': 'Wählen Sie ein Ergebnis aus der Liste.',
   'client.connect.scan': 'QR-Code scannen',
   'client.connect.scanText': 'Scannen Sie den QR-Code, den das Web beim Anlegen des API-Keys zeigt.',
-  'client.connect.scanHint': 'Halten Sie die Kamera auf den QR-Code des API-Keys.',
-  'client.connect.cameraDenied': 'Kein Zugriff auf die Kamera. Erlauben Sie die Kamera in den App-Einstellungen.',
-  'client.connect.cameraSettings': 'App-Einstellungen öffnen',
-  'client.connect.cameraFailed': 'Die Kamera konnte nicht gestartet werden.',
+  'client.connect.scannerFailed': 'Der QR-Scanner ist nicht verfügbar. Geben Sie den API-Key bitte von Hand ein.',
   'client.connect.scanFailed': 'Der QR-Code enthält keinen API-Key.',
-  'client.update.play': 'Updates installiert Google Play.',
+  'client.update.play':
+    'Updates kommen über Google Play. Der Kanal ergibt sich aus Ihrer Teilnahme im Play Store: Im Testprogramm erhalten Sie Beta-Versionen, sonst die stabilen Versionen. Zum Wechseln wenden Sie sich an Ihren Service-Repräsentanten.',
   'client.update.permission':
     'Erlauben Sie PAM Analyzer, Apps zu installieren, und tippen Sie dann erneut auf „Jetzt aktualisieren“.',
   'client.nav.overview': 'Übersicht',

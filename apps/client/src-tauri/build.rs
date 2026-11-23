@@ -18,6 +18,11 @@ fn main() {
                     "installApk",
                     "posture",
                     "distribution",
+                    "crashReports",
+                    "crashReportsDelete",
+                    "scanQr",
+                    "playUpdateCheck",
+                    "playUpdateStart",
                 ])
                 .default_permission(tauri_build::DefaultPermissionRule::AllowAllCommands),
         ),

@@ -102,6 +102,35 @@ describe('Engine', () => {
     expect(server.body.items[0].testDate).toBe(s.rows[0]?.testDate);
   });
 
+  it('sends stored crash reports once connected and deletes the accepted ones', async () => {
+    const { engine, platform, admin, connect } = await world();
+    let stored = [
+      {
+        id: 'android-1',
+        kind: 'android' as const,
+        occurredAt: Date.UTC(2026, 10, 23, 7),
+        appVersion: '0.4.0-beta.2',
+        system: 'Pixel · Android 16',
+        message: 'java.lang.IllegalStateException: boom',
+        report: 'java.lang.IllegalStateException: boom\n\tat app.Main.run(Main.kt:1)',
+      },
+    ];
+    platform.crashReports = async () => stored;
+    platform.deleteCrashReports = async (ids) => {
+      stored = stored.filter((r) => !ids.includes(r.id));
+    };
+    await connect();
+    await engine.sync();
+    expect(stored).toEqual([]);
+    const list = (await admin.json('GET', '/api/crash-reports')).body;
+    expect(list.items).toHaveLength(1);
+    expect(list.items[0]).toMatchObject({
+      kind: 'android',
+      deviceName: 'PC 1',
+      message: 'java.lang.IllegalStateException: boom',
+    });
+  });
+
   it('keeps files in the queue while the server cannot be reached', async () => {
     const { engine, admin, connect, setOnline } = await world();
     await connect();

@@ -9,7 +9,7 @@ import { openPath, openUrl, revealItemInDir } from '@tauri-apps/plugin-opener';
 import Database from '@tauri-apps/plugin-sql';
 import type { InputFile } from '../lib/evaluate';
 import { sqlStore } from '../lib/store';
-import type { Platform, UpdateInfo } from './types';
+import type { CrashReport, Platform, UpdateInfo } from './types';
 
 interface FileMeta {
   name: string;
@@ -106,6 +106,8 @@ export async function tauriPlatform(version: string): Promise<Platform> {
       await openPath(await appConfigDir());
     },
     defaultDeviceName: () => invoke<string>('device_name'),
+    crashReports: () => invoke<CrashReport[]>('crash_reports'),
+    deleteCrashReports: (ids) => invoke('crash_reports_delete', { ids }),
     setWindowTheme: (theme) => getCurrentWindow().setTheme(theme),
     openUrl: (url) => openUrl(url),
     updates: {

@@ -26,6 +26,14 @@ import androidx.security.crypto.MasterKey
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import app.tauri.annotation.ActivityCallback
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.UpdateAvailability
+import com.google.mlkit.common.MlKitException
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -36,6 +44,11 @@ import app.tauri.plugin.Plugin
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.UUID
+
+@InvokeArg
+class IdsArgs {
+  var ids: Array<String> = arrayOf()
+}
 
 @InvokeArg
 class SecretArgs {
@@ -290,8 +303,98 @@ class PamPlugin(private val activity: Activity) : Plugin(activity) {
     }
   }
 
+  // ---------- updates of the Google Play version ----------
+
+  /**
+   * Asks Google Play whether a newer version is available for this user (on the track the user takes
+   * part in: internal test, closed test or production). Resolves `{ available, versionCode }`.
+   */
+  @Command
+  fun playUpdateCheck(invoke: Invoke) {
+    AppUpdateManagerFactory.create(activity).appUpdateInfo
+      .addOnSuccessListener { info ->
+        val available = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+          info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)
+        invoke.resolve(JSObject().apply {
+          put("available", available)
+          put("versionCode", info.availableVersionCode())
+        })
+      }
+      .addOnFailureListener { e -> invoke.reject(e.message ?: "play_unavailable", "play_unavailable") }
+  }
+
+  /** Starts the update through Google Play (full-screen); the app restarts once it is installed. */
+  @Command
+  fun playUpdateStart(invoke: Invoke) {
+    val manager = AppUpdateManagerFactory.create(activity)
+    manager.appUpdateInfo
+      .addOnSuccessListener { info ->
+        if (info.updateAvailability() != UpdateAvailability.UPDATE_AVAILABLE &&
+          info.updateAvailability() != UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+        ) {
+          return@addOnSuccessListener invoke.reject("no update", "no_update")
+        }
+        try {
+          @Suppress("DEPRECATION")
+          manager.startUpdateFlowForResult(info, activity, AppUpdateOptions.defaultOptions(AppUpdateType.IMMEDIATE), PLAY_UPDATE_REQUEST)
+          invoke.resolve()
+        } catch (e: Exception) {
+          invoke.reject(e.message ?: "play_update_failed", "play_update_failed")
+        }
+      }
+      .addOnFailureListener { e -> invoke.reject(e.message ?: "play_unavailable", "play_unavailable") }
+  }
+
+  // ---------- QR code ----------
+
+  /**
+   * Scans a QR code (the API key shown on the web) with the scanner of Google Play services. It shows
+   * its own camera screen and needs no camera permission. Resolves `{ content }`, or `{ content: null }`
+   * when the user cancels.
+   */
+  @Command
+  fun scanQr(invoke: Invoke) {
+    val options = GmsBarcodeScannerOptions.Builder()
+      .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+      .build()
+    activity.runOnUiThread {
+      try {
+        GmsBarcodeScanning.getClient(activity, options)
+          .startScan()
+          .addOnSuccessListener { code -> invoke.resolve(JSObject().apply { put("content", code.rawValue) }) }
+          .addOnCanceledListener { invoke.resolve(JSObject().apply { put("content", null as String?) }) }
+          .addOnFailureListener { e ->
+            val code = if (e is MlKitException && e.errorCode == MlKitException.UNAVAILABLE) "scanner_unavailable" else "scanner_failed"
+            invoke.reject(e.message ?: code, code)
+          }
+      } catch (e: Exception) {
+        invoke.reject(e.message ?: "scanner_failed", "scanner_failed")
+      }
+    }
+  }
+
+  // ---------- crash reports ----------
+
+  @Command
+  fun crashReports(invoke: Invoke) {
+    val list = JSArray()
+    for (r in CrashLog.list(activity)) list.put(r)
+    invoke.resolve(JSObject().apply { put("reports", list) })
+  }
+
+  @Command
+  fun crashReportsDelete(invoke: Invoke) {
+    val args = invoke.parseArgs(IdsArgs::class.java)
+    CrashLog.delete(activity, args.ids.toList())
+    invoke.resolve()
+  }
+
   @Command
   fun posture(invoke: Invoke) {
     invoke.resolve(posture)
+  }
+
+  private companion object {
+    const val PLAY_UPDATE_REQUEST = 4711
   }
 }

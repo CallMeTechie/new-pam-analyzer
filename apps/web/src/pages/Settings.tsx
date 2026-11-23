@@ -14,8 +14,8 @@ import { type ApiError, api } from '../lib/api';
 import { setThresholds } from '../lib/thresholds';
 import { useApi } from '../lib/useApi';
 
-type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'manual' | 'version';
-const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'manual', 'version'];
+type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'crashes' | 'manual' | 'version';
+const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'crashes', 'manual', 'version'];
 
 /* ------------------------------ Coefficients ------------------------------ */
 
@@ -666,6 +666,72 @@ function Security() {
   );
 }
 
+/* ------------------------------ Crash reports ------------------------------ */
+
+interface CrashReportRow {
+  id: number;
+  platform: string;
+  appVersion: string | null;
+  deviceName: string | null;
+  system: string | null;
+  kind: string;
+  message: string;
+  report: string;
+  occurredAt: string;
+  companyName: string | null;
+}
+
+/** Crashes of the Windows and Android apps; the apps send them once they are connected. */
+function CrashReports() {
+  const { t, locale, int } = useI18n();
+  const { data, error, reload } = useApi<{ items: CrashReportRow[]; total: number }>('/crash-reports?pageSize=100');
+  if (error) return <ErrorNotice error={error} />;
+  if (!data) return <Loading />;
+  const when = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' });
+  return (
+    <section className="card stack" style={{ maxWidth: 1000 }}>
+      <div className="card-h" style={{ marginBottom: 0 }}>
+        <h2 className="title-with-info">
+          {t('settings.tab.crashes')}
+          <InfoTip text={t('crashes.info')} />
+        </h2>
+        <span className="muted">{t('crashes.count', { n: data.total, total: int(data.total) })}</span>
+      </div>
+      {data.items.length === 0 && <p className="muted">{t('crashes.none')}</p>}
+      <div className="stack" style={{ gap: 10 }}>
+        {data.items.map((r) => (
+          <details key={r.id} className="crash">
+            <summary>
+              <b className="mono">{r.message}</b>
+              <span className="muted">
+                {when.format(new Date(r.occurredAt))} · {r.platform} {r.appVersion ?? ''} · {r.deviceName ?? '–'}
+                {r.companyName ? ` · ${r.companyName}` : ''}
+              </span>
+            </summary>
+            {r.system && <p className="muted">{r.system}</p>}
+            <pre className="crash-report">{r.report}</pre>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" className="btn small" onClick={() => void navigator.clipboard?.writeText(r.report)}>
+                {t('crashes.copy')}
+              </button>
+              <button
+                type="button"
+                className="btn small danger"
+                onClick={async () => {
+                  await api.delete(`/crash-reports/${r.id}`);
+                  reload();
+                }}
+              >
+                {t('common.remove')}
+              </button>
+            </div>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ------------------------------ Manual and version ------------------------------ */
 
 function Manual() {
@@ -737,6 +803,7 @@ export function Settings() {
       {tab === 'rating' && <Rating />}
       {tab === 'languages' && <Languages />}
       {tab === 'security' && <Security />}
+      {tab === 'crashes' && <CrashReports />}
       {tab === 'manual' && <Manual />}
       {tab === 'version' && <Version />}
     </Page>

@@ -29,7 +29,6 @@ fn pam_plugin<R: Runtime>() -> TauriPlugin<R> {
 pub fn setup<R: Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<R> {
     builder
         .plugin(pam_plugin())
-        .plugin(tauri_plugin_barcode_scanner::init())
 }
 
 #[derive(Deserialize)]

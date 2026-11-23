@@ -155,3 +155,39 @@ describe('Geräteverbindungen', () => {
     expect(keys[0].devices[0].uploadCount).toBe(1);
   });
 });
+
+describe('Absturzberichte', () => {
+  const report = (id: string) => ({
+    id,
+    kind: 'android',
+    occurredAt: Date.UTC(2026, 10, 23, 7),
+    appVersion: '0.4.0-beta.2',
+    system: 'Pixel · Android 16',
+    message: 'java.lang.IllegalStateException: boom',
+    report: 'java.lang.IllegalStateException: boom\n\tat app.Main.run(Main.kt:1)',
+  });
+
+  it('verbundene Apps senden Berichte; Doppelte zählen einmal; nur Administratoren sehen sie', async () => {
+    const { t, admin, bossA } = await world();
+    const { key } = (await bossA.json('POST', '/api/api-keys', { name: 'K' })).body;
+    const app = t.client();
+    expect((await app.json('POST', '/api/app/crash-reports', { reports: [report('r1')] })).status).toBe(401);
+    app.setToken((await app.json('POST', '/api/app/connect', device(key, 'worker@a.test'))).body.token);
+    const sent = await app.json('POST', '/api/app/crash-reports', { reports: [report('r1'), report('r2')] });
+    expect(sent.body.accepted).toEqual(['r1', 'r2']);
+    await app.json('POST', '/api/app/crash-reports', { reports: [report('r1')] });
+
+    expect((await bossA.json('GET', '/api/crash-reports')).status).toBe(403);
+    const list = await admin.json('GET', '/api/crash-reports');
+    expect(list.body.total).toBe(2);
+    expect(list.body.items[0]).toMatchObject({
+      platform: 'android',
+      deviceName: 'Tablet line 3',
+      companyName: 'Customer A',
+      kind: 'android',
+      appVersion: '0.4.0-beta.2',
+    });
+    expect((await admin.req('DELETE', `/api/crash-reports/${list.body.items[0].id}`)).status).toBe(204);
+    expect((await admin.json('GET', '/api/crash-reports')).body.total).toBe(1);
+  });
+});

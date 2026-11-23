@@ -2,7 +2,6 @@ import { Icon } from '@web/components/Icon';
 import { Field, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import { type FormEvent, useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { reasonText, UploadChip } from '../components';
 import { ServerError } from '../lib/engine';
 import { useEngine } from '../lib/useEngine';
@@ -60,32 +59,15 @@ function ConnectForm() {
   }
   const complete = Object.values(form).every((v) => v.trim());
   const [scanError, setScanError] = useState<string | null>(null);
-  const [cameraDenied, setCameraDenied] = useState(false);
-  const [scanning, setScanning] = useState(false);
-
-  // While scanning, the camera runs behind the WebView: everything but the scan frame turns transparent.
-  useEffect(() => {
-    if (!scanning) return;
-    document.documentElement.classList.add('qr-scanning');
-    return () => document.documentElement.classList.remove('qr-scanning');
-  }, [scanning]);
-
   /** The web shows the new key as QR code: JSON with server and key, or the key alone. */
   async function scanKey() {
     setScanError(null);
-    setCameraDenied(false);
     let text: string | null = null;
-    setScanning(true);
     try {
       text = (await engine.platform.scanQr?.()) ?? null;
-    } catch (e) {
-      if (e instanceof Error && e.message === 'camera_denied') {
-        setCameraDenied(true);
-        setScanError(t('client.connect.cameraDenied'));
-      } else setScanError(t('client.connect.cameraFailed'));
+    } catch {
+      setScanError(t('client.connect.scannerFailed'));
       return;
-    } finally {
-      setScanning(false);
     }
     if (!text) return;
     const parsed = parseKeyQr(text);
@@ -96,22 +78,8 @@ function ConnectForm() {
     setForm((f) => ({ ...f, apiKey: parsed.apiKey, ...(parsed.server ? { server: parsed.server } : {}) }));
   }
 
-  const scanOverlay =
-    scanning &&
-    createPortal(
-      <div className="qr-overlay" role="dialog" aria-modal="true" aria-label={t('client.connect.scan')}>
-        <p>{t('client.connect.scanHint')}</p>
-        <div className="qr-frame" aria-hidden="true" />
-        <button type="button" className="btn" onClick={() => void engine.platform.cancelScan?.()}>
-          {t('common.cancel')}
-        </button>
-      </div>,
-      document.body,
-    );
-
   return (
     <div className="grid-2">
-      {scanOverlay}
       <form className="card stack" onSubmit={(e) => void submit(e)}>
         <h2>{t('client.connect.title')}</h2>
         <p className="muted">{t('client.connect.text')}</p>
@@ -147,16 +115,6 @@ function ConnectForm() {
             </div>
           )}
         </Field>
-        {cameraDenied && engine.platform.openAppSettings && (
-          <button
-            type="button"
-            className="linkbtn"
-            style={{ alignSelf: 'flex-start', marginTop: -6 }}
-            onClick={() => void engine.platform.openAppSettings?.()}
-          >
-            {t('client.connect.cameraSettings')}
-          </button>
-        )}
         <Field label={t('field.email')}>
           {(p) => (
             <input

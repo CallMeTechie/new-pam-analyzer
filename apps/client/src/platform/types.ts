@@ -61,15 +61,12 @@ export interface Platform {
   openUrl?(url: string): Promise<void>;
   /** Android print dialog (the WebView has no `window.print`). */
   print?(): Promise<void>;
-  /**
-   * Scans a QR code with the camera, e.g. the API key; `null` when cancelled. Asks for the camera
-   * permission first and throws `Error('camera_denied')` when it is refused.
-   */
+  /** Scans a QR code with the camera, e.g. the API key; `null` when cancelled, throws when no scanner is available. */
   scanQr?(): Promise<string | null>;
-  /** Stops a running scan; `scanQr` then resolves with `null`. */
-  cancelScan?(): Promise<void>;
-  /** Opens the app's system settings, e.g. to allow the camera after it was refused. */
-  openAppSettings?(): Promise<void>;
+  /** Crash reports stored on this device (Android exceptions, Rust panics), oldest first. */
+  crashReports?(): Promise<CrashReport[]>;
+  /** Deletes reports after the server accepted them. */
+  deleteCrashReports?(ids: string[]): Promise<void>;
   onPosture?(listener: (posture: Posture) => void): () => void;
   /** Set when an app store installs the updates (Google Play); the app then offers none itself. */
   updatesBy?: 'play';
@@ -79,4 +76,15 @@ export interface Platform {
     /** Downloads and installs the update found by `check`, then restarts the app. */
     install(onProgress: (fraction: number | null) => void): Promise<void>;
   } | null;
+}
+
+/** A crash of the app, as written by `CrashLog.kt` (Android) or `crash.rs` (Rust panic). */
+export interface CrashReport {
+  id: string;
+  kind: 'android' | 'panic';
+  occurredAt: number;
+  appVersion?: string;
+  system?: string;
+  message: string;
+  report: string;
 }
