@@ -6,6 +6,9 @@
 - Windows: neues Design – schmale Symbolleiste statt Seitenleiste, indigoblaues Kopfband auf allen Seiten, Schrift DM Sans, hell und dunkel.
 - Windows-Übersicht als Dashboard: Messungen der Woche je Tag, Ø-Cpk und kritische Köpfe im Kopfband, Filter nach Familie und „kritisch“, rechts Dateien hinzufügen und Serverstatus, Cpk-Verlauf der Woche, bester Kopf und kritische Köpfe als Karten.
 
+### Behoben
+- Android: Das Kamerasymbol beim API-Key öffnet die Kamera wieder. Die App fragt jetzt zuerst nach der Kamera-Berechtigung; beim Scannen erscheinen ein Rahmen und „Abbrechen“. Wurde der Zugriff verweigert, führt ein Link zu den App-Einstellungen.
+
 ## 0.3.5
 
 ### Geändert

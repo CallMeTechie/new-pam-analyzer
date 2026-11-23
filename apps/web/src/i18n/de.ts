@@ -519,6 +519,10 @@ export const de: Messages = {
   'client.split.empty': 'Wählen Sie ein Ergebnis aus der Liste.',
   'client.connect.scan': 'QR-Code scannen',
   'client.connect.scanText': 'Scannen Sie den QR-Code, den das Web beim Anlegen des API-Keys zeigt.',
+  'client.connect.scanHint': 'Halten Sie die Kamera auf den QR-Code des API-Keys.',
+  'client.connect.cameraDenied': 'Kein Zugriff auf die Kamera. Erlauben Sie die Kamera in den App-Einstellungen.',
+  'client.connect.cameraSettings': 'App-Einstellungen öffnen',
+  'client.connect.cameraFailed': 'Die Kamera konnte nicht gestartet werden.',
   'client.connect.scanFailed': 'Der QR-Code enthält keinen API-Key.',
   'client.update.play': 'Updates installiert Google Play.',
   'client.update.permission':
