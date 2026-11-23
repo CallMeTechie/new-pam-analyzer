@@ -230,6 +230,30 @@ describe('Ergebnisse', () => {
     const service = await admin.json('GET', '/api/dashboard');
     expect(service.body.totals).toMatchObject({ results: 5, companies: 3 });
   });
+
+  it('gruppiert die Liste nach Prüftag oder Kunde', async () => {
+    const { workerA } = await seeded();
+    const ids = (await workerA.json('GET', '/api/results')).body.items.map((r: any) => r.id);
+    expect((await workerA.req('PATCH', `/api/results/${ids[3]}`, { customer: 'Alpha' })).status).toBe(200);
+    expect((await workerA.req('PATCH', `/api/results/${ids[1]}`, { customer: 'beta' })).status).toBe(200);
+    const byCustomer = (await workerA.json('GET', '/api/results?group=customer')).body.items;
+    expect(byCustomer.map((r: any) => r.customer ?? null)).toEqual(['Alpha', 'beta', null, null]);
+    const byDate = (await workerA.json('GET', '/api/results?group=date&sort=cpkXY')).body.items;
+    const days = byDate.map((r: any) => r.testDate.slice(0, 10));
+    expect(days).toEqual([...days].sort().reverse());
+  });
+
+  it('die Übersicht kann einen festen Zeitraum (Kalenderwoche) zeigen', async () => {
+    const { workerA } = await seeded();
+    const week = await workerA.json('GET', '/api/dashboard?from=2020-01-06&to=2020-01-12');
+    expect(week.status).toBe(200);
+    expect(week.body.period).toMatchObject({ days: 7, since: '2020-01-06', until: '2020-01-12' });
+    expect(week.body.perDay).toHaveLength(7);
+    expect(week.body.totals.inPeriod).toBe(0);
+    expect(week.body.latest).toHaveLength(4);
+    expect((await workerA.json('GET', '/api/dashboard?from=2020-01-06')).status).toBe(400);
+    expect((await workerA.json('GET', '/api/dashboard?from=2020-01-12&to=2020-01-06')).status).toBe(400);
+  });
 });
 
 describe('Einstellungen', () => {

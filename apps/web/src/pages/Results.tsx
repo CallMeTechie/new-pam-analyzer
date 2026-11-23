@@ -11,10 +11,35 @@ import { useApi } from '../lib/useApi';
 const FAMILIES: (Family | '')[] = ['', 'nxt', 'nxtr', 'aimex'];
 const RATINGS: Rating[] = ['critical', 'warning', 'good', 'excellent'];
 const SORTS = ['-testDate', 'testDate', 'cpkXY', '-cpkXY', '-createdAt'] as const;
-const PAGE_SIZE = 25;
+const PAGE_SIZE = 50;
+const GROUPINGS = ['date', 'customer', 'list'] as const;
+type Grouping = (typeof GROUPINGS)[number];
+const GROUPING_KEY = 'pam-web-grouping';
+
+function storedGrouping(): Grouping {
+  try {
+    const v = localStorage.getItem(GROUPING_KEY);
+    return GROUPINGS.includes(v as Grouping) ? (v as Grouping) : 'date';
+  } catch {
+    return 'date';
+  }
+}
+
+/** Consecutive rows of the same test day or customer (the server already orders them that way). */
+function sections(rows: ResultRow[], grouping: Grouping): { key: string; rows: ResultRow[] }[] {
+  if (grouping === 'list') return [{ key: 'all', rows }];
+  const out: { key: string; rows: ResultRow[] }[] = [];
+  for (const r of rows) {
+    const key = grouping === 'date' ? r.testDate.slice(0, 10) : (r.customer ?? '');
+    const last = out.at(-1);
+    if (last && last.key === key) last.rows.push(r);
+    else out.push({ key, rows: [r] });
+  }
+  return out;
+}
 
 export function Results() {
-  const { t, int } = useI18n();
+  const { t, int, date } = useI18n();
   const scope = useScope();
   const [params, setParams] = useSearchParams();
   const q = params.get('q') ?? '';
@@ -25,6 +50,16 @@ export function Results() {
   const to = params.get('to') ?? '';
   const sort = params.get('sort') ?? '-testDate';
   const page = Math.max(1, Number(params.get('page') ?? 1));
+  const [grouping, setGroupingState] = useState<Grouping>(storedGrouping);
+  const setGrouping = (g: Grouping) => {
+    setGroupingState(g);
+    try {
+      localStorage.setItem(GROUPING_KEY, g);
+    } catch {
+      // only a convenience
+    }
+    if (page > 1) set({ page: '' });
+  };
 
   const set = (patch: Record<string, string>) => {
     const next = new URLSearchParams(params);
@@ -45,7 +80,18 @@ export function Results() {
   useEffect(() => setInput(q), [q]);
 
   const { data, error, loading } = useApi<{ items: ResultRow[]; total: number }>(
-    `/results${qs({ companyId: scope.companyId, q, family, rating, from, to, sort, page, pageSize: PAGE_SIZE })}`,
+    `/results${qs({
+      companyId: scope.companyId,
+      q,
+      family,
+      rating,
+      from,
+      to,
+      sort,
+      group: grouping === 'list' ? null : grouping,
+      page,
+      pageSize: PAGE_SIZE,
+    })}`,
   );
   const examples = useApi<{ items: ResultRow[] }>(
     `/results${qs({ companyId: scope.companyId, pageSize: 3, sort: '-createdAt' })}`,
@@ -167,15 +213,39 @@ export function Results() {
                 </>
               )}
             </span>
+            <div className="seg" role="radiogroup" aria-label={t('client.results.grouping')}>
+              {GROUPINGS.map((g) => (
+                <button key={g} type="button" role="radio" aria-checked={grouping === g} onClick={() => setGrouping(g)}>
+                  {t(`client.results.by.${g}`)}
+                </button>
+              ))}
+            </div>
           </div>
           {data.items.length === 0 ? (
             <Empty title={filtered ? t('results.noMatch') : t('results.none')}>
               {filtered ? <p>{t('results.noMatchHint')}</p> : <p>{t('dash.emptyText')}</p>}
             </Empty>
-          ) : (
+          ) : grouping === 'list' ? (
             <div className="rows">
               {data.items.map((r) => (
                 <ResultListRow key={r.id} row={r} showCompany={scope.companyId === null} />
+              ))}
+            </div>
+          ) : (
+            <div className="groups" data-testid={`groups-${grouping}`}>
+              {sections(data.items, grouping).map((g, i) => (
+                // While a new order loads the old page can repeat a key, so the position is part of it.
+                <section key={`${i}:${g.key}`} className="group">
+                  <h3 className="group-h">
+                    <span>{grouping === 'date' ? date(g.key) : g.key || t('client.results.noCustomer')}</span>
+                    <span className="muted">{t('results.groupCount', { n: g.rows.length })}</span>
+                  </h3>
+                  <div className="rows">
+                    {g.rows.map((r) => (
+                      <ResultListRow key={r.id} row={r} showCompany={scope.companyId === null} />
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           )}

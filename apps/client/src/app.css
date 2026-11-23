@@ -631,11 +631,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.seg button[aria-checked="true"] {
-  background: var(--surface);
-  color: var(--fg);
-  box-shadow: var(--shadow);
-}
 .pager {
   flex-wrap: wrap;
   gap: 10px;
@@ -646,33 +641,6 @@
   gap: 8px;
 }
 
-/* Results grouped by date or customer */
-.groups {
-  display: grid;
-  gap: 18px;
-}
-.group {
-  display: grid;
-  gap: 8px;
-}
-.group-h {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 12px;
-  margin: 0;
-  padding: 6px 2px;
-  font-size: 14px;
-  font-weight: 700;
-  background: var(--bg);
-}
-.group-h .muted {
-  font-size: 12.5px;
-  font-weight: 500;
-}
 .count-badge {
   display: inline-block;
   margin-left: 8px;

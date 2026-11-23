@@ -1,5 +1,15 @@
 # Änderungen
 
+## 0.8.0 – 23.11.2026
+
+### Geändert
+- Das Dashboard zeigt wie die App die aktuelle Kalenderwoche (Montag bis Sonntag): Ergebnisse je Wochentag, kritische Ergebnisse und Bewertungen der Woche.
+- Die Karten über der Tabelle sind die drei zuletzt hochgeladenen Ergebnisse; die Tabelle darunter zeigt die Ergebnisse dieser und der letzten Kalenderwoche.
+- Ergebnisse lassen sich nach Prüfdatum oder Kunde gruppieren oder als Liste zeigen; die Sortierung gilt innerhalb jeder Gruppe. Die Wahl wird gemerkt.
+
+### Neu
+- `GET /api/dashboard` nimmt einen festen Zeitraum (`from`, `to`), `GET /api/results` nimmt `group=date|customer`.
+
 ## 0.7.0 – 23.11.2026
 
 ### Geändert

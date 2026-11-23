@@ -91,13 +91,27 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await page.getByRole('button', { name: 'Upload and evaluate' }).click();
   await expect(page.getByText('3 new results')).toBeVisible();
 
+  // Dashboard: the three latest uploads as cards, below them this and last calendar week.
+  await page.getByRole('link', { name: 'Dashboard' }).first().click();
+  await expect(page.getByTestId('latest-cards').locator('a')).toHaveCount(3);
+  await expect(page.getByTestId('week-days').locator('span')).toHaveCount(7);
+  await expect(page.getByTestId('week-this')).toContainText('This week');
+  await expect(page.getByTestId('week-last')).toContainText('Last week');
+
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.getByText('3 results')).toBeVisible();
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
+  // Grouped by test day by default; by customer and as a plain list on request.
+  await expect(page.getByTestId('groups-date')).toBeVisible();
+  await page.getByRole('radio', { name: 'By customer' }).click();
+  await expect(page.getByTestId('groups-customer').locator('.group-h')).toContainText(['No customer']);
+  await page.getByRole('radio', { name: 'List' }).click();
+  await expect(page.locator('.groups')).toHaveCount(0);
+  await expect(page.locator('a.result-row')).toHaveCount(3);
   await page.getByRole('tab', { name: 'NXT', exact: true }).click();
-  await expect(page.locator('.pager').first()).toContainText(/^1 result\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^1 result\b/);
   await page.getByRole('tab', { name: 'All' }).click();
   await page.getByRole('searchbox').fill('V12 900018');
-  await expect(page.locator('.pager').first()).toContainText(/^2 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^2 results\b/);
 
   await page.locator('a.result-row').first().click();
   await expect(page.getByText('Head Cpk XY')).toBeVisible();
@@ -132,8 +146,22 @@ test('company member sees only the own company and can switch to German', async 
   ).toBeVisible();
   await expect(page.getByRole('link', { name: 'Companies' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Team & API keys' })).toHaveCount(0);
+  // Dashboard: the three latest uploads as cards, below them this and last calendar week.
+  await page.getByRole('link', { name: 'Dashboard' }).first().click();
+  await expect(page.getByTestId('latest-cards').locator('a')).toHaveCount(3);
+  await expect(page.getByTestId('week-days').locator('span')).toHaveCount(7);
+  await expect(page.getByTestId('week-this')).toContainText('This week');
+  await expect(page.getByTestId('week-last')).toContainText('Last week');
+
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.getByText('3 results')).toBeVisible();
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
+  // Grouped by test day by default; by customer and as a plain list on request.
+  await expect(page.getByTestId('groups-date')).toBeVisible();
+  await page.getByRole('radio', { name: 'By customer' }).click();
+  await expect(page.getByTestId('groups-customer').locator('.group-h')).toContainText(['No customer']);
+  await page.getByRole('radio', { name: 'List' }).click();
+  await expect(page.locator('.groups')).toHaveCount(0);
+  await expect(page.locator('a.result-row')).toHaveCount(3);
 
   await page.getByLabel('Language').selectOption('de');
   await expect(page.getByRole('link', { name: 'Ergebnisse' })).toBeVisible();
@@ -155,7 +183,7 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await page.getByRole('button', { name: 'Save and rate again' }).click();
   await expect(page.getByText('All results were rated again.')).toBeVisible();
   await page.goto('/results?rating=critical');
-  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
 
   await page.goto('/settings#languages');
   const file = {

@@ -90,6 +90,8 @@ const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(200).default(50),
   sort: z.enum(['testDate', '-testDate', 'cpkXY', '-cpkXY', 'createdAt', '-createdAt']).default('-testDate'),
+  // Keeps the rows of one test day (newest day first) or one customer (A–Z, without customer last) together.
+  group: z.enum(['date', 'customer']).optional(),
 });
 
 resultRoutes.get('/', (c) => {
@@ -110,6 +112,12 @@ resultRoutes.get('/', (c) => {
     query.sort.replace('-', '') as 'testDate' | 'cpkXY' | 'createdAt'
   ];
   const order = query.sort.startsWith('-') ? desc(sortColumn) : asc(sortColumn);
+  const groupOrder =
+    query.group === 'date'
+      ? [desc(sql`substr(${results.testDate}, 1, 10)`)]
+      : query.group === 'customer'
+        ? [sql`${results.customer} is null or ${results.customer} = ''`, sql`lower(${results.customer})`]
+        : [];
   const base = () =>
     db
       .select(listColumns)
@@ -118,7 +126,7 @@ resultRoutes.get('/', (c) => {
       .leftJoin(machines, eq(results.machineId, machines.id));
   const items = base()
     .where(where)
-    .orderBy(order, desc(results.id))
+    .orderBy(...groupOrder, order, desc(results.id))
     .limit(query.pageSize)
     .offset((query.page - 1) * query.pageSize)
     .all();
