@@ -30,7 +30,13 @@ import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.UpdateAvailability
+import com.google.android.gms.common.moduleinstall.InstallStatusListener
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallClient
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
+import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate
 import com.google.mlkit.common.MlKitException
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.codescanner.GmsBarcodeScannerOptions
 import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
@@ -359,18 +365,66 @@ class PamPlugin(private val activity: Activity) : Plugin(activity) {
       .build()
     activity.runOnUiThread {
       try {
-        GmsBarcodeScanning.getClient(activity, options)
-          .startScan()
-          .addOnSuccessListener { code -> invoke.resolve(JSObject().apply { put("content", code.rawValue) }) }
-          .addOnCanceledListener { invoke.resolve(JSObject().apply { put("content", null as String?) }) }
-          .addOnFailureListener { e ->
-            val code = if (e is MlKitException && e.errorCode == MlKitException.UNAVAILABLE) "scanner_unavailable" else "scanner_failed"
-            invoke.reject(e.message ?: code, code)
+        val scanner = GmsBarcodeScanning.getClient(activity, options)
+        // The scanner is a module of Google Play services, downloaded on first use: request it
+        // and wait for the download instead of failing with "unavailable".
+        val modules = ModuleInstall.getClient(activity)
+        modules.areModulesAvailable(scanner)
+          .addOnSuccessListener { available ->
+            if (available.areModulesAvailable()) {
+              startScan(scanner, invoke)
+            } else {
+              installScanner(modules, scanner, invoke)
+            }
           }
+          .addOnFailureListener { e -> rejectScan(invoke, e) }
       } catch (e: Exception) {
-        invoke.reject(e.message ?: "scanner_failed", "scanner_failed")
+        rejectScan(invoke, e)
       }
     }
+  }
+
+  private fun installScanner(modules: ModuleInstallClient, scanner: GmsBarcodeScanner, invoke: Invoke) {
+    val listener = object : InstallStatusListener {
+      override fun onInstallStatusUpdated(update: ModuleInstallStatusUpdate) {
+        when (update.installState) {
+          ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED -> {
+            modules.unregisterListener(this)
+            activity.runOnUiThread { startScan(scanner, invoke) }
+          }
+          ModuleInstallStatusUpdate.InstallState.STATE_FAILED,
+          ModuleInstallStatusUpdate.InstallState.STATE_CANCELED -> {
+            modules.unregisterListener(this)
+            invoke.reject("Scanner module could not be installed (state ${update.installState}, error ${update.errorCode}).", "scanner_install_failed")
+          }
+          else -> {}
+        }
+      }
+    }
+    val request = ModuleInstallRequest.newBuilder().addApi(scanner).setListener(listener).build()
+    modules.installModules(request)
+      .addOnSuccessListener { response ->
+        if (response.areModulesAlreadyInstalled()) {
+          modules.unregisterListener(listener)
+          startScan(scanner, invoke)
+        }
+      }
+      .addOnFailureListener { e ->
+        modules.unregisterListener(listener)
+        rejectScan(invoke, e)
+      }
+  }
+
+  private fun startScan(scanner: GmsBarcodeScanner, invoke: Invoke) {
+    scanner.startScan()
+      .addOnSuccessListener { code -> invoke.resolve(JSObject().apply { put("content", code.rawValue) }) }
+      .addOnCanceledListener { invoke.resolve(JSObject().apply { put("content", null as String?) }) }
+      .addOnFailureListener { e -> rejectScan(invoke, e) }
+  }
+
+  private fun rejectScan(invoke: Invoke, e: Exception) {
+    val code = if (e is MlKitException && e.errorCode == MlKitException.UNAVAILABLE) "scanner_unavailable" else "scanner_failed"
+    invoke.reject("${e.javaClass.simpleName}: ${e.message ?: code}", code)
   }
 
   // ---------- crash reports ----------

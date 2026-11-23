@@ -525,6 +525,7 @@ export const de: Messages = {
   'client.split.empty': 'Wählen Sie ein Ergebnis aus der Liste.',
   'client.connect.scan': 'QR-Code scannen',
   'client.connect.scanText': 'Scannen Sie den QR-Code, den das Web beim Anlegen des API-Keys zeigt.',
+  'client.connect.scannerLoading': 'QR-Scanner wird geladen …',
   'client.connect.scannerFailed': 'Der QR-Scanner ist nicht verfügbar. Geben Sie den API-Key bitte von Hand ein.',
   'client.connect.scanFailed': 'Der QR-Code enthält keinen API-Key.',
   'client.update.play':

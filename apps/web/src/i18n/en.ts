@@ -511,6 +511,7 @@ export const en = {
   'client.split.empty': 'Choose a result from the list.',
   'client.connect.scan': 'Scan QR code',
   'client.connect.scanText': 'Scan the QR code shown on the web when the API key is created.',
+  'client.connect.scannerLoading': 'Loading the QR scanner …',
   'client.connect.scannerFailed': 'The QR scanner is not available. Please enter the API key by hand.',
   'client.connect.scanFailed': 'The QR code contains no API key.',
   'client.update.play':
