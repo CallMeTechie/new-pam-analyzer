@@ -9,7 +9,7 @@
 - Android (Google Play): "Check now" asks Google Play for a new version and shows it; "Install" starts the update through Google Play.
 
 ### Fixed
-- Android: the camera button next to the API key crashed the app. Scanning now uses the QR scanner of Google Play services – its own camera screen, no camera permission needed. If the scanner module is still missing, the app downloads it through Google Play and starts the scanner afterwards. If the scanner fails, the app shows the exact reason.
+- Android: the camera button next to the API key crashed the app. Scanning now uses the QR scanner of Google Play services – its own camera screen, no camera permission needed. If the scanner module is still missing, the app downloads it through Google Play and starts the scanner afterwards. If the scanner fails, the app shows the exact reason. In the Play version the scanner failed because code optimisation (R8) had removed parts of Google Play services.
 
 ### Fixed
 - Android: the camera button next to the API key opens the camera again. The app now asks for the camera permission first; while scanning a frame and "Cancel" are shown. If access was refused, a link leads to the app settings.

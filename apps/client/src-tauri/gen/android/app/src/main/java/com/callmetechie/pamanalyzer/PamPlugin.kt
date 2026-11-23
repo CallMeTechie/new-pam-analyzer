@@ -425,7 +425,9 @@ class PamPlugin(private val activity: Activity) : Plugin(activity) {
 
   private fun rejectScan(invoke: Invoke, e: Exception) {
     val code = if (e is MlKitException && e.errorCode == MlKitException.UNAVAILABLE) "scanner_unavailable" else "scanner_failed"
-    invoke.reject("${e.javaClass.simpleName}: ${e.message ?: code}", code)
+    // The first frames show where it failed (the Play version is obfuscated; mapping.txt is in the release).
+    val frames = e.stackTrace.take(4).joinToString(" < ") { "${it.className}.${it.methodName}:${it.lineNumber}" }
+    invoke.reject("${e.javaClass.simpleName}: ${e.message ?: code} @ $frames", code)
   }
 
   // ---------- crash reports ----------
