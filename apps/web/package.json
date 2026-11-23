@@ -1,6 +1,6 @@
 {
   "name": "@pam/web",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "PAM Analyzer web interface",
   "private": true,
   "type": "module",
@@ -16,6 +16,7 @@
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
     "@pam/core": "workspace:*",
+    "fflate": "~0.8.3",
     "qrcode-generator": "^2.0.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

@@ -9,6 +9,7 @@ import {
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ANGLE_COLOR, Gauge, Scatter } from '../components/charts';
+import { EditResultDialog } from '../components/EditResult';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
 import {
@@ -547,6 +548,7 @@ export function ResultDetail() {
   const navigate = useNavigate();
   const { data, error, loading } = useApi<Detail>(`/results/${id}`);
   const [coefficient, setCoefficient] = useState<number | null>(null);
+  const [editing, setEditing] = useState(false);
   const [tab, setTab] = useState<DetailTab>('overview');
   // Sections stay rendered so that the printout shows everything; inactive tabs are only hidden.
   const sectionClass = (k: DetailTab) => `rd-sec rd-${k}${options.tabbed && tab !== k ? ' tab-off' : ''}`;
@@ -659,11 +661,18 @@ export function ResultDetail() {
           {options.renderActions ? (
             options.renderActions(data)
           ) : (
-            <a href={`/api/results/${data.result.id}/file`} className="btn" download>
-              <Icon name="download" size={16} />
-              <span className="label-sm-hide">{t('detail.download')}</span>
-            </a>
+            <>
+              <button type="button" className="btn" onClick={() => setEditing(true)} title={t('client.assign.edit')}>
+                <Icon name="edit" size={16} />
+                <span className="label-sm-hide">{t('client.assign.edit')}</span>
+              </button>
+              <a href={`/api/results/${data.result.id}/file`} className="btn" download>
+                <Icon name="download" size={16} />
+                <span className="label-sm-hide">{t('detail.download')}</span>
+              </a>
+            </>
           )}
+          {editing && <EditResultDialog detail={data} onClose={() => setEditing(false)} />}
           {canDelete && (
             <button
               type="button"

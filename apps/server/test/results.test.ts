@@ -57,6 +57,12 @@ describe('Upload', () => {
     const modified = await workerA.upload([{ ...fixture('nxt', 0), lastModified: Date.UTC(2026, 6, 14, 11, 26) }]);
     expect(modified.body.results[0]).toMatchObject({ dateSource: 'file_modified', testDate: '2026-07-14 13:26:00' });
 
+    // Datum eines ZIP-Eintrags, den die Web-Oberfläche selbst entpackt hat: Ortszeit der Maschinen.
+    const local = await workerA.upload([{ ...fixture('nxt', 2), lastModified: Date.UTC(2020, 0, 1) }], {
+      modifiedLocal: '2026-07-15 08:05:10',
+    });
+    expect(local.body.results[0]).toMatchObject({ dateSource: 'file_modified', testDate: '2026-07-15 08:05:10' });
+
     const before = Date.now();
     const upload = await workerA.upload([fixture('nxt', 1)]);
     expect(upload.body.results[0].dateSource).toBe('upload');

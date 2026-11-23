@@ -5,6 +5,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { requireAdmin } from '../auth/middleware.js';
 import { type AppEnv, HttpError, jsonBody, notFound, parse } from '../http.js';
 import { catalogSchema, deleteCatalog, listCatalogs, localeCode, putCatalog } from '../services/languages.js';
+import { mailConfig } from '../services/mail.js';
 
 /** Version of the server package, read once on start (works from `src` and from `dist`). */
 export const SERVER_VERSION: string = (() => {
@@ -26,7 +27,9 @@ metaRoutes.get('/version', (c) =>
     version: SERVER_VERSION,
     algorithmVersion: ALGORITHM_VERSION,
     /** Invitations can be sent by e-mail. */
-    mail: c.get('config').smtp !== null,
+    mail: mailConfig(c.get('db'), c.get('config')) !== null,
+    /** Limits the web UI sizes its upload batches by (it unpacks ZIP archives itself). */
+    upload: { maxFileBytes: c.get('config').maxFileBytes, maxUploadBytes: c.get('config').maxUploadBytes },
   }),
 );
 

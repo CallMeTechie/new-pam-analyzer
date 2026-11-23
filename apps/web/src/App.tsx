@@ -6,7 +6,7 @@ import type { Company } from './lib/api';
 import { useAuth, useUser } from './lib/auth';
 import { ScopeProvider, useScope } from './lib/scope';
 import { useApi } from './lib/useApi';
-import { Account, ForcedPasswordChange } from './pages/Account';
+import { Account, ForcedPasswordChange, NameServiceCompany } from './pages/Account';
 import { Companies } from './pages/Companies';
 import { Connect } from './pages/Connect';
 import { Dashboard } from './pages/Dashboard';
@@ -76,6 +76,7 @@ function CompanyView() {
 function SignedIn() {
   const user = useUser();
   if (user.mustChangePassword) return <ForcedPasswordChange />;
+  if (user.nameServiceCompany) return <NameServiceCompany />;
   const staff = user.company.isService;
   const admin = staff && user.role === 'admin';
   return (

@@ -5,6 +5,7 @@ import { api, type Profile } from '../lib/api';
 import { useAuth, useUser } from '../lib/auth';
 import { useScope } from '../lib/scope';
 import { Icon, type IconName, Logo } from './Icon';
+import { UploadToast } from './UploadToast';
 import { CompanyBadge, InfoTip } from './ui';
 
 interface NavItem {
@@ -220,6 +221,7 @@ export function Layout() {
           <span className="version">v{__APP_VERSION__}</span>
         </footer>
       </div>
+      <UploadToast />
     </div>
   );
 }

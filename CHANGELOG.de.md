@@ -1,5 +1,19 @@
 # Änderungen
 
+## 0.11.0 – 23.11.2026
+
+### Geändert
+- **Upload im Hintergrund, in jeder Größe.** Der Upload läuft im Hintergrund: Man kann weiterarbeiten und die Seite wechseln; eine Meldung zeigt Dateien, MB und Prozent, am unteren Rand läuft ein Fortschrittsbalken, und der Upload lässt sich abbrechen. ZIP-Archive jeder Größe (auch ZIP64) und beliebig viele Dateien: Der Browser entpackt die Archive Eintrag für Eintrag und schickt die Dateien in Portionen; scheitert eine Portion am Netz, wird sie erneut gesendet. Das Ergebnis öffnet sich aus der Meldung („Details“).
+- Die eigene Upload-Seite entfällt; hochgeladen wird in der Ablagefläche des Dashboards (`/upload` führt dorthin).
+- Der Mailserver für Einladungen wird unter **Einstellungen → E-Mail** eingerichtet (mit Test-E-Mail); er gilt vor den Umgebungsvariablen `SMTP_*`.
+- Die Service-Firma ist unter Firmen mit „Service“ markiert, mit Erklärung, was sie sieht.
+- Zahlen in Texten erscheinen im Format der Sprache (9.677 / 9,677).
+
+### Neu
+- **Service-Firma benennen** ist der zweite Schritt einer neuen Installation, direkt nach dem Ändern der Standard-Zugangsdaten (`POST /api/auth/service-company`); `SERVICE_COMPANY_NAME` ist nur noch der Vorschlag. Bestehende Installationen behalten ihren Namen.
+- **Kunde & Datum** im Web: Kunde und Prüfdatum eines Ergebnisses nachträglich ändern.
+- `GET/PUT /api/settings/mail`, `POST /api/settings/mail/test`; `GET /api/version` nennt die Upload-Grenzen; Uploads nehmen `modifiedLocal` an (Datum eines ZIP-Eintrags, Ortszeit der Maschinen).
+
 ## 0.10.0 – 23.11.2026
 
 ### Geändert

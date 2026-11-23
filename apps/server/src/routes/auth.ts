@@ -8,8 +8,9 @@ import { currentUser } from '../auth/middleware.js';
 import { createSession, deleteSession, deleteUserSessions, SESSION_COOKIE, userForSession } from '../auth/sessions.js';
 import { companies, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
-import { DEFAULT_ADMIN } from '../services/bootstrap.js';
+import { DEFAULT_ADMIN, SERVICE_NAMED_SETTING } from '../services/bootstrap.js';
 import { isKnownLocale, localeCode } from '../services/languages.js';
+import { readSetting, writeSetting } from '../services/settings.js';
 
 export const password = z.string().min(12, 'at least 12 characters').max(200);
 export const email = z.string().trim().toLowerCase().email().max(200);
@@ -17,7 +18,7 @@ export const email = z.string().trim().toLowerCase().email().max(200);
 export const authRoutes = new Hono<AppEnv>();
 
 function profile(db: AppEnv['Variables']['db'], userId: number) {
-  return db
+  const row = db
     .select({
       id: users.id,
       email: users.email,
@@ -36,6 +37,13 @@ function profile(db: AppEnv['Variables']['db'], userId: number) {
     .innerJoin(companies, eq(users.companyId, companies.id))
     .where(eq(users.id, userId))
     .get();
+  if (!row) return row;
+  return {
+    ...row,
+    /** The service company still has to be named (new installation, an administrator of the service company). */
+    nameServiceCompany:
+      row.role === 'admin' && row.company.isService && readSetting<boolean>(db, SERVICE_NAMED_SETTING) === false,
+  };
 }
 
 authRoutes.post('/login', async (c) => {
@@ -118,6 +126,27 @@ authRoutes.post('/password', async (c) => {
     .run();
   deleteUserSessions(db, user.id, getCookie(c, SESSION_COOKIE));
   return c.body(null, 204);
+});
+
+/**
+ * Names the service company of a new installation: the step right after the default administrator
+ * replaced the default credentials. Later it is renamed like any company under Companies.
+ */
+authRoutes.post('/service-company', async (c) => {
+  const user = currentUser(c);
+  const db = c.get('db');
+  if (user.role !== 'admin' || !user.isService) throw new HttpError(403, 'forbidden', 'Administrators only.');
+  if (user.mustChangePassword) {
+    throw new HttpError(403, 'password_change_required', 'Replace the default credentials first.');
+  }
+  const body = parse(z.object({ name: z.string().trim().min(1).max(120) }), await jsonBody(c));
+  const taken = db.select({ id: companies.id }).from(companies).where(eq(companies.name, body.name)).get();
+  if (taken && taken.id !== user.companyId) {
+    throw new HttpError(409, 'name_taken', 'A company with this name already exists.');
+  }
+  db.update(companies).set({ name: body.name }).where(eq(companies.id, user.companyId)).run();
+  writeSetting(db, SERVICE_NAMED_SETTING, true, user.id);
+  return c.json({ user: profile(db, user.id) });
 });
 
 /** Lets the web UI check a session without an error status. */

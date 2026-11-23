@@ -195,16 +195,81 @@ export function Account() {
 /** Shown instead of the app until a new user has replaced the initial password. */
 export function ForcedPasswordChange() {
   const { t } = useI18n();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   return (
     <div className="center-page">
       <div className="card stack" style={{ width: 'min(460px, 100%)' }}>
+        {user?.nameServiceCompany && (
+          <span className="muted" style={{ fontSize: 13 }}>
+            {t('setup.step', { n: 1, total: 2 })}
+          </span>
+        )}
         <h2 style={{ fontSize: 24, fontWeight: 800 }}>{t('password.title')}</h2>
         <PasswordForm forced />
         <button type="button" className="linkbtn" style={{ alignSelf: 'flex-start' }} onClick={() => void logout()}>
           {t('profile.logout')}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Second step of a new installation, right after the default credentials were replaced: the
+ * administrator names the service company (suggestion: `SERVICE_COMPANY_NAME`).
+ */
+export function NameServiceCompany() {
+  const { t } = useI18n();
+  const user = useUser();
+  const { setUser, logout } = useAuth();
+  const [name, setName] = useState(user.company.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ApiError | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await api.post<{ user: Profile }>('/auth/service-company', { name: name.trim() });
+      setUser(res.user);
+    } catch (err) {
+      setError(err as ApiError);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="center-page">
+      <form className="card stack" style={{ width: 'min(460px, 100%)' }} onSubmit={submit}>
+        <span className="muted" style={{ fontSize: 13 }}>
+          {t('setup.step', { n: 2, total: 2 })}
+        </span>
+        <h2 style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{t('setup.serviceTitle')}</h2>
+        <p style={{ margin: 0 }}>{t('setup.serviceText')}</p>
+        {error && <ErrorNotice error={error} />}
+        <Field label={t('setup.serviceName')} hint={t('setup.serviceHint')}>
+          {(p) => (
+            <input
+              {...p}
+              className="input"
+              value={name}
+              maxLength={120}
+              required
+              onChange={(e) => setName(e.target.value)}
+            />
+          )}
+        </Field>
+        <div>
+          <button type="submit" className="btn primary" disabled={busy || !name.trim()}>
+            {t('setup.serviceSave')}
+          </button>
+        </div>
+        <button type="button" className="linkbtn" style={{ alignSelf: 'flex-start' }} onClick={() => void logout()}>
+          {t('profile.logout')}
+        </button>
+      </form>
     </div>
   );
 }

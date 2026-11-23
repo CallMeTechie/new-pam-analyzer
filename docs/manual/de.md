@@ -6,8 +6,9 @@ Der PAM Analyzer wertet PAM-Ergebnisse (`.dat`) von FUJI NXT, NXT-R und AIMEX au
 
 1. Beim ersten Start gibt es das Konto `admin@example.com` mit dem Passwort `admin1234`.
 2. Bei der ersten Anmeldung wählen Sie eine eigene E-Mail-Adresse und ein Passwort mit mindestens 12 Zeichen. Danach gelten die Standard-Zugangsdaten nicht mehr.
-3. Unter **Firmen** legen Sie die Kundenfirmen an, unter **Benutzer** die Konten.
-4. Unter **Hochladen** laden Sie die ersten PAM-Dateien hoch.
+3. Direkt danach geben Sie der **Service-Firma** ihren Namen (Schritt 2 von 2). Er lässt sich später unter Firmen ändern.
+4. Unter **Firmen** legen Sie die Kundenfirmen an, unter **Benutzer** die Konten.
+5. Im Upload-Bereich des **Dashboards** laden Sie die ersten PAM-Dateien hoch.
 
 ## Rollen
 
@@ -15,14 +16,17 @@ Der PAM Analyzer wertet PAM-Ergebnisse (`.dat`) von FUJI NXT, NXT-R und AIMEX au
 - **Firmen-Admin**: lädt Mitglieder ein, verwaltet ihre Geräte, die Maschinen und das Logo seiner Firma.
 - **Benutzer**: sieht die Ergebnisse seiner Firma und lädt neue hoch.
 
-Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen.
+Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen. Die **Service-Firma** legt der Server beim ersten Start an; ihren Namen vergibt der erste Administrator direkt nach dem Ändern der Standard-Zugangsdaten (Vorschlag: `SERVICE_COMPANY_NAME`, Standard „FUJI Service“). Sie ist unter Firmen mit „Service“ markiert; es gibt genau eine. Jede andere Firma sieht und lädt immer nur ihre eigenen Ergebnisse.
 
 ## Ergebnisse hochladen
 
-- Unter **Hochladen** Dateien, ZIP-Archive oder ganze Ordner auswählen oder in die Fläche ziehen.
+- Im Upload-Bereich des **Dashboards** Dateien, ZIP-Archive oder ganze Ordner auswählen oder in die Fläche ziehen. Größe der ZIP-Archive und Zahl der Dateien sind nicht begrenzt: Archive werden im Browser entpackt, die Dateien gehen in Portionen zum Server.
+- Der Upload läuft **im Hintergrund**: Sie können weiterarbeiten und die Seite wechseln. Eine Meldung unten rechts zeigt Dateien, MB und Prozent, am unteren Rand läuft ein Fortschrittsbalken; ✕ bricht ab (bis dahin Hochgeladenes bleibt gespeichert). Den Browser-Tab währenddessen nicht schließen oder neu laden.
+- Ist er fertig, zeigt **Details** jede Datei: neu, schon gespeichert, nicht lesbar oder übersprungen.
 - Die Service-Firma wählt vorher die Firma, zu der die Ergebnisse gehören.
 - Dateien, die in der Firma schon gespeichert sind, werden erkannt und übersprungen.
-- **Prüfdatum**: der Zeitstempel in der Datei (NXT-R), sonst das Änderungsdatum der Datei, sonst das Upload-Datum.
+- **Prüfdatum**: der Zeitstempel in der Datei (NXT-R), sonst das Änderungsdatum der Datei (im ZIP: des Eintrags), sonst das Upload-Datum.
+- **Kunde & Datum** im Ergebnis ändert Kunde und Prüfdatum nachträglich (Datum aus der Datei, heute oder ein anderer Tag).
 
 ## Ergebnisse finden
 
@@ -63,6 +67,7 @@ Ein Klick auf **Kopf-Historie** im Ergebnis zeigt alle Prüfungen desselben Kopf
 - **Koeffizienten**: Toleranz und erwartete Bauteile je Kopftyp, dazu die DX-Werkzeuge. Jede Änderung wird als neue Version gespeichert; vorhandene Ergebnisse behalten ihre Version.
 - **Bewertung**: Grenzen der vier Bewertungsstufen.
 - **Sprachen**: Sprachdatei exportieren, übersetzen und wieder importieren. Fehlende Texte erscheinen auf Englisch.
+- **E-Mail**: Mailserver (SMTP) für den Versand der Einladungen, mit Test-E-Mail. Was hier eingetragen ist, gilt vor den Umgebungsvariablen `SMTP_*`; das Passwort wird nie wieder angezeigt.
 - **Sicherheit & Daten**: Standard für die Zahl der Geräte je Mitglied (eine Firma kann im Team eine eigene Grenze setzen).
 - **Version**: installierte Version und Änderungen.
 

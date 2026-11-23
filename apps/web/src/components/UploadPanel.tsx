@@ -1,16 +1,13 @@
 import { type DragEvent, useRef, useState } from 'react';
-import { Link } from 'react-router';
 import { useI18n } from '../i18n';
-import { ApiError, type Company, type IngestOutcome, type UploadResponse, uploadFiles } from '../lib/api';
+import type { Company } from '../lib/api';
+import { startUpload, useBackgroundUpload } from '../lib/backgroundUpload';
 import { useScope } from '../lib/scope';
 import { useApi } from '../lib/useApi';
 import { Icon } from './Icon';
-import { errorText, InfoTip, Modal, Notice, RatingPill } from './ui';
+import { InfoTip } from './ui';
 
 const accepted = (name: string) => /\.(dat|zip)$/i.test(name);
-/** Requests stay well below the server limit (200 MB) and keep the progress meaningful. */
-const BATCH_BYTES = 40 * 1024 * 1024;
-const BATCH_FILES = 300;
 
 interface FileSystemEntryLike {
   isFile: boolean;
@@ -44,30 +41,12 @@ async function filesFromEntry(entry: FileSystemEntryLike): Promise<File[]> {
   return [];
 }
 
-function batches(files: File[]): File[][] {
-  const out: File[][] = [];
-  let current: File[] = [];
-  let size = 0;
-  for (const f of files) {
-    if (current.length && (size + f.size > BATCH_BYTES || current.length >= BATCH_FILES)) {
-      out.push(current);
-      current = [];
-      size = 0;
-    }
-    current.push(f);
-    size += f.size;
-  }
-  if (current.length) out.push(current);
-  return out;
-}
-
 /**
- * Drop zone with the whole upload: drop or choose files and folders (.dat, .zip), choose the company
- * (service staff), upload in batches with progress; the outcome opens in a dialog. Used on the
- * dashboard; there is no separate upload page.
+ * Drop zone of the dashboard: drop or choose files and folders (.dat, .zip of any size), choose the
+ * company (service staff) and start; the upload then runs in the background (see `UploadToast`).
  */
 export function UploadPanel() {
-  const { t, int, num, dateTime } = useI18n();
+  const { t, num } = useI18n();
   const scope = useScope();
   const staffAll = scope.companyId === null;
   const companies = useApi<{ items: Company[] }>(staffAll ? '/companies' : null);
@@ -75,9 +54,7 @@ export function UploadPanel() {
   const [files, setFiles] = useState<File[]>([]);
   const [ignored, setIgnored] = useState(0);
   const [over, setOver] = useState(false);
-  const [progress, setProgress] = useState<number | null>(null);
-  const [response, setResponse] = useState<UploadResponse | null>(null);
-  const [error, setError] = useState<ApiError | null>(null);
+  const upload = useBackgroundUpload();
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
 
@@ -88,8 +65,6 @@ export function UploadPanel() {
       const seen = new Set(prev.map((f) => `${f.name}|${f.size}|${f.lastModified}`));
       return [...prev, ...ok.filter((f) => !seen.has(`${f.name}|${f.size}|${f.lastModified}`))];
     });
-    setResponse(null);
-    setError(null);
   }
 
   async function onDrop(e: DragEvent) {
@@ -103,49 +78,14 @@ export function UploadPanel() {
     else add([...e.dataTransfer.files]);
   }
 
-  async function start() {
-    const groups = batches(files);
-    const total = files.reduce((s, f) => s + f.size, 0) || 1;
-    let done = 0;
-    const merged: UploadResponse = {
-      summary: { created: 0, duplicate: 0, rejected: 0, skipped: 0 },
-      results: [],
-      skipped: [],
-    };
-    setProgress(0);
-    setError(null);
-    try {
-      for (const group of groups) {
-        const form = new FormData();
-        for (const f of group) {
-          form.append('files', f, f.name);
-          form.append('lastModified', String(f.lastModified));
-        }
-        const target = scope.companyId ?? (companyId ? Number(companyId) : null);
-        if (target) form.append('companyId', String(target));
-        const size = group.reduce((s, f) => s + f.size, 0);
-        const res = await uploadFiles(form, (p) => setProgress((done + p * size) / total));
-        done += size;
-        for (const k of Object.keys(merged.summary) as (keyof UploadResponse['summary'])[])
-          merged.summary[k] += res.summary[k];
-        merged.results.push(...res.results);
-        merged.skipped.push(...res.skipped);
-      }
-      setResponse(merged);
-      setFiles([]);
-      setIgnored(0);
-    } catch (err) {
-      setError(err instanceof ApiError ? err : new ApiError(0, 'internal_error', String(err)));
-      if (merged.results.length) setResponse(merged);
-    } finally {
-      setProgress(null);
-    }
+  function start() {
+    startUpload(files, scope.companyId ?? (companyId ? Number(companyId) : null));
+    setFiles([]);
+    setIgnored(0);
   }
 
-  const busy = progress !== null;
+  const busy = upload.status === 'running';
   const size = files.reduce((s, f) => s + f.size, 0);
-  const statusLabel = (r: IngestOutcome) =>
-    r.status === 'rejected' ? t(`reject.${r.reason ?? 'unreadable'}` as never) : t(`upload.status.${r.status}`);
 
   return (
     <div className="upload-panel stack" style={{ gap: 12 }}>
@@ -230,7 +170,7 @@ export function UploadPanel() {
         />
       </section>
 
-      {(files.length > 0 || busy) && (
+      {files.length > 0 && (
         <section className="card stack" style={{ gap: 10 }}>
           <div className="stack" style={{ gap: 8 }}>
             <div>
@@ -244,138 +184,34 @@ export function UploadPanel() {
               <button type="button" className="btn" onClick={() => setFiles([])} disabled={busy}>
                 {t('common.clear')}
               </button>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => void start()}
-                disabled={busy || files.length === 0}
-              >
+              <button type="button" className="btn primary" onClick={start} disabled={busy || files.length === 0}>
                 <Icon name="upload" size={16} />
                 {busy ? t('upload.busy') : t('upload.start')}
               </button>
             </div>
+            {busy && (
+              <span className="muted" style={{ fontSize: 13 }}>
+                {t('upload.waitHint')}
+              </span>
+            )}
           </div>
-          {busy && (
-            <div
-              className="progress"
-              role="progressbar"
-              aria-valuenow={Math.round((progress ?? 0) * 100)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <span style={{ width: `${(progress ?? 0) * 100}%` }} />
-            </div>
-          )}
-          {!busy && (
-            <ul
-              className="muted mono"
-              style={{
-                margin: 0,
-                paddingLeft: 18,
-                fontSize: 12.5,
-                maxHeight: 140,
-                overflowY: 'auto',
-                overflowWrap: 'anywhere',
-              }}
-            >
-              {files.slice(0, 50).map((f) => (
-                <li key={`${f.name}|${f.size}|${f.lastModified}`}>{f.name}</li>
-              ))}
-              {files.length > 50 && <li>{t('upload.more', { n: files.length - 50 })}</li>}
-            </ul>
-          )}
+          <ul
+            className="muted mono"
+            style={{
+              margin: 0,
+              paddingLeft: 18,
+              fontSize: 12.5,
+              maxHeight: 140,
+              overflowY: 'auto',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {files.slice(0, 50).map((f) => (
+              <li key={`${f.name}|${f.size}|${f.lastModified}`}>{f.name}</li>
+            ))}
+            {files.length > 50 && <li>{t('upload.more', { n: files.length - 50 })}</li>}
+          </ul>
         </section>
-      )}
-
-      {error && <Notice kind="error" title={errorText(t, error)} />}
-
-      {response && (
-        <Modal title={t('upload.done')} onClose={() => setResponse(null)} wide>
-          <div className="section-h">
-            <div className="summary-pills">
-              <span className="pill r-excellent">{t('upload.created', { n: response.summary.created })}</span>
-              <span className="pill plain">{t('upload.duplicates', { n: response.summary.duplicate })}</span>
-              {response.summary.rejected > 0 && (
-                <span className="pill r-critical">{t('upload.rejected', { n: response.summary.rejected })}</span>
-              )}
-              {response.summary.skipped > 0 && (
-                <span className="pill r-warning">{t('upload.skipped', { n: response.summary.skipped })}</span>
-              )}
-            </div>
-          </div>
-          <div className="card flat table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>{t('upload.file')}</th>
-                  <th>{t('upload.status')}</th>
-                  <th>{t('fact.head')}</th>
-                  <th>{t('fact.tested')}</th>
-                  <th>Cpk XY</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {response.results.map((r, i) => (
-                  <tr key={`${r.fileName}-${i}`}>
-                    <td className="mono" style={{ fontSize: 13, overflowWrap: 'anywhere' }}>
-                      {r.fileName}
-                    </td>
-                    <td>
-                      <span
-                        className={`pill small ${r.status === 'created' ? 'r-excellent' : r.status === 'rejected' ? 'r-critical' : 'plain'}`}
-                      >
-                        {statusLabel(r)}
-                      </span>
-                    </td>
-                    <td className="nowrap">{r.headType ? `${r.headType} · ${r.headSerial}` : '–'}</td>
-                    <td className="nowrap">
-                      {r.testDate ? dateTime(r.testDate) : '–'}
-                      {r.dateSource && r.dateSource !== 'header' && (
-                        <div className="muted" style={{ fontSize: 12 }}>
-                          {t(`dateSource.${r.dateSource}` as never)}
-                        </div>
-                      )}
-                    </td>
-                    <td>
-                      {r.status === 'created' ? (
-                        <RatingPill rating={r.rating ?? null} value={r.cpkXY ?? null} small />
-                      ) : (
-                        '–'
-                      )}
-                    </td>
-                    <td className="actions">
-                      {r.resultId && (
-                        <Link to={scope.link(`/results/${r.resultId}`)} className="linkbtn">
-                          {t('common.open')} →
-                        </Link>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {response.skipped.map((s, i) => (
-                  <tr key={`skip-${s.name}-${i}`}>
-                    <td className="mono" style={{ fontSize: 13 }}>
-                      {s.name}
-                    </td>
-                    <td>
-                      <span className="pill small r-warning">{t(`skip.${s.reason}` as never)}</span>
-                    </td>
-                    <td colSpan={4} />
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="actions">
-            <button type="button" className="btn" onClick={() => setResponse(null)}>
-              {t('common.close')}
-            </button>
-            <Link to={scope.link('/results')} className="btn primary">
-              {t('upload.toResults', { n: int(response.summary.created) })} →
-            </Link>
-          </div>
-        </Modal>
       )}
     </div>
   );

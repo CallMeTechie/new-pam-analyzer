@@ -1,5 +1,5 @@
 import { type CoefficientConfig, CPK_THRESHOLDS, type CpkThresholds, validThresholds } from '@pam/core';
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import changelogDe from '../../../../CHANGELOG.de.md?raw';
 import changelogEn from '../../../../CHANGELOG.md?raw';
 import manualDe from '../../../../docs/manual/de.md?raw';
@@ -14,8 +14,8 @@ import { type ApiError, api } from '../lib/api';
 import { setThresholds } from '../lib/thresholds';
 import { useApi } from '../lib/useApi';
 
-type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'crashes' | 'manual' | 'version';
-const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'crashes', 'manual', 'version'];
+type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'mail' | 'crashes' | 'manual' | 'version';
+const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'mail', 'crashes', 'manual', 'version'];
 
 /* ------------------------------ Coefficients ------------------------------ */
 
@@ -666,6 +666,169 @@ function Security() {
   );
 }
 
+/* ------------------------------ E-mail ------------------------------ */
+
+interface MailSettings {
+  host: string;
+  port: number;
+  secure: boolean;
+  user: string;
+  from: string;
+  passwordSet: boolean;
+  source: 'settings' | 'environment' | 'none';
+}
+
+/** Mail server for invitations by e-mail. Without it, links and QR codes are handed over by hand. */
+function Mail() {
+  const { t } = useI18n();
+  const { data, error, reload } = useApi<MailSettings>('/settings/mail');
+  const [form, setForm] = useState({ host: '', port: '587', secure: false, user: '', password: '', from: '' });
+  const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<ApiError | null>(null);
+  const [to, setTo] = useState('');
+  const [test, setTest] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (data) {
+      setForm({
+        host: data.host,
+        port: String(data.port),
+        secure: data.secure,
+        user: data.user,
+        password: '',
+        from: data.from,
+      });
+    }
+  }, [data]);
+  if (error) return <ErrorNotice error={error} />;
+  if (!data) return <Loading />;
+  const set = (k: 'host' | 'port' | 'user' | 'password' | 'from') => (e: ChangeEvent<HTMLInputElement>) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+    setSaved(false);
+  };
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setSaveError(null);
+    try {
+      await api.put('/settings/mail', {
+        host: form.host.trim(),
+        port: Number(form.port),
+        secure: form.secure,
+        user: form.user.trim(),
+        from: form.from.trim(),
+        ...(form.password ? { password: form.password } : {}),
+      });
+      setSaved(true);
+      reload();
+    } catch (err) {
+      setSaveError(err as ApiError);
+    }
+  }
+
+  async function sendTest() {
+    setBusy(true);
+    setTest(null);
+    try {
+      const res = await api.post<{ to: string }>('/settings/mail/test', to.trim() ? { to: to.trim() } : {});
+      setTest({ ok: true, text: t('mail.testSent', { to: res.to }) });
+    } catch (err) {
+      setTest({ ok: false, text: (err as ApiError).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="card stack" style={{ maxWidth: 760 }}>
+      <div className="card-h" style={{ marginBottom: 0 }}>
+        <h2 className="title-with-info">
+          {t('settings.tab.mail')}
+          <InfoTip text={t('mail.info')} />
+        </h2>
+      </div>
+      {data.source === 'environment' && <Notice kind="info">{t('mail.fromEnvironment')}</Notice>}
+      {data.source === 'none' && <Notice kind="info">{t('mail.none')}</Notice>}
+      {saved && <Notice kind="success" title={t('common.saved')} />}
+      {saveError && <ErrorNotice error={saveError} />}
+      <form className="stack" onSubmit={save}>
+        <div className="form-grid">
+          <label className="field">
+            {t('mail.host')}
+            <input className="input" value={form.host} onChange={set('host')} placeholder="smtp.example.com" />
+          </label>
+          <label className="field">
+            {t('mail.port')}
+            <input className="input mono" type="number" min={1} max={65535} value={form.port} onChange={set('port')} />
+          </label>
+          <label className="field">
+            {t('mail.user')}
+            <input className="input" value={form.user} onChange={set('user')} autoComplete="off" />
+          </label>
+          <label className="field">
+            {t('mail.password')}
+            <input
+              className="input"
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              autoComplete="new-password"
+              placeholder={data.passwordSet ? t('mail.passwordKept') : ''}
+            />
+          </label>
+          <label className="field">
+            {t('mail.from')}
+            <input
+              className="input"
+              value={form.from}
+              onChange={set('from')}
+              placeholder="PAM Analyzer <pam@example.com>"
+            />
+          </label>
+        </div>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={form.secure}
+            onChange={(e) => {
+              setForm((f) => ({ ...f, secure: e.target.checked }));
+              setSaved(false);
+            }}
+          />
+          {t('mail.secure')}
+        </label>
+        <div>
+          <button type="submit" className="btn primary" disabled={!form.port || Number(form.port) < 1}>
+            {t('common.save')}
+          </button>
+        </div>
+      </form>
+      {data.source !== 'none' && (
+        <div className="stack" style={{ gap: 10, borderTop: '1px solid var(--line)', paddingTop: 16 }}>
+          <h3 style={{ margin: 0, fontSize: 16 }}>{t('mail.testTitle')}</h3>
+          <div className="form-row">
+            <label className="field" style={{ flex: '1 1 260px' }}>
+              {t('mail.testTo')}
+              <input
+                className="input"
+                type="email"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder={t('mail.testToMe')}
+              />
+            </label>
+            <button type="button" className="btn" disabled={busy} onClick={() => void sendTest()}>
+              <Icon name="mail" size={16} />
+              {t('mail.testSend')}
+            </button>
+          </div>
+          {test && <Notice kind={test.ok ? 'success' : 'error'} title={test.text} />}
+        </div>
+      )}
+    </section>
+  );
+}
+
 /* ------------------------------ Crash reports ------------------------------ */
 
 interface CrashReportRow {
@@ -803,6 +966,7 @@ export function Settings() {
       {tab === 'rating' && <Rating />}
       {tab === 'languages' && <Languages />}
       {tab === 'security' && <Security />}
+      {tab === 'mail' && <Mail />}
       {tab === 'crashes' && <CrashReports />}
       {tab === 'manual' && <Manual />}
       {tab === 'version' && <Version />}

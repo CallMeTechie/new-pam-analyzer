@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.11.0 – 2026-11-23
+
+### Changed
+- **Upload in the background, in any size.** The upload runs in the background: you can keep working and switch pages; a toast shows files, MB and percent, a bar runs along the bottom edge, and the upload can be cancelled. ZIP archives of any size (also ZIP64) and any number of files: the browser unpacks the archives one entry at a time and sends the files in portions; a portion that fails because of the network is sent again. The outcome opens from the toast ("Details").
+- The separate upload page is gone; uploading is done in the drop zone of the dashboard (`/upload` leads there).
+- The mail server for invitations is set up under **Settings → E-mail** (with test e-mail); it wins over the `SMTP_*` environment variables.
+- The service company is marked "Service" under Companies, with an explanation of what it sees.
+- Counts in texts are formatted for the language (9,677 / 9.677).
+
+### Added
+- **Naming the service company** is the second step of a new installation, right after the default credentials are replaced (`POST /api/auth/service-company`); `SERVICE_COMPANY_NAME` is only the suggestion. Existing installations keep their name.
+- **Customer & date** on the web: change the customer and test date of a result afterwards.
+- `GET/PUT /api/settings/mail`, `POST /api/settings/mail/test`; `GET /api/version` reports the upload limits; uploads accept `modifiedLocal` (date of a ZIP entry, wall-clock time of the machines).
+
 ## 0.10.0 – 2026-11-23
 
 ### Changed

@@ -1,7 +1,6 @@
 import { machineLabel } from '@pam/core';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { Icon } from '../components/Icon';
 import { MenuToggle } from '../components/Layout';
 import { UploadPanel } from '../components/UploadPanel';
 import { Empty, ErrorNotice, headLabel, Loading, ResultListRow, ratingClass } from '../components/ui';

@@ -19,6 +19,8 @@ export interface Profile {
   role: Role;
   locale: string;
   mustChangePassword: boolean;
+  /** New installation: the service company still has to be named (after the default credentials). */
+  nameServiceCompany?: boolean;
   company: { id: number; name: string; isService: boolean; logoVersion: number | null };
 }
 
@@ -269,9 +271,19 @@ export function qs(params: Record<string, string | number | null | undefined>): 
 }
 
 /** Upload with progress (fetch has no upload progress). */
-export function uploadFiles(form: FormData, onProgress: (fraction: number) => void): Promise<UploadResponse> {
+export function uploadFiles(
+  form: FormData,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
+): Promise<UploadResponse> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
+    if (signal?.aborted) {
+      reject(new ApiError(0, 'aborted', 'Cancelled.'));
+      return;
+    }
+    signal?.addEventListener('abort', () => xhr.abort());
+    xhr.onabort = () => reject(new ApiError(0, 'aborted', 'Cancelled.'));
     xhr.open('POST', '/api/uploads');
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(e.loaded / e.total);

@@ -139,3 +139,36 @@ describe('Sprachen und Version', () => {
     expect(res.body.version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 });
+
+describe('E-Mail-Server', () => {
+  it('wird in den Einstellungen gepflegt; das Passwort kommt nie zurück', async () => {
+    const t = await setup();
+    const admin = await t.login(ADMIN.email, ADMIN.password);
+    expect((await admin.json('GET', '/api/settings/mail')).body).toMatchObject({ source: 'none', host: '' });
+    expect((await admin.json('GET', '/api/version')).body.mail).toBe(false);
+
+    const saved = await admin.json('PUT', '/api/settings/mail', {
+      host: '127.0.0.1',
+      port: 1,
+      secure: false,
+      user: 'pam@example.test',
+      password: 'smtp-secret',
+      from: 'PAM <pam@example.test>',
+    });
+    expect(saved.body).toMatchObject({ source: 'settings', host: '127.0.0.1', passwordSet: true });
+    expect(JSON.stringify(saved.body)).not.toContain('smtp-secret');
+    // Saving without a password keeps the stored one.
+    const again = await admin.json('PUT', '/api/settings/mail', { ...saved.body, port: 2, password: undefined });
+    expect(again.body).toMatchObject({ port: 2, passwordSet: true });
+    expect((await admin.json('GET', '/api/version')).body.mail).toBe(true);
+
+    // Nothing listens on port 2: the test mail reports the reason.
+    const test = await admin.json('POST', '/api/settings/mail/test', {});
+    expect(test.status).toBe(502);
+    expect(test.body.error.code).toBe('mail_failed');
+
+    await t.createUser(await t.createCompany('A'), 'boss@a.test', 'companyAdmin');
+    const boss = await t.login('boss@a.test', PASSWORD);
+    expect((await boss.json('GET', '/api/settings/mail')).status).toBe(403);
+  });
+});
