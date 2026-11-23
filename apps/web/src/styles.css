@@ -903,6 +903,39 @@ textarea {
   color: var(--fg);
   box-shadow: var(--shadow);
 }
+.seg button[aria-checked="true"] {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: var(--shadow);
+}
+
+/* Results grouped by date or customer */
+.groups {
+  display: grid;
+  gap: 18px;
+}
+.group {
+  display: grid;
+  gap: 8px;
+}
+.group-h {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  padding: 6px 2px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--bg);
+}
+.group-h .muted {
+  font-size: 12.5px;
+  font-weight: 500;
+}
 
 /* Lists of results */
 .rows {

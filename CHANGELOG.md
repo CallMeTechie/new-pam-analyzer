@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0 – 2026-11-23
+
+### Changed
+- Dashboard shows the current calendar week (Monday to Sunday), like the app: results per weekday, critical results and ratings of the week.
+- The cards above the table are the three most recently uploaded results; the table below lists the results of this and last calendar week.
+- Results can be grouped by test date or by customer, or shown as a plain list; sorting still applies within each group. The choice is remembered.
+
+### Added
+- `GET /api/dashboard` takes a fixed period (`from`, `to`), `GET /api/results` takes `group=date|customer`.
+
 ## 0.7.0 – 2026-11-23
 
 ### Changed

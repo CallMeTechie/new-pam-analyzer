@@ -1,5 +1,5 @@
 import { machineLabel } from '@pam/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon';
 import { MenuToggle } from '../components/Layout';
@@ -9,6 +9,7 @@ import { type Dashboard as DashboardData, type Family, qs, type Rating, type Res
 import { useUser } from '../lib/auth';
 import { useScope } from '../lib/scope';
 import { useApi } from '../lib/useApi';
+import { isoDate, isoWeek } from '../lib/week';
 
 const RATINGS: Rating[] = ['excellent', 'good', 'warning', 'critical'];
 const RATING_COLOR: Record<Rating, string> = {
@@ -17,7 +18,6 @@ const RATING_COLOR: Record<Rating, string> = {
   warning: 'var(--warn-fill)',
   critical: 'var(--crit-fill)',
 };
-const PERIODS = [7, 30, 90] as const;
 
 function LatestCard({ row }: { row: ResultRow }) {
   const { t, num, date } = useI18n();
@@ -47,7 +47,7 @@ function LatestCard({ row }: { row: ResultRow }) {
   );
 }
 
-function Ratings({ data, plain = false }: { data: DashboardData; plain?: boolean }) {
+function Ratings({ data, week, plain = false }: { data: DashboardData; week: number; plain?: boolean }) {
   const { t, int, num } = useI18n();
   const total = RATINGS.reduce((s, r) => s + (data.ratings[r] ?? 0), 0);
   let acc = 0;
@@ -59,7 +59,7 @@ function Ratings({ data, plain = false }: { data: DashboardData; plain?: boolean
   const top = total ? ((data.ratings.excellent ?? 0) / total) * 100 : 0;
   return (
     <section className="card stack" style={{ flex: '1 1 280px', gap: 16 }}>
-      {!plain && <span className="card-label">{t('dash.ratings', { n: data.period.days })}</span>}
+      {!plain && <span className="card-label">{t('dash.ratings', { week })}</span>}
       <div
         className="donut"
         role="img"
@@ -86,15 +86,43 @@ function Ratings({ data, plain = false }: { data: DashboardData; plain?: boolean
 
 const TABS: (Family | 'all')[] = ['all', 'nxt', 'nxtr', 'aimex'];
 
+/** This and last calendar week, from the user's local clock. */
+function useWeeks() {
+  const today = isoDate(new Date());
+  return useMemo(() => {
+    const now = isoWeek(new Date(`${today}T12:00:00`));
+    const lastMonday = new Date(now.monday.getFullYear(), now.monday.getMonth(), now.monday.getDate() - 7);
+    return {
+      week: now.week,
+      lastWeek: isoWeek(lastMonday).week,
+      from: isoDate(now.monday),
+      to: isoDate(now.sunday),
+      lastFrom: isoDate(lastMonday),
+      days: Array.from(
+        { length: 7 },
+        (_, i) => new Date(now.monday.getFullYear(), now.monday.getMonth(), now.monday.getDate() + i),
+      ),
+    };
+  }, [today]);
+}
+
 export function Dashboard() {
-  const { t } = useI18n();
+  const { t, date, locale } = useI18n();
   const user = useUser();
   const scope = useScope();
-  const [days, setDays] = useState<(typeof PERIODS)[number]>(30);
+  const weeks = useWeeks();
   const [tab, setTab] = useState<Family | 'all'>('all');
-  const dash = useApi<DashboardData>(`/dashboard${qs({ companyId: scope.companyId, days })}`);
-  const list = useApi<{ items: ResultRow[] }>(
-    `/results${qs({ companyId: scope.companyId, family: tab === 'all' ? null : tab, pageSize: 8, sort: '-createdAt' })}`,
+  const dash = useApi<DashboardData>(`/dashboard${qs({ companyId: scope.companyId, from: weeks.from, to: weeks.to })}`);
+  // The table: everything tested this and last calendar week.
+  const list = useApi<{ items: ResultRow[]; total: number }>(
+    `/results${qs({
+      companyId: scope.companyId,
+      family: tab === 'all' ? null : tab,
+      from: weeks.lastFrom,
+      to: weeks.to,
+      sort: '-testDate',
+      pageSize: 200,
+    })}`,
   );
   const staffAll = scope.companyId === null;
   const firstName = user.name.split(/\s+/)[0] ?? user.name;
@@ -105,6 +133,20 @@ export function Dashboard() {
   const data = dash.data;
   const critical = data?.perDay.reduce((n, d) => n + d.critical, 0) ?? 0;
   const peak = Math.max(1, ...(data?.perDay.map((d) => d.results) ?? [0]));
+  const items = list.data?.items ?? [];
+  const weekSections = [
+    {
+      key: 'this',
+      label: t('dash.thisWeek', { week: weeks.week }),
+      rows: items.filter((r) => r.testDate.slice(0, 10) >= weeks.from),
+    },
+    {
+      key: 'last',
+      label: t('dash.lastWeek', { week: weeks.lastWeek }),
+      rows: items.filter((r) => r.testDate.slice(0, 10) < weeks.from),
+    },
+  ];
+  const allLink = scope.link(`/results${qs({ from: weeks.lastFrom, to: weeks.to })}`);
 
   return (
     <div className="dash dash-web">
@@ -117,29 +159,30 @@ export function Dashboard() {
           {scope.viewing ? scope.companyName : t('dash.welcome', { name: firstName })} ·{' '}
           {staffAll ? t('dash.subAll') : t('dash.subCompany', { company: scope.companyName ?? '' })}
         </p>
-        <div className="dash-filters" role="group" aria-label={t('dash.period')}>
-          <span>{t('dash.period')}:</span>
-          {PERIODS.map((p) => (
-            <button key={p} type="button" className="chip" aria-pressed={days === p} onClick={() => setDays(p)}>
-              {t('dash.days', { n: p })}
-            </button>
-          ))}
-        </div>
         {data && (
           <div className="dash-sum">
             <div className="dash-grow">
-              <div className="dash-ttl">{t('dash.perDay', { n: data.period.days })}</div>
+              <div className="dash-ttl">
+                {t('dash.weekText', {
+                  week: weeks.week,
+                  from: date(weeks.from),
+                  to: date(weeks.to),
+                  n: data.totals.inPeriod,
+                })}
+              </div>
               <div
-                className="dash-days dash-days-many"
+                className="dash-days"
                 role="img"
-                aria-label={t('dash.perDayAria', { n: data.totals.inPeriod, days: data.period.days })}
+                aria-label={t('dash.perDayAria', { n: data.totals.inPeriod, week: weeks.week })}
+                data-testid="week-days"
               >
-                {data.perDay.map((d) => (
-                  <span key={d.day} title={`${d.day}: ${d.results} · ${t('rating.critical')} ${d.critical}`}>
+                {data.perDay.map((d, i) => (
+                  <span key={d.day} title={`${date(d.day)}: ${d.results} · ${t('rating.critical')} ${d.critical}`}>
                     <i
                       style={{ height: `${Math.max(3, (d.results / peak) * 46)}px` }}
                       className={d.results ? (d.critical ? 'c' : '') : 'z'}
                     />
+                    {weeks.days[i]?.toLocaleDateString(locale, { weekday: 'short' })}
                   </span>
                 ))}
               </div>
@@ -169,8 +212,8 @@ export function Dashboard() {
         </Link>
         {data && data.totals.results > 0 && (
           <>
-            <h2>{t('dash.ratings', { n: data.period.days })}</h2>
-            <Ratings data={data} plain />
+            <h2>{t('dash.ratings', { week: weeks.week })}</h2>
+            <Ratings data={data} week={weeks.week} plain />
           </>
         )}
       </aside>
@@ -189,7 +232,7 @@ export function Dashboard() {
         )}
         {data && data.totals.results > 0 && (
           <>
-            <div className="latest">
+            <div className="latest" data-testid="latest-cards">
               {data.latest.slice(0, 3).map((r) => (
                 <LatestCard key={r.id} row={r} />
               ))}
@@ -203,16 +246,39 @@ export function Dashboard() {
                     </button>
                   ))}
                 </div>
-                <Link to={scope.link('/results')} className="btn">
+                <Link to={allLink} className="btn">
                   {t('dash.allResults')} →
                 </Link>
               </div>
-              <div className="rows">
-                {list.data?.items.map((r) => (
-                  <ResultListRow key={r.id} row={r} showCompany={staffAll} />
-                ))}
-                {list.data?.items.length === 0 && <Empty title={t('results.none')} />}
-              </div>
+              {list.error && <ErrorNotice error={list.error} />}
+              {list.data && (
+                <div className="groups" data-testid="week-table">
+                  {weekSections.map((g) => (
+                    <section key={g.key} className="group" data-testid={`week-${g.key}`}>
+                      <h3 className="group-h">
+                        <span>{g.label}</span>
+                        <span className="muted">{t('results.groupCount', { n: g.rows.length })}</span>
+                      </h3>
+                      {g.rows.length ? (
+                        <div className="rows">
+                          {g.rows.map((r) => (
+                            <ResultListRow key={r.id} row={r} showCompany={staffAll} />
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="muted" style={{ margin: '2px 2px 6px' }}>
+                          {t('dash.weekNone')}
+                        </p>
+                      )}
+                    </section>
+                  ))}
+                  {list.data.total > items.length && (
+                    <Link to={allLink} className="btn" style={{ justifySelf: 'center' }}>
+                      {t('dash.allResults')} →
+                    </Link>
+                  )}
+                </div>
+              )}
             </section>
           </>
         )}
