@@ -476,6 +476,7 @@ export class Engine {
         }
       }
       this.set({ rows: await this.store.all() });
+      await this.sendCrashReports();
       const updated = { ...connection, lastSyncAt: Date.now() };
       await this.store.setSetting('connection', updated);
       this.set({ connection: updated, server: 'online' });
@@ -490,6 +491,22 @@ export class Engine {
       }
     } finally {
       this.set({ syncing: false });
+    }
+  }
+
+  /** Crash reports stored on the device go to the server once it is reachable; a failure waits for the next sync. */
+  private async sendCrashReports(): Promise<void> {
+    try {
+      const reports = (await this.platform.crashReports?.()) ?? [];
+      for (let i = 0; i < reports.length; i += 20) {
+        const { accepted } = await this.call<{ accepted: string[] }>('/app/crash-reports', {
+          method: 'POST',
+          json: { reports: reports.slice(i, i + 20) },
+        });
+        await this.platform.deleteCrashReports?.(accepted);
+      }
+    } catch {
+      // Not important enough to mark the connection as offline.
     }
   }
 

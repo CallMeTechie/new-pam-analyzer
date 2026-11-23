@@ -2745,3 +2745,32 @@ table.table.compact td {
     text-decoration: none;
   }
 }
+
+/* Crash reports (settings) */
+.crash {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+}
+.crash summary {
+  display: grid;
+  gap: 2px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.crash[open] {
+  display: grid;
+  gap: 10px;
+}
+.crash-report {
+  margin: 0;
+  max-height: 420px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--surface-3);
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre;
+}

@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.9.0 – 23.11.2026
+
+### Neu
+- Absturzberichte der Apps: Verbundene Apps senden sie (`POST /api/app/crash-reports`); Administratoren sehen, kopieren und löschen sie unter Einstellungen → Absturzberichte (`GET`/`DELETE /api/crash-reports`).
+
 ## 0.8.0 – 23.11.2026
 
 ### Geändert

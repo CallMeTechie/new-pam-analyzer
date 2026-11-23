@@ -5,9 +5,11 @@
 ### Added
 - Windows: new design – narrow icon bar instead of the sidebar, indigo header band on every page, DM Sans typeface, light and dark.
 - Windows overview as a dashboard: this week's measurements per day, Ø Cpk and critical heads in the header band, filters by family and "critical", adding files and server state on the right, Cpk trend of the week, best head and critical heads as cards.
+- Crash reports: when the app crashes (Windows or Android), it stores a report and sends it to the server once connected. Administrators find them on the web under Settings → Crash reports.
+- Android (Google Play): "Check now" asks Google Play for a new version and shows it; "Install" starts the update through Google Play.
 
 ### Fixed
-- Android: the camera button next to the API key opens the camera again. The app now asks for the camera permission first; while scanning a frame and "Cancel" are shown. If access was refused, a link leads to the app settings.
+- Android: the camera button next to the API key crashed the app. Scanning now uses the QR scanner of Google Play services – its own camera screen, no camera permission needed.
 
 ## 0.3.5
 

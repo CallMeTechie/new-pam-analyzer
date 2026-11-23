@@ -11,6 +11,9 @@ use std::time::UNIX_EPOCH;
 
 use serde::Serialize;
 use tauri::ipc::Response;
+use tauri::Manager;
+
+mod crash;
 
 #[cfg(desktop)]
 mod desktop;
@@ -72,13 +75,21 @@ pub fn run() {
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_sql::Builder::default().build());
+        .plugin(tauri_plugin_sql::Builder::default().build())
+        .setup(|app| {
+            if let Ok(dir) = app.path().app_data_dir() {
+                crash::install(dir.join("crashes"), app.package_info().version.to_string());
+            }
+            Ok(())
+        });
 
     #[cfg(desktop)]
     let builder = desktop::setup(builder).invoke_handler(tauri::generate_handler![
         file_meta,
         read_file,
         path_exists,
+        crash::crash_reports,
+        crash::crash_reports_delete,
         desktop::take_start_files,
         desktop::device_name,
         desktop::secret_get,
@@ -93,6 +104,8 @@ pub fn run() {
         file_meta,
         read_file,
         path_exists,
+        crash::crash_reports,
+        crash::crash_reports_delete,
         mobile::update_check,
         mobile::update_download
     ]);

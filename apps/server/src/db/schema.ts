@@ -234,3 +234,30 @@ export const settings = sqliteTable('settings', {
   updatedBy: integer('updated_by').references(() => users.id, { onDelete: 'set null' }),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 });
+
+/** Crash reports of the apps (Android exceptions, Rust panics), sent once the app is connected. */
+export const crashReports = sqliteTable(
+  'crash_reports',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    deviceId: integer('device_id').references(() => devices.id, { onDelete: 'set null' }),
+    companyId: integer('company_id').references(() => companies.id, { onDelete: 'set null' }),
+    /** Id the app gave the report, so a resend after a lost answer is not stored twice. */
+    clientId: text('client_id').notNull(),
+    platform: text('platform').notNull(),
+    appVersion: text('app_version'),
+    deviceName: text('device_name'),
+    /** Model and system version, e.g. "Google Pixel 10 Pro Fold · Android 16". */
+    system: text('system'),
+    /** `android` (Java/Kotlin exception) or `panic` (Rust). */
+    kind: text('kind').notNull(),
+    message: text('message').notNull(),
+    report: text('report').notNull(),
+    occurredAt: integer('occurred_at', { mode: 'timestamp_ms' }).notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex('crash_reports_client_idx').on(t.deviceId, t.clientId),
+    index('crash_reports_created_idx').on(t.createdAt),
+  ],
+);

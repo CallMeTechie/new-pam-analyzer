@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { connectDevice, disconnectDevice } from '../auth/apiKeys.js';
 import { checkCredentials } from '../auth/login.js';
 import { requireAuth } from '../auth/middleware.js';
-import { companies, users } from '../db/schema.js';
+import { companies, crashReports, devices, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
 import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
@@ -80,4 +80,49 @@ appRoutes.delete('/connection', (c) => {
   if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
   disconnectDevice(c.get('db'), auth.device.id);
   return c.body(null, 204);
+});
+
+const crashReport = z.object({
+  id: z.string().trim().min(1).max(100),
+  kind: z.enum(['android', 'panic']),
+  occurredAt: z.number().int().positive(),
+  appVersion: z.string().trim().max(40).optional(),
+  system: z.string().trim().max(200).optional(),
+  message: z.string().max(1000),
+  report: z.string().max(200_000),
+});
+
+/**
+ * Crash reports the app stored while it was not connected (or crashed). Returns the ids it may delete;
+ * a report sent twice is stored once.
+ */
+appRoutes.post('/crash-reports', async (c) => {
+  const auth = requireAuth(c);
+  if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
+  const body = parse(z.object({ reports: z.array(crashReport).max(50) }), await jsonBody(c));
+  const db = c.get('db');
+  const device = db
+    .select({ name: devices.name, platform: devices.platform, appVersion: devices.appVersion })
+    .from(devices)
+    .where(eq(devices.id, auth.device.id))
+    .get();
+  for (const r of body.reports) {
+    db.insert(crashReports)
+      .values({
+        deviceId: auth.device.id,
+        companyId: auth.device.companyId,
+        clientId: r.id,
+        platform: device?.platform ?? 'other',
+        appVersion: r.appVersion ?? device?.appVersion ?? null,
+        deviceName: device?.name ?? null,
+        system: r.system ?? null,
+        kind: r.kind,
+        message: r.message.slice(0, 1000) || '–',
+        report: r.report,
+        occurredAt: new Date(r.occurredAt),
+      })
+      .onConflictDoNothing()
+      .run();
+  }
+  return c.json({ accepted: body.reports.map((r) => r.id) });
 });

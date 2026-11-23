@@ -5,9 +5,11 @@
 ### Neu
 - Windows: neues Design – schmale Symbolleiste statt Seitenleiste, indigoblaues Kopfband auf allen Seiten, Schrift DM Sans, hell und dunkel.
 - Windows-Übersicht als Dashboard: Messungen der Woche je Tag, Ø-Cpk und kritische Köpfe im Kopfband, Filter nach Familie und „kritisch“, rechts Dateien hinzufügen und Serverstatus, Cpk-Verlauf der Woche, bester Kopf und kritische Köpfe als Karten.
+- Absturzberichte: Stürzt die App ab (Windows oder Android), speichert sie einen Bericht und sendet ihn an den Server, sobald sie verbunden ist. Administratoren sehen die Berichte im Web unter Einstellungen → Absturzberichte.
+- Android (Google Play): „Jetzt suchen“ prüft, ob Google Play eine neue Version anbietet, und zeigt sie an; „Installieren“ startet das Update über Google Play.
 
 ### Behoben
-- Android: Das Kamerasymbol beim API-Key öffnet die Kamera wieder. Die App fragt jetzt zuerst nach der Kamera-Berechtigung; beim Scannen erscheinen ein Rahmen und „Abbrechen“. Wurde der Zugriff verweigert, führt ein Link zu den App-Einstellungen.
+- Android: Das Kamerasymbol beim API-Key ließ die App abstürzen. Gescannt wird jetzt mit dem QR-Scanner von Google Play-Diensten – eigene Kameraansicht, keine Kamera-Berechtigung nötig.
 
 ## 0.3.5
 

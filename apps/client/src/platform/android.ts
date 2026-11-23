@@ -1,19 +1,11 @@
 import { addPluginListener, Channel as IpcChannel, invoke } from '@tauri-apps/api/core';
 import { appConfigDir } from '@tauri-apps/api/path';
-import {
-  checkPermissions as cameraPermission,
-  cancel as cancelScan,
-  Format,
-  openAppSettings,
-  requestPermissions as requestCamera,
-  scan,
-} from '@tauri-apps/plugin-barcode-scanner';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import Database from '@tauri-apps/plugin-sql';
 import type { InputFile } from '../lib/evaluate';
 import { sqlStore } from '../lib/store';
-import type { Platform, Posture, UpdateInfo } from './types';
+import type { CrashReport, Platform, Posture, UpdateInfo } from './types';
 
 /** A file the Android plugin copied into the app's cache. */
 interface SharedFile {
@@ -33,6 +25,15 @@ async function readShared(files: SharedFile[]): Promise<InputFile[]> {
     }
   }
   return out;
+}
+
+/** Inverse of `version-code` in `.github/scripts/app-release.mjs`: 400002 -> 0.4.0-beta.2, 400099 -> 0.4.0. */
+export function versionFromCode(code: number): string {
+  const build = code % 1000;
+  const patch = Math.floor(code / 1000) % 100;
+  const minor = Math.floor(code / 100_000) % 100;
+  const major = Math.floor(code / 10_000_000);
+  return `${major}.${minor}.${patch}${build === 99 ? '' : `-beta.${build}`}`;
 }
 
 const pam = <T>(command: string, args?: Record<string, unknown>) => invoke<T>(`plugin:pam|${command}`, args);
@@ -99,28 +100,44 @@ export async function androidPlatform(version: string): Promise<Platform> {
     defaultDeviceName: () => pam<{ name: string }>('deviceName').then((r) => r.name),
     print: () => pam('printPage'),
     openUrl: (url) => openUrl(url),
+    // Scanner of Google Play services (PamPlugin.scanQr): own camera screen, no camera permission.
     async scanQr() {
-      // The plugin does not ask by itself: without the permission `scan` fails at once.
-      let state = await cameraPermission();
-      if (state !== 'granted') state = await requestCamera();
-      if (state !== 'granted') throw new Error('camera_denied');
-      try {
-        // Windowed: the camera runs behind the transparent WebView, which shows the frame and "Cancel".
-        const res = await scan({ windowed: true, formats: [Format.QRCode] });
-        return res.content || null;
-      } catch {
-        return null;
-      }
+      const res = await pam<{ content: string | null }>('scanQr');
+      return res.content || null;
     },
-    cancelScan: () => cancelScan(),
-    openAppSettings: () => openAppSettings(),
+    // Java/Kotlin crashes (CrashLog.kt) and Rust panics (crash.rs) are stored apart.
+    async crashReports() {
+      const [native, panics] = await Promise.all([
+        pam<{ reports: CrashReport[] }>('crashReports').then(
+          (r) => r.reports,
+          () => [],
+        ),
+        invoke<CrashReport[]>('crash_reports').catch(() => []),
+      ]);
+      return [...native, ...panics].sort((a, b) => a.occurredAt - b.occurredAt);
+    },
+    async deleteCrashReports(ids) {
+      await Promise.all([pam('crashReportsDelete', { ids }), invoke('crash_reports_delete', { ids })]);
+    },
     onPosture(listener) {
       void pam<Posture>('posture').then(listener);
       const l = addPluginListener<Posture>('pam', 'posture', listener);
       return () => void l.then((x) => x.unregister());
     },
     ...(distribution === 'play'
-      ? { updatesBy: 'play' as const, updates: null }
+      ? {
+          // Google Play installs the update; the version is the one of the Play track the user takes part in.
+          updatesBy: 'play' as const,
+          updates: {
+            async check() {
+              const res = await pam<{ available: boolean; versionCode: number }>('playUpdateCheck');
+              return res.available ? { version: versionFromCode(res.versionCode), notes: '', date: null } : null;
+            },
+            async install() {
+              await pam('playUpdateStart');
+            },
+          },
+        }
       : {
           updates: {
             async check(channel) {

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.9.0 – 2026-11-23
+
+### Added
+- Crash reports of the apps: connected apps send them (`POST /api/app/crash-reports`); administrators see, copy and delete them under Settings → Crash reports (`GET`/`DELETE /api/crash-reports`).
+
 ## 0.8.0 – 2026-11-23
 
 ### Changed

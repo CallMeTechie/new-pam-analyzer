@@ -11,6 +11,7 @@ import { apiKeyRoutes, deviceRoutes } from './routes/apiKeys.js';
 import { appRoutes } from './routes/app.js';
 import { authRoutes } from './routes/auth.js';
 import { companyRoutes } from './routes/companies.js';
+import { crashReportRoutes } from './routes/crashReports.js';
 import { dashboardRoutes } from './routes/dashboard.js';
 import { machineRoutes } from './routes/machines.js';
 import { metaRoutes } from './routes/meta.js';
@@ -55,6 +56,7 @@ export function createApp(db: Db, config: ServerConfig) {
   api.route('/results', resultRoutes);
   api.route('/dashboard', dashboardRoutes);
   api.route('/settings', settingsRoutes);
+  api.route('/crash-reports', crashReportRoutes);
   api.all('*', () => {
     throw new HttpError(404, 'not_found', 'Unknown API endpoint.');
   });

@@ -80,9 +80,8 @@ function General() {
             ))}
           </fieldset>
         )}
-        {engine.platform.updatesBy === 'play' ? (
-          <Notice kind="info">{t('client.update.play')}</Notice>
-        ) : engine.platform.updates ? (
+        {engine.platform.updatesBy === 'play' && <Notice kind="info">{t('client.update.play')}</Notice>}
+        {engine.platform.updates ? (
           <div className="form-row" style={{ alignItems: 'center' }}>
             <button type="button" className="btn" disabled={updates.checking} onClick={() => void updates.check(true)}>
               {updates.checking ? t('client.update.checking') : t('client.update.checkNow')}
