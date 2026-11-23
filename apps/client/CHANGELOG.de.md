@@ -9,7 +9,7 @@
 - Android (Google Play): „Jetzt suchen“ prüft, ob Google Play eine neue Version anbietet, und zeigt sie an; „Installieren“ startet das Update über Google Play.
 
 ### Behoben
-- Android: Das Kamerasymbol beim API-Key ließ die App abstürzen. Gescannt wird jetzt mit dem QR-Scanner von Google Play-Diensten – eigene Kameraansicht, keine Kamera-Berechtigung nötig. Fehlt das Scanner-Modul noch, lädt die App es über Google Play herunter und startet den Scanner danach.
+- Android: Das Kamerasymbol beim API-Key ließ die App abstürzen. Gescannt wird jetzt mit dem QR-Scanner von Google Play-Diensten – eigene Kameraansicht, keine Kamera-Berechtigung nötig. Fehlt das Scanner-Modul noch, lädt die App es über Google Play herunter und startet den Scanner danach. Schlägt der Scanner fehl, zeigt die App den genauen Grund an.
 
 ### Behoben
 - Android: Das Kamerasymbol beim API-Key öffnet die Kamera wieder. Die App fragt jetzt zuerst nach der Kamera-Berechtigung; beim Scannen erscheinen ein Rahmen und „Abbrechen“. Wurde der Zugriff verweigert, führt ein Link zu den App-Einstellungen.

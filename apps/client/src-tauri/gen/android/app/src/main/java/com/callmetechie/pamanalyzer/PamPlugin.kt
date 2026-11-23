@@ -377,7 +377,8 @@ class PamPlugin(private val activity: Activity) : Plugin(activity) {
               installScanner(modules, scanner, invoke)
             }
           }
-          .addOnFailureListener { e -> rejectScan(invoke, e) }
+          // The module check itself failed (old Play services): try the scanner directly.
+          .addOnFailureListener { startScan(scanner, invoke) }
       } catch (e: Exception) {
         rejectScan(invoke, e)
       }
