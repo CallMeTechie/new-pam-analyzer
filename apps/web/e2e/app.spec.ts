@@ -99,7 +99,7 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await expect(page.getByTestId('week-last')).toContainText('Last week');
 
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
@@ -108,10 +108,10 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await expect(page.locator('.groups')).toHaveCount(0);
   await expect(page.locator('a.result-row')).toHaveCount(3);
   await page.getByRole('tab', { name: 'NXT', exact: true }).click();
-  await expect(page.locator('.pager').first()).toContainText(/^1 result\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^1 result\b/);
   await page.getByRole('tab', { name: 'All' }).click();
   await page.getByRole('searchbox').fill('V12 900018');
-  await expect(page.locator('.pager').first()).toContainText(/^2 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^2 results\b/);
 
   await page.locator('a.result-row').first().click();
   await expect(page.getByText('Head Cpk XY')).toBeVisible();
@@ -154,7 +154,7 @@ test('company member sees only the own company and can switch to German', async 
   await expect(page.getByTestId('week-last')).toContainText('Last week');
 
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
@@ -183,7 +183,7 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await page.getByRole('button', { name: 'Save and rate again' }).click();
   await expect(page.getByText('All results were rated again.')).toBeVisible();
   await page.goto('/results?rating=critical');
-  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
+  await expect(page.locator('.pager > span').first()).toContainText(/^3 results\b/);
 
   await page.goto('/settings#languages');
   const file = {
