@@ -11,6 +11,9 @@
 ### Fixed
 - Android: the camera button next to the API key crashed the app. Scanning now uses the QR scanner of Google Play services – its own camera screen, no camera permission needed.
 
+### Fixed
+- Android: the camera button next to the API key opens the camera again. The app now asks for the camera permission first; while scanning a frame and "Cancel" are shown. If access was refused, a link leads to the app settings.
+
 ## 0.3.5
 
 ### Changed

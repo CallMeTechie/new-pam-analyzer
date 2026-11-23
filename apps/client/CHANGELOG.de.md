@@ -11,6 +11,9 @@
 ### Behoben
 - Android: Das Kamerasymbol beim API-Key ließ die App abstürzen. Gescannt wird jetzt mit dem QR-Scanner von Google Play-Diensten – eigene Kameraansicht, keine Kamera-Berechtigung nötig.
 
+### Behoben
+- Android: Das Kamerasymbol beim API-Key öffnet die Kamera wieder. Die App fragt jetzt zuerst nach der Kamera-Berechtigung; beim Scannen erscheinen ein Rahmen und „Abbrechen“. Wurde der Zugriff verweigert, führt ein Link zu den App-Einstellungen.
+
 ## 0.3.5
 
 ### Geändert
