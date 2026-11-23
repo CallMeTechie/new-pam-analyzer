@@ -1,12 +1,11 @@
 import { type DragEvent, useRef, useState } from 'react';
 import { Link } from 'react-router';
-import { Icon } from '../components/Icon';
-import { Page } from '../components/Layout';
-import { errorText, InfoTip, Notice, RatingPill } from '../components/ui';
 import { useI18n } from '../i18n';
 import { ApiError, type Company, type IngestOutcome, type UploadResponse, uploadFiles } from '../lib/api';
 import { useScope } from '../lib/scope';
 import { useApi } from '../lib/useApi';
+import { Icon } from './Icon';
+import { errorText, InfoTip, Modal, Notice, RatingPill } from './ui';
 
 const accepted = (name: string) => /\.(dat|zip)$/i.test(name);
 /** Requests stay well below the server limit (200 MB) and keep the progress meaningful. */
@@ -62,7 +61,12 @@ function batches(files: File[]): File[][] {
   return out;
 }
 
-export function Upload() {
+/**
+ * Drop zone with the whole upload: drop or choose files and folders (.dat, .zip), choose the company
+ * (service staff), upload in batches with progress; the outcome opens in a dialog. Used on the
+ * dashboard; there is no separate upload page.
+ */
+export function UploadPanel() {
   const { t, int, num, dateTime } = useI18n();
   const scope = useScope();
   const staffAll = scope.companyId === null;
@@ -144,38 +148,41 @@ export function Upload() {
     r.status === 'rejected' ? t(`reject.${r.reason ?? 'unreadable'}` as never) : t(`upload.status.${r.status}`);
 
   return (
-    <Page title={t('nav.upload')} info={t('upload.intro')}>
+    <div className="upload-panel stack" style={{ gap: 12 }}>
       {staffAll && (
-        <section className="card form-row" style={{ padding: '14px 18px' }}>
-          <div className="field" style={{ flex: '0 1 420px' }}>
-            <span className="title-with-info">
-              <label htmlFor="upload-company">{t('upload.company')}</label>
-              <InfoTip text={companyId ? t('upload.companyHint') : t('upload.unassignedHint')} />
-            </span>
-            <select
-              id="upload-company"
-              className="select"
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-              disabled={busy}
-            >
-              <option value="">{t('upload.unassigned')}</option>
-              {companies.data?.items
-                .filter((c) => !c.isService && !c.disabled)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </div>
-        </section>
+        <div className="field">
+          <span className="title-with-info">
+            <label htmlFor="upload-company">{t('upload.company')}</label>
+            <InfoTip text={companyId ? t('upload.companyHint') : t('upload.unassignedHint')} />
+          </span>
+          <select
+            id="upload-company"
+            className="select"
+            value={companyId}
+            onChange={(e) => setCompanyId(e.target.value)}
+            disabled={busy}
+          >
+            <option value="">{t('upload.unassigned')}</option>
+            {companies.data?.items
+              .filter((c) => !c.isService && !c.disabled)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </div>
       )}
-      {scope.viewing && <Notice kind="info">{t('upload.forCompany', { company: scope.companyName ?? '' })}</Notice>}
+      {scope.viewing && (
+        <p className="muted" style={{ margin: 0, fontSize: 13 }}>
+          {t('upload.forCompany', { company: scope.companyName ?? '' })}
+        </p>
+      )}
 
       {/* biome-ignore lint/a11y/noStaticElementInteractions: dropping is a shortcut; the buttons inside choose files and folders */}
       <section
-        className={`dropzone${over ? ' over' : ''}`}
+        className={`dropzone compact${over ? ' over' : ''}`}
+        data-testid="dropzone"
         onDragOver={(e) => {
           e.preventDefault();
           setOver(true);
@@ -184,10 +191,12 @@ export function Upload() {
         onDrop={(e) => void onDrop(e)}
       >
         <span className="icon-circle">
-          <Icon name="upload" size={28} />
+          <Icon name="upload" size={22} />
         </span>
-        <b>{t('upload.drop')}</b>
-        <span className="muted">{t('upload.dropHint')}</span>
+        <span className="dz-text">
+          <b>{t('dash.uploadTitle')}</b>
+          <span className="muted">{t('dash.uploadText')}</span>
+        </span>
         <div className="form-row" style={{ justifyContent: 'center' }}>
           <button type="button" className="btn primary" onClick={() => fileInput.current?.click()} disabled={busy}>
             <Icon name="file" size={16} />
@@ -222,14 +231,14 @@ export function Upload() {
       </section>
 
       {(files.length > 0 || busy) && (
-        <section className="card stack">
-          <div className="card-h" style={{ marginBottom: 0 }}>
+        <section className="card stack" style={{ gap: 10 }}>
+          <div className="stack" style={{ gap: 8 }}>
             <div>
-              <h2>{t('upload.ready', { n: files.length })}</h2>
-              <p>
+              <b>{t('upload.ready', { n: files.length })}</b>
+              <div className="muted" style={{ fontSize: 13 }}>
                 {num(size / 1024 / 1024, 1)} MB
                 {ignored > 0 && ` · ${t('upload.ignored', { n: ignored })}`}
-              </p>
+              </div>
             </div>
             <div className="form-row">
               <button type="button" className="btn" onClick={() => setFiles([])} disabled={busy}>
@@ -260,7 +269,14 @@ export function Upload() {
           {!busy && (
             <ul
               className="muted mono"
-              style={{ margin: 0, paddingLeft: 18, fontSize: 13, maxHeight: 180, overflowY: 'auto' }}
+              style={{
+                margin: 0,
+                paddingLeft: 18,
+                fontSize: 12.5,
+                maxHeight: 140,
+                overflowY: 'auto',
+                overflowWrap: 'anywhere',
+              }}
             >
               {files.slice(0, 50).map((f) => (
                 <li key={`${f.name}|${f.size}|${f.lastModified}`}>{f.name}</li>
@@ -274,9 +290,8 @@ export function Upload() {
       {error && <Notice kind="error" title={errorText(t, error)} />}
 
       {response && (
-        <section className="stack">
+        <Modal title={t('upload.done')} onClose={() => setResponse(null)} wide>
           <div className="section-h">
-            <h2>{t('upload.done')}</h2>
             <div className="summary-pills">
               <span className="pill r-excellent">{t('upload.created', { n: response.summary.created })}</span>
               <span className="pill plain">{t('upload.duplicates', { n: response.summary.duplicate })}</span>
@@ -352,13 +367,16 @@ export function Upload() {
               </tbody>
             </table>
           </div>
-          <div>
-            <Link to={scope.link('/results')} className="btn">
+          <div className="actions">
+            <button type="button" className="btn" onClick={() => setResponse(null)}>
+              {t('common.close')}
+            </button>
+            <Link to={scope.link('/results')} className="btn primary">
               {t('upload.toResults', { n: int(response.summary.created) })} →
             </Link>
           </div>
-        </section>
+        </Modal>
       )}
-    </Page>
+    </div>
   );
 }

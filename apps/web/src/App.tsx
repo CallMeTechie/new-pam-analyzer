@@ -16,7 +16,6 @@ import { ResultDetail } from './pages/ResultDetail';
 import { Results } from './pages/Results';
 import { Settings } from './pages/Settings';
 import { Team } from './pages/Team';
-import { Upload } from './pages/Upload';
 import { Users } from './pages/Users';
 
 function NotFound() {
@@ -41,7 +40,8 @@ const sharedRoutes = (
     <Route path="results" element={<Results />} />
     <Route path="results/:id" element={<ResultDetail />} />
     <Route path="results/:id/history" element={<HeadHistory />} />
-    <Route path="upload" element={<Upload />} />
+    {/* Uploads happen in the drop zone of the dashboard. */}
+    <Route path="upload" element={<Navigate to=".." replace />} />
   </>
 );
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { Icon } from '../components/Icon';
 import { MenuToggle } from '../components/Layout';
+import { UploadPanel } from '../components/UploadPanel';
 import { Empty, ErrorNotice, headLabel, Loading, ResultListRow, ratingClass } from '../components/ui';
 import { useI18n } from '../i18n';
 import { type Dashboard as DashboardData, type Family, qs, type Rating, type ResultRow } from '../lib/api';
@@ -201,15 +202,7 @@ export function Dashboard() {
 
       <aside className="dash-side">
         <h2>{t('nav.upload')}</h2>
-        <Link to={scope.link('/upload')} className="dropzone compact clickable">
-          <span className="icon-circle">
-            <Icon name="upload" size={22} />
-          </span>
-          <span className="dz-text">
-            <b>{t('dash.uploadTitle')}</b>
-            <span className="muted">{t('dash.uploadText')}</span>
-          </span>
-        </Link>
+        <UploadPanel />
         {data && data.totals.results > 0 && (
           <>
             <h2>{t('dash.ratings', { week: weeks.week })}</h2>
@@ -224,10 +217,6 @@ export function Dashboard() {
         {data && data.totals.results === 0 && (
           <Empty title={t('dash.emptyTitle')}>
             <p>{t('dash.emptyText')}</p>
-            <Link to={scope.link('/upload')} className="btn primary">
-              <Icon name="upload" size={16} />
-              {t('nav.upload')}
-            </Link>
           </Empty>
         )}
         {data && data.totals.results > 0 && (

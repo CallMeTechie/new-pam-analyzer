@@ -27,7 +27,6 @@ function useNav(): { label: MessageKey; items: NavItem[] }[] {
           { to: l('/results'), label: 'nav.results', icon: 'results' },
         ],
       },
-      { label: 'nav.data', items: [{ to: l('/upload'), label: 'nav.upload', icon: 'upload' }] },
     ];
     if (scope.canManage || scope.viewing) {
       sections.push({ label: 'nav.myCompany', items: [{ to: l('/team'), label: 'nav.team', icon: 'users' }] });
@@ -43,7 +42,6 @@ function useNav(): { label: MessageKey; items: NavItem[] }[] {
         { to: '/results', label: 'nav.results', icon: 'results' },
       ],
     },
-    { label: 'nav.data', items: [{ to: '/upload', label: 'nav.upload', icon: 'upload' }] },
     {
       label: 'nav.admin',
       items: [
