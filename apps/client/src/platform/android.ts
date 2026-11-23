@@ -36,6 +36,23 @@ export function versionFromCode(code: number): string {
   return `${major}.${minor}.${patch}${build === 99 ? '' : `-beta.${build}`}`;
 }
 
+/** Text of a rejected plugin call: Kotlin's `invoke.reject(message, code)` arrives as `{ message, code }`. */
+export function pluginError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === 'object') {
+    const { message, code } = e as { message?: unknown; code?: unknown };
+    if (typeof message === 'string' || typeof code === 'string') {
+      return [code, message].filter((x) => typeof x === 'string' && x).join(': ');
+    }
+    try {
+      return JSON.stringify(e);
+    } catch {
+      // fall through
+    }
+  }
+  return String(e);
+}
+
 const pam = <T>(command: string, args?: Record<string, unknown>) => invoke<T>(`plugin:pam|${command}`, args);
 
 interface AndroidUpdate extends UpdateInfo {
@@ -102,8 +119,12 @@ export async function androidPlatform(version: string): Promise<Platform> {
     openUrl: (url) => openUrl(url),
     // Scanner of Google Play services (PamPlugin.scanQr): own camera screen, no camera permission.
     async scanQr() {
-      const res = await pam<{ content: string | null }>('scanQr');
-      return res.content || null;
+      try {
+        const res = await pam<{ content: string | null }>('scanQr');
+        return res.content || null;
+      } catch (e) {
+        throw new Error(pluginError(e));
+      }
     },
     // Java/Kotlin crashes (CrashLog.kt) and Rust panics (crash.rs) are stored apart.
     async crashReports() {

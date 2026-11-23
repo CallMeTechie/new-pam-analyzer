@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/plugin-http', () => ({ fetch: vi.fn() }));
 vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn() }));
 vi.mock('@tauri-apps/plugin-sql', () => ({ default: class {} }));
 
-const { versionFromCode } = await import('../src/platform/android');
+const { pluginError, versionFromCode } = await import('../src/platform/android');
 
 describe('versionFromCode', () => {
   it('reverses the versionCode of the release workflow', () => {
@@ -18,5 +18,16 @@ describe('versionFromCode', () => {
       );
       expect(versionFromCode(code)).toBe(v);
     }
+  });
+});
+
+describe('pluginError', () => {
+  it('reads message and code of a rejected plugin call', () => {
+    expect(pluginError({ message: 'ApiException: 17', code: 'scanner_failed' })).toBe(
+      'scanner_failed: ApiException: 17',
+    );
+    expect(pluginError(new Error('boom'))).toBe('boom');
+    expect(pluginError('plain')).toBe('plain');
+    expect(pluginError({ other: 1 })).toBe('{"other":1}');
   });
 });
