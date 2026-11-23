@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes, useParams } from 'react-router';
+import { Link, matchPath, Navigate, Route, Routes, useLocation, useParams } from 'react-router';
 import { Layout, Page } from './components/Layout';
 import { ErrorNotice, Loading } from './components/ui';
 import { useI18n } from './i18n';
@@ -8,6 +8,7 @@ import { ScopeProvider, useScope } from './lib/scope';
 import { useApi } from './lib/useApi';
 import { Account, ForcedPasswordChange } from './pages/Account';
 import { Companies } from './pages/Companies';
+import { Connect } from './pages/Connect';
 import { Dashboard } from './pages/Dashboard';
 import { HeadHistory } from './pages/HeadHistory';
 import { Login } from './pages/Login';
@@ -105,6 +106,15 @@ function SignedIn() {
 
 export function App() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  // Invitation and connect links work signed in or not.
+  if (matchPath('/connect/:code', location.pathname)) {
+    return (
+      <Routes>
+        <Route path="/connect/:code" element={<Connect />} />
+      </Routes>
+    );
+  }
   if (loading) return <Loading />;
   return user ? <SignedIn /> : <Login />;
 }

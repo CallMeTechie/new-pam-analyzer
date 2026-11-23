@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { KeysPanel, LogoEditor, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
+import { LogoEditor, MachinesPanel, UsersPanel } from '../components/CompanyPanels';
+import { DevicesPanel } from '../components/Devices';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
 import { CompanyBadge, Empty, ErrorNotice, Loading, Modal } from '../components/ui';
@@ -9,7 +10,7 @@ import { type ApiError, api, type Company } from '../lib/api';
 import { useUser } from '../lib/auth';
 import { useApi } from '../lib/useApi';
 
-type Tab = 'keys' | 'users' | 'machines';
+type Tab = 'devices' | 'users' | 'machines';
 
 function CompanyForm({ company, onClose, onSaved }: { company?: Company; onClose(): void; onSaved(c: Company): void }) {
   const { t } = useI18n();
@@ -78,7 +79,7 @@ export function Companies() {
   const isAdmin = me.role === 'admin';
   const [params, setParams] = useSearchParams();
   const { data, error, reload } = useApi<{ items: Company[] }>('/companies');
-  const [tab, setTab] = useState<Tab>('keys');
+  const [tab, setTab] = useState<Tab>('users');
   const [form, setForm] = useState<'new' | 'edit' | null>(null);
   const selectedId = Number(params.get('selected')) || data?.items.find((c) => !c.isService)?.id || data?.items[0]?.id;
   const selected = data?.items.find((c) => c.id === selectedId);
@@ -185,8 +186,8 @@ export function Companies() {
                   <b>{int(selected.users)}</b>
                 </div>
                 <div className="stat">
-                  <span>{t('companies.keys')}</span>
-                  <b>{int(selected.apiKeys)}</b>
+                  <span>{t('companies.devices')}</span>
+                  <b>{int(selected.devices)}</b>
                 </div>
                 <div className="stat">
                   <span>{t('companies.machines')}</span>
@@ -200,13 +201,15 @@ export function Companies() {
               {selected.notes && <p style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{selected.notes}</p>}
               {isAdmin && <LogoEditor company={selected} onChange={reload} />}
               <div className="tabs" role="tablist" aria-label={t('companies.sections')}>
-                {(['keys', 'users', 'machines'] as const).map((k) => (
+                {(['users', 'devices', 'machines'] as const).map((k) => (
                   <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}>
                     {t(`companies.tab.${k}`)}
                   </button>
                 ))}
               </div>
-              {tab === 'keys' && <KeysPanel key={`k${selected.id}`} companyId={selected.id} canManage={isAdmin} />}
+              {tab === 'devices' && (
+                <DevicesPanel key={`d${selected.id}`} companyId={selected.id} canManage={isAdmin} />
+              )}
               {tab === 'users' && (
                 <UsersPanel
                   key={`u${selected.id}`}

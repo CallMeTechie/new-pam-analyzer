@@ -3,9 +3,9 @@
 ## Ziel
 
 - **Server** als eigenständiger Docker-Container: Web-Oberfläche, Firmen mit Benutzern und
-  API-Keys, Historie je Kopf, Suche, Upload-API. Details: [Server](server.md).
+  Einladungen und Geräte, Historie je Kopf, Suche, Upload-API. Details: [Server](server.md).
 - **Apps** für Windows, Android und iOS, die PAM-Dateien **eigenständig und offline** auswerten und
-  die Daten optional per API-Key zum Server hochladen.
+  die Daten optional zum Server hochladen (verbunden per Einladungs- oder Gerätecode).
 - Alle rechnen mit **demselben Rechenkern** (`packages/core`) und kommen daher zu identischen Ergebnissen.
 
 ```
@@ -26,7 +26,7 @@
 | Rechenkern | Reines TypeScript ohne Abhängigkeiten | Läuft in Node, Browser und App-WebViews |
 | Datenbank | SQLite (Drizzle ORM) | ca. 100.000 Datensätze, wenige Schreibzugriffe; eine Datei, einfache Backups |
 | Server | Node.js mit Hono im Docker-Container | Ein Image, Daten auf Volume `/data` |
-| Mandanten | Firmen; Benutzer, API-Keys, Maschinen und Ergebnisse gehören zu einer Firma | FUJI Service sieht alle Firmen, Firmen nur sich selbst |
+| Mandanten | Firmen; Benutzer, Geräte, Maschinen und Ergebnisse gehören zu einer Firma | FUJI Service sieht alle Firmen, Firmen nur sich selbst |
 | Apps | Tauri 2 (Windows fertig, Android und iOS folgen) | Gemeinsame Web-Oberfläche, kleine Installer; mobil notfalls Capacitor. Details: [App](app.md) |
 | Gespeichert wird | Originaldatei (komprimiert) + Kennzahlen als Spalten | Diagramme werden bei Bedarf berechnet; Neuberechnung jederzeit möglich |
 
@@ -47,10 +47,11 @@
 
 - Die App sendet die **Original-`.dat`-Datei** und Metadaten, nicht ihr Ergebnis. Der Server rechnet
   mit seinem Rechenkern und seinen Koeffizienten neu und ist maßgeblich.
-- **API-Keys gehören einer Firma.** Der Firmen-Admin (oder FUJI Service) legt sie an und legt fest,
-  wie viele Geräte gleichzeitig verbunden sein dürfen. Jeder Benutzer der Firma kann sich mit jedem
-  Key der Firma verbinden: Die App meldet sich einmal mit Key, E-Mail und Passwort an und erhält ein
-  Geräte-Token. Keys und Tokens werden nur als Hash gespeichert und sind widerrufbar.
+- **Geräte gehören einem Benutzer.** Die App verbindet sich einmal mit einem kurzlebigen Einmal-Code
+  (aus der Einladung oder aus „Mein Konto“) und erhält ein Geräte-Token; ein API-Key oder Passwort ist
+  in der App nicht nötig. Wie viele Geräte ein Benutzer gleichzeitig verbinden darf, legt die Firma
+  fest. Codes und Tokens werden nur als Hash gespeichert; Trennen oder Deaktivieren beendet die
+  Verbindung.
 - Doppelte Dateien werden je Firma über den SHA-256-Hash des Inhalts erkannt; ein erneuter Upload ist folgenlos.
 - Die Apps sammeln Uploads offline in einer Warteschlange.
 - Die Apps bringen die Standard-Koeffizienten mit und holen den aktuellen Stand, die Bewertungsgrenzen und die Zeitzone der Maschinen vom Server.

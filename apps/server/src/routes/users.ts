@@ -1,8 +1,8 @@
 import { and, asc, count, eq, isNull, ne, sql } from 'drizzle-orm';
 import { type Context, Hono } from 'hono';
 import { z } from 'zod';
-import { disconnectUserDevices } from '../auth/apiKeys.js';
-import { hashPassword } from '../auth/crypto.js';
+import { hashPassword, randomToken } from '../auth/crypto.js';
+import { disconnectUserDevices } from '../auth/devices.js';
 import { canManageCompany, currentUser, requireManage } from '../auth/middleware.js';
 import { deleteUserSessions } from '../auth/sessions.js';
 import type { Db } from '../db/index.js';
@@ -10,6 +10,7 @@ import { companies, ROLES, type Role, users } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse, type SessionUser } from '../http.js';
 import { isKnownLocale, localeCode } from '../services/languages.js';
 import { email, password } from './auth.js';
+import { inviteUser } from './connect.js';
 
 export const userRoutes = new Hono<AppEnv>();
 
@@ -28,6 +29,10 @@ function listUsers(db: Db, where: ReturnType<typeof eq> | undefined) {
       lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
       devices: sql<number>`(select count(*) from "devices" d where d.user_id = "users"."id" and d.disconnected_at is null)`,
+      /** Open invitation (password not set yet): until when it is valid; `null` without one. */
+      inviteUntil: sql<
+        number | null
+      >`(select max(k.expires_at) from "connect_codes" k where k.user_id = "users"."id" and k.purpose = 'invite' and k.revoked_at is null and k.password_set_at is null and k.expires_at > (unixepoch() * 1000))`,
     })
     .from(users)
     .innerJoin(companies, eq(users.companyId, companies.id))
@@ -83,7 +88,10 @@ userRoutes.post('/', async (c) => {
       name: z.string().trim().min(1).max(100),
       role: z.enum(ROLES),
       locale: localeCode.default('en'),
-      password,
+      /** Optional: without it the member chooses the password through the invitation. */
+      password: password.optional(),
+      /** Send the invitation by e-mail (when a mail server is configured). */
+      sendInvite: z.boolean().default(false),
     }),
     await jsonBody(c),
   );
@@ -98,13 +106,28 @@ userRoutes.post('/', async (c) => {
   if (db.select({ id: users.id }).from(users).where(eq(users.email, body.email)).get()) {
     throw new HttpError(409, 'email_taken', 'A user with this e-mail address already exists.');
   }
-  const { password: initial, ...fields } = body;
+  const { password: initial, sendInvite, ...fields } = body;
   const { id } = db
     .insert(users)
-    .values({ ...fields, passwordHash: await hashPassword(initial), mustChangePassword: true })
+    .values({
+      ...fields,
+      // Without an initial password nobody can sign in until the invitation sets one.
+      passwordHash: await hashPassword(initial ?? randomToken(32)),
+      mustChangePassword: true,
+    })
     .returning({ id: users.id })
     .get();
-  return c.json({ user: listUsers(db, eq(users.id, id))[0] }, 201);
+  const invite = await inviteUser(c, id, actor.id, sendInvite);
+  return c.json({ user: listUsers(db, eq(users.id, id))[0], invite }, 201);
+});
+
+/** New invitation for a member (replaces an older one): link, QR code and code for the app. */
+userRoutes.post('/:id/invite', async (c) => {
+  const { actor, row, db } = target(c);
+  if (row.disabledAt) throw new HttpError(400, 'user_disabled', 'The account is disabled.');
+  const body = parse(z.object({ send: z.boolean().default(false) }), await jsonBody(c));
+  const invite = await inviteUser(c, row.id, actor.id, body.send);
+  return c.json({ user: listUsers(db, eq(users.id, row.id))[0], invite });
 });
 
 function target(c: Context<AppEnv>) {

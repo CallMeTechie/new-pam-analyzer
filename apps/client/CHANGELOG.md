@@ -7,6 +7,8 @@
 - Windows overview as a dashboard: this week's measurements per day, Ø Cpk and critical heads in the header band, filters by family and "critical", adding files and server state on the right, Cpk trend of the week, best head and critical heads as cards.
 - Crash reports: when the app crashes (Windows or Android), it stores a report and sends it to the server once connected. Administrators find them on the web under Settings → Crash reports.
 - Android (Google Play): "Check now" asks Google Play for a new version and shows it; "Install" starts the update through Google Play.
+- **Connect with a code instead of an API key:** under Settings → Server scan the QR code of the invitation (or from "My account" on the web) – the app connects right away. Or enter the server address and code. The app no longer needs an e-mail address, password or API key (server 0.10 or later).
+- **Results: "This device" / "Server".** When connected, the switch also shows the results of the whole company on the server, with who uploaded them with which device; read-only, grouped by date or customer.
 
 ### Fixed
 - Android: the camera button next to the API key crashed the app. Scanning now uses the QR scanner of Google Play services – its own camera screen, no camera permission needed. If the scanner module is still missing, the app downloads it through Google Play and starts the scanner afterwards. If the scanner fails, the app shows the exact reason. In the Play version the scanner failed because code optimisation (R8) had removed parts of Google Play services.

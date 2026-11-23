@@ -8,6 +8,7 @@ import { UploadChip } from '../components';
 import { toRow } from '../lib/evaluate';
 import type { LocalResult } from '../lib/types';
 import { useEngine } from '../lib/useEngine';
+import { ServerResults } from './ServerResults';
 
 const FAMILIES: (Family | '')[] = ['', 'nxt', 'nxtr', 'aimex'];
 const RATINGS: Rating[] = ['critical', 'warning', 'good', 'excellent'];
@@ -15,6 +16,16 @@ const GROUPINGS = ['date', 'customer', 'list'] as const;
 export type Grouping = (typeof GROUPINGS)[number];
 const PAGE = 100;
 const GROUPING_KEY = 'pam-grouping';
+const SOURCE_KEY = 'pam-results-source';
+type Source = 'device' | 'server';
+
+function storedSource(): Source {
+  try {
+    return localStorage.getItem(SOURCE_KEY) === 'server' ? 'server' : 'device';
+  } catch {
+    return 'device';
+  }
+}
 
 function storedGrouping(): Grouping {
   try {
@@ -65,9 +76,27 @@ export function sections(
 }
 
 /** Local history: every evaluated file, one row per head, grouped by date or customer. */
-export function Results({ compact = false, selectedId = null }: { compact?: boolean; selectedId?: number | null }) {
+export function Results({
+  compact = false,
+  selectedId = null,
+}: {
+  compact?: boolean;
+  /** Open result: a local id, or `s<id>` for one of the server. */
+  selectedId?: string | null;
+}) {
   const { t, int, date } = useI18n();
   const [state] = useEngine();
+  const [source, setSourceState] = useState<Source>(storedSource);
+  const setSource = (next: Source) => {
+    setSourceState(next);
+    try {
+      localStorage.setItem(SOURCE_KEY, next);
+    } catch {
+      // only a convenience
+    }
+  };
+  // The server view needs a connection; without one the device's results are shown.
+  const fromServer = source === 'server' && state.connection !== null;
   const [q, setQ] = useState('');
   const [family, setFamily] = useState<Family | ''>('');
   const [rating, setRating] = useState<Rating | ''>('');
@@ -112,7 +141,7 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
     <ResultListRow
       key={e.latest.id}
       row={toRow(e.latest)}
-      selected={e.latest.id === selectedId}
+      selected={String(e.latest.id) === selectedId}
       count={e.count}
       {...(e.count > 1 ? { to: `/results/${e.latest.id}/history` } : {})}
       extra={
@@ -123,8 +152,37 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
     />
   );
 
+  const groupingSwitch = (
+    <div className={`seg${compact ? ' seg-sm' : ''}`} role="radiogroup" aria-label={t('client.results.grouping')}>
+      {GROUPINGS.map((g) => (
+        <button key={g} type="button" role="radio" aria-checked={grouping === g} onClick={() => setGrouping(g)}>
+          {t(`client.results.by.${g}`)}
+        </button>
+      ))}
+    </div>
+  );
+  const sourceSwitch = state.connection && (
+    <div className="source-switch" role="radiogroup" aria-label={t('client.results.source')}>
+      {(['device', 'server'] as const).map((k) => (
+        <button key={k} type="button" role="radio" aria-checked={source === k} onClick={() => setSource(k)}>
+          {k === 'device' ? t('client.results.fromDevice') : t('client.results.fromServer')}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (fromServer) {
+    return (
+      <Page title={t('client.nav.results')}>
+        {sourceSwitch}
+        <ServerResults grouping={grouping} groupingSwitch={groupingSwitch} selectedId={selectedId} />
+      </Page>
+    );
+  }
+
   return (
     <Page title={t('client.nav.results')}>
+      {sourceSwitch}
       {state.rows.length > 0 && (
         <section className="search-card" role="search">
           <label className="search-box">
@@ -199,17 +257,7 @@ export function Results({ compact = false, selectedId = null }: { compact?: bool
                 </>
               )}
             </span>
-            <div
-              className={`seg${compact ? ' seg-sm' : ''}`}
-              role="radiogroup"
-              aria-label={t('client.results.grouping')}
-            >
-              {GROUPINGS.map((g) => (
-                <button key={g} type="button" role="radio" aria-checked={grouping === g} onClick={() => setGrouping(g)}>
-                  {t(`client.results.by.${g}`)}
-                </button>
-              ))}
-            </div>
+            {groupingSwitch}
           </div>
           {entries.length === 0 ? (
             <Empty title={t('results.noMatch')}>

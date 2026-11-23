@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
-import { countDeviceUploads } from '../auth/apiKeys.js';
+import { countDeviceUploads } from '../auth/devices.js';
 import { readScope, requireAuth } from '../auth/middleware.js';
 import { companies } from '../db/schema.js';
 import { type AppEnv, HttpError, notFound } from '../http.js';

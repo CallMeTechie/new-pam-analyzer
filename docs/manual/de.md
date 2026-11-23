@@ -11,8 +11,8 @@ Der PAM Analyzer wertet PAM-Ergebnisse (`.dat`) von FUJI NXT, NXT-R und AIMEX au
 
 ## Rollen
 
-- **Administrator**: gehört zur Service-Firma und verwaltet alle Firmen, Benutzer, API-Keys und Einstellungen.
-- **Firmen-Admin**: verwaltet die Benutzer, API-Keys, Maschinen und das Logo seiner Firma.
+- **Administrator**: gehört zur Service-Firma und verwaltet alle Firmen, Benutzer und Einstellungen.
+- **Firmen-Admin**: lädt Mitglieder ein, verwaltet ihre Geräte, die Maschinen und das Logo seiner Firma.
 - **Benutzer**: sieht die Ergebnisse seiner Firma und lädt neue hoch.
 
 Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen.
@@ -51,18 +51,19 @@ Bewertet wird die Streuung aller Bauteile eines Holders, nicht jedes Bauteil ein
 
 Ein Klick auf **Kopf-Historie** im Ergebnis zeigt alle Prüfungen desselben Kopfes in der Firma: Cpk XY als Linie über der Zeit und die Liste aller Prüfungen. Ein gefüllter Punkt bedeutet „Datum aus der Datei“, ein hohler „Datum = Upload“.
 
-## Firmen, Team und API-Keys
+## Firmen, Team und Geräte
 
-- **Firmen** (Service-Firma): Firmen anlegen, Logo hochladen, Benutzer, API-Keys und Maschinen verwalten. **Firmenansicht öffnen** zeigt die Firma genau so, wie ihre Mitarbeiter sie sehen.
-- **Team & API-Keys** (Firmen-Admin): Mitglieder einladen, API-Keys erstellen, Geräte trennen, Linien der Maschinen eintragen.
-- **API-Keys** verbinden die Apps für Windows, Android und iOS. Jedes Mitglied der Firma kann jeden Key der Firma nutzen. Ein Key erlaubt höchstens die eingestellte Anzahl Geräte. Der Key wird nur beim Erstellen angezeigt.
+- **Firmen** (Service-Firma): Firmen anlegen, Logo hochladen, Benutzer, Geräte und Maschinen verwalten. **Firmenansicht öffnen** zeigt die Firma genau so, wie ihre Mitarbeiter sie sehen.
+- **Team** (Firmen-Admin): Mitglieder einladen, Geräte trennen, die Zahl der Geräte je Mitglied festlegen, Linien der Maschinen eintragen.
+- **Mitglied einladen:** Name, E-Mail-Adresse und Rolle eingeben. Es entsteht eine **Einladung** mit QR-Code, Link und Code (7 Tage gültig, einmal verwendbar). Mit dem Link legt das Mitglied im Browser sein Passwort fest; mit dem QR-Code verbindet es in der App sein erstes Gerät. Ist ein Mailserver eingerichtet, kann die Einladung direkt per E-Mail verschickt werden. Verloren? **Einladung** in der Mitgliederliste erzeugt eine neue, die alte wird ungültig.
+- **Weiteres Gerät verbinden:** jedes Mitglied selbst unter **Mein Konto**. Der angezeigte QR-Code gilt 10 Minuten und nur einmal. Dort sieht man auch seine Geräte und kann sie trennen.
 
 ## Einstellungen (Administratoren)
 
 - **Koeffizienten**: Toleranz und erwartete Bauteile je Kopftyp, dazu die DX-Werkzeuge. Jede Änderung wird als neue Version gespeichert; vorhandene Ergebnisse behalten ihre Version.
 - **Bewertung**: Grenzen der vier Bewertungsstufen.
 - **Sprachen**: Sprachdatei exportieren, übersetzen und wieder importieren. Fehlende Texte erscheinen auf Englisch.
-- **Sicherheit & Daten**: Standard für die maximale Anzahl Geräte neuer API-Keys.
+- **Sicherheit & Daten**: Standard für die Zahl der Geräte je Mitglied (eine Firma kann im Team eine eigene Grenze setzen).
 - **Version**: installierte Version und Änderungen.
 
 ## Betrieb

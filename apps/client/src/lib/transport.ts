@@ -1,6 +1,11 @@
-import { ApiError, type ApiTransport, type Profile } from '@web/lib/api';
+import { ApiError, type ApiTransport, type Profile, type ResultDetail, type ResultRow } from '@web/lib/api';
 import type { Engine } from './engine';
 import { detail, toRow } from './evaluate';
+
+/** A server result as row of the app: its id becomes `s<id>`, so it never clashes with a local one. */
+export function serverRow(row: ResultRow): ResultRow {
+  return { ...row, id: `s${row.id}` as unknown as number };
+}
 
 /**
  * Answers the API requests of the web pages that the app reuses (result page, head history,
@@ -32,6 +37,20 @@ export function localTransport(engine: Engine): ApiTransport {
     }
     if (method === 'GET' && p === '/settings/rating') return engine.snapshot.config.thresholds;
     if (method === 'GET' && p === '/i18n') return { catalogs: [] };
+
+    // Results of the server (the "Server" view of the results): `s<id>`, read-only.
+    const remote = /^\/results\/s(\d+)(\/history)?$/.exec(p);
+    if (method === 'GET' && remote) {
+      const id = remote[1];
+      if (remote[2]) {
+        const res = await engine.remote<{ headType: string; headSerial: string; items: ResultRow[] }>(
+          `/results/${id}/history`,
+        );
+        return { ...res, items: res.items.map(serverRow) };
+      }
+      const res = await engine.remote<ResultDetail>(`/results/${id}`);
+      return { ...res, result: { ...res.result, id: `s${res.result.id}` as unknown as number } };
+    }
 
     const m = /^\/results\/(\d+)(\/history)?$/.exec(p);
     if (method === 'GET' && m) {

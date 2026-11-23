@@ -7,6 +7,8 @@
 - Windows-Übersicht als Dashboard: Messungen der Woche je Tag, Ø-Cpk und kritische Köpfe im Kopfband, Filter nach Familie und „kritisch“, rechts Dateien hinzufügen und Serverstatus, Cpk-Verlauf der Woche, bester Kopf und kritische Köpfe als Karten.
 - Absturzberichte: Stürzt die App ab (Windows oder Android), speichert sie einen Bericht und sendet ihn an den Server, sobald sie verbunden ist. Administratoren sehen die Berichte im Web unter Einstellungen → Absturzberichte.
 - Android (Google Play): „Jetzt suchen“ prüft, ob Google Play eine neue Version anbietet, und zeigt sie an; „Installieren“ startet das Update über Google Play.
+- **Verbinden mit Code statt API-Key:** Unter Einstellungen → Server den QR-Code der Einladung (oder aus „Mein Konto“ im Web) scannen – die App verbindet sich sofort. Alternativ Serveradresse und Code eingeben. E-Mail-Adresse, Passwort und API-Key braucht die App nicht mehr (Server 0.10 oder neuer).
+- **Auswertungen: „Dieses Gerät“ / „Server“.** Verbunden zeigt der Umschalter auch die Ergebnisse der ganzen Firma vom Server, mit Angabe, wer sie mit welchem Gerät hochgeladen hat; schreibgeschützt, gruppiert nach Datum oder Kunde.
 
 ### Behoben
 - Android: Das Kamerasymbol beim API-Key ließ die App abstürzen. Gescannt wird jetzt mit dem QR-Scanner von Google Play-Diensten – eigene Kameraansicht, keine Kamera-Berechtigung nötig. Fehlt das Scanner-Modul noch, lädt die App es über Google Play herunter und startet den Scanner danach. Schlägt der Scanner fehl, zeigt die App den genauen Grund an. In der Play-Version schlug der Scanner fehl, weil die Code-Optimierung (R8) Teile der Google Play-Dienste entfernt hatte.

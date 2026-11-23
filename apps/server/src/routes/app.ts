@@ -2,16 +2,15 @@ import { ALGORITHM_VERSION } from '@pam/core';
 import { eq } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { connectDevice, disconnectDevice } from '../auth/apiKeys.js';
-import { checkCredentials } from '../auth/login.js';
+import { connectDevice, disconnectDevice } from '../auth/devices.js';
 import { requireAuth } from '../auth/middleware.js';
 import { companies, crashReports, devices, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
 import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 /**
- * Endpoints for the Windows, Android and iOS apps. An app connects once with an API key of the
- * company plus the user's e-mail and password and then uses the returned device token.
+ * Endpoints for the Windows, Android and iOS apps. An app connects once with a one-time code (from an
+ * invitation or from "My account → Connect device") and then uses the returned device token.
  */
 export const appRoutes = new Hono<AppEnv>();
 
@@ -20,9 +19,8 @@ const PLATFORMS = ['windows', 'android', 'ios', 'macos', 'linux', 'other'] as co
 appRoutes.post('/connect', async (c) => {
   const body = parse(
     z.object({
-      apiKey: z.string().trim().min(10).max(200),
-      email: z.string().trim().toLowerCase().max(200),
-      password: z.string().min(1).max(200),
+      /** One-time code from an invitation or from "My account → Connect device", e.g. `7KQ4-M2XP`. */
+      code: z.string().trim().min(4).max(40),
       installId: z.string().trim().min(8).max(100),
       deviceName: z.string().trim().min(1).max(100),
       platform: z.enum(PLATFORMS),
@@ -31,18 +29,8 @@ appRoutes.post('/connect', async (c) => {
     await jsonBody(c),
   );
   const db = c.get('db');
-  const userId = await checkCredentials(db, c.get('config'), body.email, body.password);
-  const account = db.select({ mustChange: users.mustChangePassword }).from(users).where(eq(users.id, userId)).get();
-  if (account?.mustChange) {
-    throw new HttpError(
-      403,
-      'password_change_required',
-      'Please sign in on the web once and change your initial password.',
-    );
-  }
-  const { token, deviceId } = connectDevice(db, {
-    apiKey: body.apiKey,
-    userId,
+  const { token, deviceId, userId } = connectDevice(db, {
+    code: body.code,
     installId: body.installId,
     name: body.deviceName,
     platform: body.platform,

@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { MyDevices } from '../components/Devices';
 import { Page } from '../components/Layout';
 import { ErrorNotice, Field, Notice } from '../components/ui';
 import { CATALOGS, useI18n } from '../i18n';
@@ -186,6 +187,7 @@ export function Account() {
           <PasswordForm />
         </section>
       </div>
+      <MyDevices />
     </Page>
   );
 }

@@ -9,7 +9,8 @@ import { useAuth } from '../lib/auth';
 export function Login() {
   const { t } = useI18n();
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  // After an invitation the e-mail address is filled in (`/?email=`).
+  const [email, setEmail] = useState(() => new URLSearchParams(window.location.search).get('email') ?? '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<ApiError | null>(null);
   const [busy, setBusy] = useState(false);

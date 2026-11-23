@@ -1,5 +1,17 @@
 # Änderungen
 
+## 0.10.0 – 23.11.2026
+
+### Geändert
+- **Einladungen statt API-Keys.** Beim Einladen eines Mitglieds entsteht eine Einladung mit QR-Code, Link und Code (7 Tage gültig, einmal verwendbar): Mit dem Link legt das Mitglied im Browser sein Passwort fest, mit dem QR-Code verbindet es in der App sein erstes Gerät. Verlorene Einladungen werden einfach ersetzt. Mit einem Mailserver (`SMTP_HOST`, optional) kann die Einladung per E-Mail verschickt werden.
+- **Weiteres Gerät verbinden:** Jeder Benutzer erzeugt unter „Mein Konto“ einen QR-Code (10 Minuten gültig, einmal verwendbar) und sieht und trennt dort seine Geräte.
+- Die Zahl der Geräte ist je Benutzer begrenzt (Standard unter Einstellungen → Sicherheit, je Firma unter Team → Geräte) statt je API-Key.
+- API-Keys sind entfernt (Web, API und Datenbank). Bereits verbundene Geräte laufen mit ihrem Token weiter.
+- Ergebnislisten enthalten, wer ein Ergebnis mit welchem Gerät hochgeladen hat (für die Server-Ansicht der Apps).
+
+### Behoben
+- Datenbank-Migrationen, die eine Tabelle neu aufbauen, löschen nicht mehr die Verweise anderer Tabellen darauf.
+
 ## 0.9.0 – 23.11.2026
 
 ### Neu

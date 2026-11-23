@@ -179,7 +179,18 @@ export function Empty({ title, children }: { title: string; children?: ReactNode
   );
 }
 
-export function Modal({ title, onClose, children }: { title: string; onClose(): void; children: ReactNode }) {
+export function Modal({
+  title,
+  onClose,
+  children,
+  wide = false,
+}: {
+  title: string;
+  onClose(): void;
+  children: ReactNode;
+  /** Room for a QR code next to text. */
+  wide?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
@@ -201,7 +212,7 @@ export function Modal({ title, onClose, children }: { title: string; onClose(): 
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal" role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div className={`modal${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
         <h2>{title}</h2>
         {children}
       </div>

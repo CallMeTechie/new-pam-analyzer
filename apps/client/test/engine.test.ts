@@ -13,8 +13,9 @@ async function world() {
   const companyId = await t.createCompany('Customer A');
   await t.createUser(companyId, 'boss@a.test', 'companyAdmin');
   await t.createUser(companyId, 'worker@a.test');
-  const boss = await t.login('boss@a.test', PASSWORD);
-  const key = (await boss.json('POST', '/api/api-keys', { name: 'Windows PCs', maxConnections: 1 })).body.key as string;
+  const worker = await t.login('worker@a.test', PASSWORD);
+  /** A fresh "connect another device" code of the worker, as shown on the web. */
+  const code = async () => (await worker.json('POST', '/api/devices/connect-code')).body.code as string;
   let online = true;
   const handler = async (url: string, init: HttpRequest) => {
     if (!online) return { status: 0, text: 'offline' };
@@ -31,15 +32,15 @@ async function world() {
   const admin = await t.login(ADMIN.email, ADMIN.password);
   return {
     t,
-    key,
+    code,
+    worker,
     engine,
     platform,
     admin,
     setOnline: (v: boolean) => {
       online = v;
     },
-    connect: () =>
-      engine.connect({ server: SERVER, apiKey: key, email: 'worker@a.test', password: PASSWORD, deviceName: 'PC 1' }),
+    connect: async () => engine.connect({ server: SERVER, code: await code(), deviceName: 'PC 1' }),
   };
 }
 
@@ -160,23 +161,21 @@ describe('Engine', () => {
   });
 
   it('reports errors of the server with their code', async () => {
-    const { engine, key } = await world();
-    const attempt = (password: string, apiKey = key) =>
-      engine.connect({ server: SERVER, apiKey, email: 'worker@a.test', password, deviceName: 'PC' });
-    await expect(attempt('wrong-password')).rejects.toMatchObject({ code: 'invalid_credentials' });
-    await expect(attempt(PASSWORD, 'pam_invalid_key_1234567890')).rejects.toMatchObject({ code: 'invalid_api_key' });
-    await expect(
-      engine.connect({ server: 'not a url', apiKey: key, email: 'x', password: 'y', deviceName: 'PC' }),
-    ).rejects.toMatchObject({ code: 'invalid_server' });
+    const { engine, code } = await world();
+    await expect(engine.connect({ server: SERVER, code: 'ABCD-EFGH', deviceName: 'PC' })).rejects.toMatchObject({
+      code: 'invalid_code',
+    });
+    await expect(engine.connect({ server: 'not a url', code: await code(), deviceName: 'PC' })).rejects.toMatchObject({
+      code: 'invalid_server',
+    });
     expect(engine.snapshot.connection).toBeNull();
   });
 
-  it('notices a revoked key and disconnects', async () => {
-    const { engine, connect, t } = await world();
+  it('notices a device disconnected on the web and disconnects', async () => {
+    const { engine, connect, worker } = await world();
     await connect();
-    const boss = await t.login('boss@a.test', PASSWORD);
-    const keys = (await boss.json('GET', '/api/api-keys')).body.items as { id: number }[];
-    await boss.json('DELETE', `/api/api-keys/${keys[0]?.id}`);
+    const devices = (await worker.json('GET', '/api/devices')).body.items as { id: number }[];
+    await worker.req('DELETE', `/api/devices/${devices[0]?.id}`);
     await engine.importFiles([fixture('nxt', 0)]);
     await engine.sync();
     expect(engine.snapshot.server).toBe('revoked');

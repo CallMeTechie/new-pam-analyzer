@@ -2,7 +2,7 @@ import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie } from 'hono/cookie';
 import type { Role } from '../db/schema.js';
 import { type AppEnv, type Auth, HttpError, type SessionUser } from '../http.js';
-import { principalForDevice } from './apiKeys.js';
+import { principalForDevice } from './devices.js';
 import { SESSION_COOKIE, userForSession } from './sessions.js';
 
 /** Paths an account with an initial password may still use. */

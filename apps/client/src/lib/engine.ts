@@ -299,6 +299,12 @@ export class Engine {
     return data as T;
   }
 
+  /** Reads from the server with the device token, e.g. the results of the whole company. */
+  async remote<T>(path: string): Promise<T> {
+    if (!this.state.connection) throw new ServerError(0, 'not_connected', 'Not connected.');
+    return this.call<T>(path, { method: 'GET' });
+  }
+
   private async installId(): Promise<string> {
     let id = await this.store.setting<string>('installId');
     if (!id) {
@@ -308,14 +314,8 @@ export class Engine {
     return id;
   }
 
-  /** Connects with an API key of the company and the user's e-mail and password. */
-  async connect(input: {
-    server: string;
-    apiKey: string;
-    email: string;
-    password: string;
-    deviceName: string;
-  }): Promise<void> {
+  /** Connects with a one-time code (invitation or "My account → Connect another device"). */
+  async connect(input: { server: string; code: string; deviceName: string }): Promise<void> {
     let server: string;
     try {
       server = normalizeServer(input.server);
@@ -335,9 +335,7 @@ export class Engine {
       server,
       token: null,
       json: {
-        apiKey: input.apiKey.trim(),
-        email: input.email.trim(),
-        password: input.password,
+        code: input.code.trim().toUpperCase(),
         installId: await this.installId(),
         deviceName: input.deviceName.trim(),
         platform: this.platform.os,

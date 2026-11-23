@@ -982,3 +982,62 @@ html.qr-scanning #root {
   margin-top: 24px;
   min-width: 140px;
 }
+
+/* Connect form: scanning the QR code is the main way */
+.scan-btn {
+  justify-content: center;
+  min-height: 52px;
+  font-size: 16px;
+}
+.or-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.or-line::before,
+.or-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.code-input {
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Results: this device or the server */
+.source-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: var(--surface-3);
+  max-width: 420px;
+}
+.source-switch button {
+  border: 0;
+  background: transparent;
+  border-radius: 9px;
+  padding: 9px 12px;
+  font: inherit;
+  font-weight: 600;
+  color: var(--fg-2);
+  cursor: pointer;
+  min-height: 40px;
+}
+.source-switch button[aria-checked="true"] {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+.uploader {
+  font-size: 12.5px;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 220px;
+}

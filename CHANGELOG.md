@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.0 – 2026-11-23
+
+### Changed
+- **Invitations instead of API keys.** Inviting a member creates a one-time invitation with QR code, link and code (valid for 7 days): with the link the member chooses a password in the browser, with the QR code they connect their first device in the app. Lost invitations are simply replaced. With a mail server configured (`SMTP_HOST`, optional) the invitation can be sent by e-mail.
+- **Connect another device:** every user creates a QR code under "My account" (valid for 10 minutes, once) and sees and disconnects their devices there.
+- The number of devices is limited per user (default under Settings → Security, per company under Team → Devices) instead of per API key.
+- API keys are removed (web, API and database). Devices connected so far keep working with their token.
+- Result lists include who uploaded a result and with which device (for the server view of the apps).
+
+### Fixed
+- Database migrations that rebuild a table no longer clear the references of other tables to it.
+
 ## 0.9.0 – 2026-11-23
 
 ### Added
