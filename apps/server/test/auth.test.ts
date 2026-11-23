@@ -14,6 +14,36 @@ describe('Anmeldung', () => {
     });
   });
 
+  it('der erste Administrator benennt die Service-Firma nach dem Ändern der Standard-Zugangsdaten', async () => {
+    const t = await setup({ serviceCompanyName: 'Vorschlag' }, { keepInitialPassword: true });
+    const admin = await t.login(ADMIN.email, ADMIN.password);
+    expect((await admin.json('GET', '/api/auth/me')).body.user).toMatchObject({
+      nameServiceCompany: true,
+      company: { name: 'Vorschlag' },
+    });
+    // Erst die Standard-Zugangsdaten ersetzen.
+    expect((await admin.json('POST', '/api/auth/service-company', { name: 'Muster Service' })).status).toBe(403);
+    const changed = await admin.json('POST', '/api/auth/password', {
+      currentPassword: ADMIN.password,
+      newPassword: 'a-new-password-123',
+      newEmail: 'it@plant.test',
+    });
+    expect(changed.status).toBe(204);
+    const customer = await t.createCompany('Kunde A');
+    await t.createUser(customer, 'a@customer.test');
+    const member = await t.login('a@customer.test', PASSWORD);
+    expect((await member.json('GET', '/api/auth/me')).body.user.nameServiceCompany).toBe(false);
+    expect((await member.json('POST', '/api/auth/service-company', { name: 'X' })).status).toBe(403);
+    expect((await admin.json('POST', '/api/auth/service-company', { name: 'Kunde A' })).status).toBe(409);
+    expect((await admin.json('POST', '/api/auth/service-company', { name: '  ' })).status).toBe(400);
+    const named = await admin.json('POST', '/api/auth/service-company', { name: 'Muster Service' });
+    expect(named.body.user).toMatchObject({
+      nameServiceCompany: false,
+      company: { name: 'Muster Service', isService: true },
+    });
+    expect((await admin.json('GET', '/api/auth/me')).body.user.nameServiceCompany).toBe(false);
+  });
+
   it('lehnt falsche Passwörter ab und sperrt nach zu vielen Versuchen', async () => {
     const t = await setup({ loginMaxAttempts: 3 });
     const c = t.client();

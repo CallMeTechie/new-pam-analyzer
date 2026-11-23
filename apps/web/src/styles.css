@@ -2826,3 +2826,175 @@ table.table.compact td {
 .connect-page .card {
   width: min(560px, 100%);
 }
+
+/* Choices as cards and the customer/date dialog (web and apps) */
+.radio-cards {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.radio-cards label {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 11px 13px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+}
+.radio-cards label.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.radio-cards input {
+  margin: 3px 0 0;
+  accent-color: var(--accent);
+}
+.radio-cards span {
+  display: grid;
+  gap: 2px;
+}
+.radio-cards small {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.assign {
+  display: grid;
+  gap: 14px;
+}
+.assign .radio-cards input[type="date"] {
+  margin-top: 6px;
+  max-width: 200px;
+}
+.assign .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* The service company (FUJI Service) sees all companies */
+.service-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font-size: 11.5px;
+  font-weight: 700;
+  vertical-align: 2px;
+  white-space: nowrap;
+}
+b > .service-pill {
+  font-size: 11px;
+}
+
+/* Background upload: toast at the bottom right, bar along the bottom edge */
+.toasts {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 120;
+  display: grid;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+.toast {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+  padding: 12px 12px 12px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.16);
+  animation: toast-in 0.2s ease-out;
+}
+.toast > svg {
+  margin-top: 1px;
+}
+.toast-success > svg {
+  color: var(--exc, #1f9d55);
+}
+.toast-error > svg {
+  color: var(--crit, #d64545);
+}
+.toast-progress > svg {
+  color: var(--accent);
+}
+.toast-text {
+  display: grid;
+  gap: 3px;
+  font-size: 13.5px;
+}
+.toast-text small {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.toast-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 6px;
+}
+.toast-close:hover {
+  color: var(--fg);
+  background: var(--surface-3);
+}
+.upload-edge {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 121;
+  height: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.upload-edge > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+.upload-edge > span.indeterminate {
+  width: 30%;
+  animation: upload-sweep 1.2s ease-in-out infinite;
+}
+@keyframes upload-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .upload-edge > span.indeterminate {
+    animation: none;
+  }
+}
+@media print {
+  .toasts,
+  .upload-edge {
+    display: none;
+  }
+}

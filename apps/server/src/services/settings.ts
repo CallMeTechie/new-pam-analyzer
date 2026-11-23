@@ -27,6 +27,15 @@ export const coefficientConfigSchema = z.object({
   defaultCoefficient: tolerance,
 });
 
+/** Raw setting (JSON); for settings kept by other services, e.g. the mail server. */
+export function readSetting<T>(db: Db, key: string): T | undefined {
+  return read<T>(db, key);
+}
+
+export function writeSetting(db: Db, key: string, value: unknown, userId: number | null): void {
+  write(db, key, value, userId);
+}
+
 function read<T>(db: Db, key: string): T | undefined {
   return db.select().from(settings).where(eq(settings.key, key)).get()?.value as T | undefined;
 }

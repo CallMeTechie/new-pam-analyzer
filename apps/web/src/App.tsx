@@ -6,7 +6,7 @@ import type { Company } from './lib/api';
 import { useAuth, useUser } from './lib/auth';
 import { ScopeProvider, useScope } from './lib/scope';
 import { useApi } from './lib/useApi';
-import { Account, ForcedPasswordChange } from './pages/Account';
+import { Account, ForcedPasswordChange, NameServiceCompany } from './pages/Account';
 import { Companies } from './pages/Companies';
 import { Connect } from './pages/Connect';
 import { Dashboard } from './pages/Dashboard';
@@ -16,7 +16,6 @@ import { ResultDetail } from './pages/ResultDetail';
 import { Results } from './pages/Results';
 import { Settings } from './pages/Settings';
 import { Team } from './pages/Team';
-import { Upload } from './pages/Upload';
 import { Users } from './pages/Users';
 
 function NotFound() {
@@ -41,7 +40,8 @@ const sharedRoutes = (
     <Route path="results" element={<Results />} />
     <Route path="results/:id" element={<ResultDetail />} />
     <Route path="results/:id/history" element={<HeadHistory />} />
-    <Route path="upload" element={<Upload />} />
+    {/* Uploads happen in the drop zone of the dashboard. */}
+    <Route path="upload" element={<Navigate to=".." replace />} />
   </>
 );
 
@@ -76,6 +76,7 @@ function CompanyView() {
 function SignedIn() {
   const user = useUser();
   if (user.mustChangePassword) return <ForcedPasswordChange />;
+  if (user.nameServiceCompany) return <NameServiceCompany />;
   const staff = user.company.isService;
   const admin = staff && user.role === 'admin';
   return (

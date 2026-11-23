@@ -106,7 +106,7 @@ export function Results() {
     <Page
       title={t('nav.results')}
       actions={
-        <Link to={scope.link('/upload')} className="btn primary">
+        <Link to={scope.link('/')} className="btn primary">
           <Icon name="upload" size={16} />
           {t('nav.upload')}
         </Link>

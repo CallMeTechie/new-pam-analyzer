@@ -1,7 +1,9 @@
 import { CPK_THRESHOLDS, DEFAULT_CONFIG } from '@pam/core';
 import { Hono } from 'hono';
-import { requireAdmin, requireAuth } from '../auth/middleware.js';
-import { type AppEnv, jsonBody, parse } from '../http.js';
+import { z } from 'zod';
+import { currentUser, requireAdmin, requireAuth } from '../auth/middleware.js';
+import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
+import { getMailSettings, mailConfig, mailSettingsSchema, sendTestMail, setMailSettings } from '../services/mail.js';
 import {
   coefficientConfigSchema,
   generalSettingsSchema,
@@ -47,4 +49,32 @@ settingsRoutes.get('/general', (c) => {
 settingsRoutes.put('/general', async (c) => {
   const user = requireAdmin(c);
   return c.json(setGeneralSettings(c.get('db'), parse(generalSettingsSchema, await jsonBody(c)), user.id));
+});
+
+/** Mail server for invitations (administrators). The password is never returned. */
+settingsRoutes.get('/mail', (c) => {
+  requireAdmin(c);
+  return c.json(getMailSettings(c.get('db'), c.get('config')));
+});
+
+settingsRoutes.put('/mail', async (c) => {
+  const user = requireAdmin(c);
+  const body = parse(mailSettingsSchema, await jsonBody(c));
+  setMailSettings(c.get('db'), body, user.id);
+  return c.json(getMailSettings(c.get('db'), c.get('config')));
+});
+
+/** Sends a test e-mail with the stored settings, by default to the administrator. */
+settingsRoutes.post('/mail/test', async (c) => {
+  requireAdmin(c);
+  const me = currentUser(c);
+  const body = parse(z.object({ to: z.string().trim().email().max(200).optional() }), await jsonBody(c));
+  const smtp = mailConfig(c.get('db'), c.get('config'));
+  if (!smtp) throw new HttpError(400, 'mail_not_configured', 'No mail server is configured.');
+  try {
+    await sendTestMail(smtp, body.to ?? me.email);
+  } catch (error) {
+    throw new HttpError(502, 'mail_failed', error instanceof Error ? error.message : String(error));
+  }
+  return c.json({ sent: true, to: body.to ?? me.email });
 });

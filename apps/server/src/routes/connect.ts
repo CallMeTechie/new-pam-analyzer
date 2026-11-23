@@ -15,7 +15,7 @@ import { deleteUserSessions } from '../auth/sessions.js';
 import type { Db } from '../db/index.js';
 import { companies, connectCodes, devices, users } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse } from '../http.js';
-import { sendInvite } from '../services/mail.js';
+import { mailConfig, sendInvite } from '../services/mail.js';
 import { password } from './auth.js';
 
 /**
@@ -53,7 +53,7 @@ export async function inviteUser(
   send: boolean,
 ): Promise<IssuedCode & { emailed: boolean; mailError?: string }> {
   const issued = issueCode(c, userId, 'invite', actorId);
-  const smtp = c.get('config').smtp;
+  const smtp = mailConfig(c.get('db'), c.get('config'));
   if (!send || !smtp) return { ...issued, emailed: false };
   const user = c
     .get('db')

@@ -30,9 +30,9 @@ die Nummer in `docker-compose.yml` zu ändern und das Projekt neu zu erstellen. 
 | `SESSION_TTL_DAYS` | `7` | Gültigkeit einer Anmeldung, verlängert sich bei Nutzung |
 | `MAX_UPLOAD_MB` / `MAX_FILE_MB` | `200` / `10` | Grenze je Upload bzw. je `.dat`-Datei |
 | `LOGIN_MAX_ATTEMPTS` / `LOGIN_LOCK_MINUTES` | `5` / `15` | Sperre nach Fehlversuchen |
-| `SERVICE_COMPANY_NAME` | `FUJI Service` | Name der Service-Firma beim ersten Start |
+| `SERVICE_COMPANY_NAME` | `FUJI Service` | Vorschlag für den Namen der Service-Firma; der erste Administrator legt ihn nach dem Ändern der Standard-Zugangsdaten fest (`POST /api/auth/service-company`) |
 | `WEB_DIR` | `/app/public` | Gebaute Web-Oberfläche; fehlt der Ordner, läuft nur die API |
-| `SMTP_HOST` | – | Optional: Mailserver für Einladungen per E-Mail. Ohne ihn gibt man Link oder QR-Code selbst weiter |
+| `SMTP_HOST` | – | Optional: Mailserver für Einladungen per E-Mail. Ohne ihn gibt man Link oder QR-Code selbst weiter. Einfacher in der Web-Oberfläche unter Einstellungen → E-Mail; was dort steht, gilt vor diesen Variablen |
 | `SMTP_PORT` / `SMTP_SECURE` | `587` / bei Port 465 `true` | Port; `true` = TLS von Anfang an, sonst STARTTLS |
 | `SMTP_USER` / `SMTP_PASSWORD` | – | Anmeldung am Mailserver |
 | `SMTP_FROM` | `PAM Analyzer <SMTP_USER>` | Absender |
@@ -117,7 +117,7 @@ Eintrag im ZIP-Archiv oder von der App. Gibt der Techniker das Prüfdatum selbst
 ## Upload
 
 `POST /api/uploads` als `multipart/form-data` mit `files` (eine oder mehrere `.dat`- oder
-ZIP-Dateien, auch verschachtelt), optional je Datei `lastModified`, `customer` (Kunde, höchstens
+ZIP-Dateien, auch verschachtelt), optional je Datei `lastModified`, `modifiedLocal` (`YYYY-MM-DD HH:mm:ss`, Ortszeit der Maschinen; Datum eines ZIP-Eintrags, den die Web-Oberfläche entpackt hat; gilt vor `lastModified`), `customer` (Kunde, höchstens
 120 Zeichen) und `testDate` (`YYYY-MM-DD HH:mm[:ss]`, Ortszeit der Maschinen) und – nur für FUJI
 Service – `companyId`. Kunde und Prüfdatum gelten für alle Dateien eines ZIP-Archivs. Jede Datei wird ausgewertet und mit Originaldatei (gzip) und Kennzahlen gespeichert.
 Antwort je Datei: `created`, `duplicate` (gleicher Inhalt in derselben Firma) oder `rejected` mit
@@ -137,6 +137,7 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `POST /api/auth/login`, `POST /api/auth/logout` | Anmelden (Cookie `pam_session`), Abmelden |
 | `GET /api/auth/me`, `PATCH /api/auth/me` | Eigenes Profil, Name und Sprache |
 | `POST /api/auth/password` | Passwort ändern (meldet andere Sitzungen ab) |
+| `POST /api/auth/service-company` | Name der Service-Firma einer neuen Installation festlegen (erster Administrator, nach den Standard-Zugangsdaten) |
 | `GET /api/auth/session` | Sitzung prüfen, ohne Fehlerstatus |
 | `GET/POST /api/companies`, `GET/PATCH /api/companies/:id` | Firmen (Anlegen, Ändern, Deaktivieren) |
 | `GET /api/companies/:id/machines`, `PATCH /api/machines/:id` | Maschinen einer Firma, Linie setzen |
@@ -156,11 +157,12 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `DELETE /api/results/:id`, `POST /api/results/assign` | Löschen (weich), Firma zuordnen |
 | `GET /api/dashboard` | Übersicht: Summen, Ergebnisse je Tag, Bewertungen, neueste Ergebnisse |
 | `GET/PUT /api/settings/coefficients` | Koeffizienten; jede Änderung ist eine neue Version |
+| `GET/PUT /api/settings/mail` | Mailserver (Passwort wird nie ausgegeben, leer = unverändert); `POST /api/settings/mail/test` schickt eine Test-E-Mail |
 | `GET/PUT /api/settings/general` | Standard: Geräte je Benutzer |
 | `GET/PUT /api/settings/rating` | Bewertungsgrenzen; Speichern bewertet alle Ergebnisse neu |
 | `PUT/GET/DELETE /api/companies/:id/logo` | Firmenlogo (PNG, JPEG, WebP, ≤ 512 KB); Firmen-Admin oder Administrator |
 | `GET /api/i18n`, `PUT/DELETE /api/i18n/:code` | Importierte Sprachkataloge (lesen ohne Anmeldung, ändern nur Administratoren) |
-| `GET /api/version` | Versionen von Server und Rechenkern (ohne Anmeldung) |
+| `GET /api/version` | Versionen von Server und Rechenkern, Mail eingerichtet, Upload-Grenzen (ohne Anmeldung) |
 
 Die Suche teilt `q` in Wörter; jedes Wort muss in Maschinennummer, Kopftyp, Kopf-Seriennummer,
 Werkzeug-Seriennummer, Dateiname, Linie oder Firmenname vorkommen.

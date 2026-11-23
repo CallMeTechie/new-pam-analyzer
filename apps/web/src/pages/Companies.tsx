@@ -114,7 +114,10 @@ export function Companies() {
                 >
                   <CompanyBadge company={c} />
                   <span className="cm">
-                    <b>{c.name}</b>
+                    <b>
+                      {c.name}
+                      {c.isService && <span className="service-pill">{t('companies.service')}</span>}
+                    </b>
                     <span>
                       {c.disabled
                         ? t('companies.disabled')
@@ -137,7 +140,12 @@ export function Companies() {
                     <b style={{ fontSize: 22, fontWeight: 800, display: 'block', overflowWrap: 'anywhere' }}>
                       {selected.name}
                     </b>
-                    <span className="muted" style={{ fontSize: 13.5 }}>
+                    {selected.isService && (
+                      <span className="service-pill" title={t('companies.serviceHint')}>
+                        {t('companies.serviceSeesAll')}
+                      </span>
+                    )}
+                    <span className="muted" style={{ fontSize: 13.5, display: 'block' }}>
                       {[
                         selected.number,
                         selected.location,

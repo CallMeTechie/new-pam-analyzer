@@ -50,7 +50,11 @@ export function translate(locale: string, key: MessageKey, vars: Vars = {}): str
     const form = new Intl.PluralRules(locale).select(n) as keyof Plural;
     msg = msg[form] ?? msg.other;
   }
-  return msg.replace(/\{(\w+)\}/g, (_, k: string) => String(vars[k] ?? ''));
+  // Counts in the language's format (9,677 / 9.677); other values as passed.
+  return msg.replace(/\{(\w+)\}/g, (_, k: string) => {
+    const v = vars[k];
+    return typeof v === 'number' && Number.isInteger(v) ? new Intl.NumberFormat(locale).format(v) : String(v ?? '');
+  });
 }
 
 const STORAGE_KEY = 'pam-locale';

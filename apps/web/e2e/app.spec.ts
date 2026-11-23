@@ -1,6 +1,8 @@
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
+import { zipSync } from 'fflate';
 
 const FIXTURES = fileURLToPath(new URL('../../../packages/core/test/fixtures/', import.meta.url));
 const fixture = (family: string, index: number) =>
@@ -10,6 +12,12 @@ const fixture = (family: string, index: number) =>
   readdirSync(FIXTURES + family)
     .filter((f) => f.endsWith('.dat'))
     .sort()[index];
+
+const asUpload = (path: string) => ({
+  name: basename(path),
+  mimeType: 'application/octet-stream',
+  buffer: readFileSync(path),
+});
 
 /** Default credentials of a new installation, and what the administrator changes them to. */
 const DEFAULT = { email: 'admin@example.com', password: 'admin1234' };
@@ -36,12 +44,20 @@ test.describe.configure({ mode: 'serial' });
 
 test('administrator: first sign-in with default credentials, company, team and invitation', async ({ page }) => {
   await signIn(page, DEFAULT.email, DEFAULT.password);
+  await expect(page.getByText('Step 1 of 2')).toBeVisible();
   await changePassword(page, DEFAULT.password, ADMIN.password, ADMIN.email);
+  // Step 2: name the service company (suggestion from SERVICE_COMPANY_NAME).
+  await expect(page.getByRole('heading', { name: 'Name your service company' })).toBeVisible();
+  const serviceName = page.getByLabel('Name of the service company');
+  await expect(serviceName).toHaveValue('FUJI Service');
+  await serviceName.fill('Sample Service');
+  await page.getByRole('button', { name: 'Save and continue' }).click();
   await expect(page.getByText('No results yet')).toBeVisible();
   await expect(page.locator('.footer')).toContainText('Made with');
   await expect(page.locator('.footer')).toContainText('CallMeTechie');
 
   await page.getByRole('link', { name: 'Companies' }).click();
+  await expect(page.getByRole('listitem').filter({ hasText: 'Sample Service' })).toContainText('Service');
   await page.getByRole('button', { name: 'Add company' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Customer A');
   await page.getByLabel('Location').fill('Plant 1');
@@ -83,18 +99,34 @@ test('default credentials no longer work after the first sign-in', async ({ page
 
 test('upload, results, search, detail and head history', async ({ page }) => {
   await signIn(page, ADMIN.email, ADMIN.password);
-  await page.getByRole('link', { name: 'Upload' }).first().click();
+  // No upload page: the drop zone of the dashboard uploads, service staff choose the company there.
+  await expect(page.getByRole('link', { name: 'Upload' })).toHaveCount(0);
+  await page.getByTestId('dropzone').scrollIntoViewIfNeeded();
   await page.getByLabel('Company').selectOption({ label: 'Customer A' });
-  // P1/P2 of the same AIMEX head plus one NXT file.
+  // P1/P2 of the same AIMEX head plus one NXT file inside a ZIP archive (unpacked in the browser).
+  const nxt = fixture('nxt', 0);
+  const zip = zipSync({ [`M1/${basename(nxt)}`]: new Uint8Array(readFileSync(nxt)), 'notes.txt': new Uint8Array(3) });
   await page
     .locator('input[type=file][accept=".dat,.zip"]')
-    .setInputFiles([fixture('aimex', 2), fixture('aimex', 10), fixture('nxt', 0)]);
+    .setInputFiles([
+      asUpload(fixture('aimex', 2)),
+      asUpload(fixture('aimex', 10)),
+      { name: 'line1.zip', mimeType: 'application/zip', buffer: Buffer.from(zip) },
+    ]);
   await expect(page.getByText('3 files ready')).toBeVisible();
   await page.getByRole('button', { name: 'Upload and evaluate' }).click();
-  await expect(page.getByText('3 new results')).toBeVisible();
+  // The upload runs in the background; a toast reports it on every page.
+  const toast = page.getByTestId('upload-toast');
+  await expect(toast).toContainText('Upload finished');
+  await expect(toast).toContainText('3 new results · 1 skipped');
+  await toast.getByRole('button', { name: 'Details' }).click();
+  const done = page.getByRole('dialog', { name: 'Upload finished' });
+  await expect(done.getByText('3 new results')).toBeVisible();
+  await expect(done.getByText('notes.txt')).toBeVisible();
+  await done.getByRole('button', { name: 'Close' }).click();
+  await expect(toast).toHaveCount(0);
 
   // Dashboard: the three latest uploads as cards, below them this and last calendar week.
-  await page.getByRole('link', { name: 'Dashboard' }).first().click();
   await expect(page.getByTestId('latest-cards').locator('a')).toHaveCount(3);
   await expect(page.getByTestId('week-days').locator('span')).toHaveCount(7);
   await expect(page.getByTestId('week-this')).toContainText('This week');
@@ -121,6 +153,17 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Total', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Increase coefficient' }).click();
   await expect(page.locator('#coef-sub')).toContainText('manual');
+
+  // Customer and test date can be corrected on the web, as in the apps.
+  await page.getByRole('button', { name: 'Customer & date' }).click();
+  const edit = page.getByRole('dialog', { name: 'Customer and test date' });
+  await edit.getByLabel('Customer').fill('Sample Works');
+  await edit.getByRole('radio', { name: 'Another date' }).check();
+  await edit.locator('input[type=date]').fill('2026-03-14');
+  await edit.getByRole('button', { name: 'Apply' }).click();
+  await expect(edit).toBeHidden();
+  await expect(page.locator('.hero')).toContainText('Sample Works');
+  await expect(page.locator('.hero')).toContainText('Mar 14, 2026');
 
   await expect(page.getByRole('button', { name: 'Print' })).toBeVisible();
   // Printout: module type and serial number from the machine number, coefficient and components in the

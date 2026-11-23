@@ -8,14 +8,20 @@ keine externen Quellen), Akzent Blau, vier Bewertungsfarben.
 
 | Ansicht | Für | Inhalt |
 |---|---|---|
-| Dashboard | alle | Drei neueste Ergebnisse, Ergebnisse je Tag (mit kritischen), Verteilung der Bewertungen, neueste Ergebnisse je Maschinenfamilie |
+| Dashboard | alle | Aktuelle Kalenderwoche, drei neueste Ergebnisse, Verteilung der Bewertungen; **Upload**: Dateien, ZIP-Archive und ganze Ordner per Auswahl oder Ziehen, FUJI Service wählt die Firma |
 | Ergebnisse | alle | Live-Suche über Kopf, Seriennummer, Maschine, Linie und Dateiname; Filter Familie, Bewertung, Zeitraum; Sortierung; Filter bleiben in der Adresse |
 | Ergebnis | alle | Messuhr Cpk XY, Boxen HEAD / TOTAL / Koeffizient & Bauteile, Gesamtansicht nach Winkel und Holder, Einzelansicht je Holder; Koeffizient zum Ausprobieren änderbar (wird nicht gespeichert); Originaldatei |
 | Kopf-Historie | alle | Linie Cpk XY über dem Prüfdatum, gefüllter Punkt = Datum aus der Datei, hohler Punkt = Upload-Datum; Liste aller Prüfungen |
-| Hochladen | alle | Dateien, ZIP-Archive und ganze Ordner per Auswahl oder Ziehen; FUJI Service wählt die Firma |
 | Team | Firmen-Admin | Mitglieder einladen (QR-Code, Link, optional E-Mail), Geräte trennen, Geräte je Mitglied, Linien der Maschinen |
 | Firmen | FUJI Service | Firmen anlegen und bearbeiten, Keys, Benutzer, Maschinen; **Firmenansicht öffnen** |
-| Benutzer, Einstellungen | Administrator | Alle Konten; Koeffizienten (versioniert), Bewertung, Sprachen, Standard für max. Geräte |
+| Benutzer, Einstellungen | Administrator | Alle Konten; Koeffizienten (versioniert), Bewertung, Sprachen, E-Mail (SMTP mit Test-E-Mail), Standard für max. Geräte |
+
+**Upload im Hintergrund:** Der Browser entpackt ZIP-Archive selbst (`lib/zip.ts`: nur das
+Inhaltsverzeichnis und je ein Eintrag im Speicher, ZIP64, ohne Größengrenze) und schickt die `.dat`-Dateien
+in Portionen (höchstens 300 Dateien bzw. 40 MB, unter `MAX_UPLOAD_MB`) an `POST /api/uploads`
+(`lib/uploadQueue.ts`); Netzfehler werden bis zu dreimal wiederholt. Der Zustand liegt außerhalb der
+Seiten (`lib/backgroundUpload.ts`), deshalb läuft der Upload beim Seitenwechsel weiter; `UploadToast`
+zeigt Fortschritt, Abbrechen und am Ende die Details. Beim Schließen des Tabs warnt der Browser.
 
 **Firmenansicht:** FUJI Service öffnet unter *Firmen* jede Firma genau so, wie deren Mitarbeiter
 sie sehen (`/companies/:id/view/…`). Ein dunkles Band zeigt das an und führt zurück.

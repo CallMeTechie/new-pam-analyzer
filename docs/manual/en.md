@@ -6,8 +6,9 @@ The PAM Analyzer evaluates PAM results (`.dat`) of FUJI NXT, NXT-R and AIMEX mac
 
 1. On the first start there is the account `admin@example.com` with the password `admin1234`.
 2. At the first sign-in you choose your own e-mail address and a password with at least 12 characters. The default credentials stop working afterwards.
-3. Create the customer companies under **Companies** and the accounts under **Users**.
-4. Upload the first PAM files under **Upload**.
+3. Right after that you name the **service company** (step 2 of 2). It can be renamed later under Companies.
+4. Create the customer companies under **Companies** and the accounts under **Users**.
+5. Upload the first PAM files in the upload area of the **Dashboard**.
 
 ## Roles
 
@@ -15,14 +16,17 @@ The PAM Analyzer evaluates PAM results (`.dat`) of FUJI NXT, NXT-R and AIMEX mac
 - **Company admin**: invites members, manages their devices, the machines and the logo of their company.
 - **User**: sees the results of their company and uploads new ones.
 
-Members of the service company see the results of all companies.
+Members of the service company see the results of all companies. The **service company** is created by the server on its first start and named by the first administrator right after the default credentials are replaced (suggested name: `SERVICE_COMPANY_NAME`, default "FUJI Service"). It is marked "Service" under Companies; there is exactly one. Every other company only ever sees and uploads its own results.
 
 ## Uploading results
 
-- Under **Upload**, choose files, ZIP archives or whole folders, or drop them onto the area.
+- In the upload area of the **Dashboard**, choose files, ZIP archives or whole folders, or drop them onto the area. There is no limit on the size of a ZIP archive or the number of files: archives are unpacked in the browser and the files go to the server in portions.
+- The upload runs **in the background**: you can keep working and switch pages. A message at the bottom right shows files, MB and percent, a bar runs along the bottom edge; ✕ cancels (what was uploaded until then is kept). Do not close or reload the browser tab while it runs.
+- When it is finished, **Details** shows every file: new, already stored, not readable or skipped.
 - The service company first chooses the company the results belong to.
 - Files already stored in the company are recognized and skipped.
-- **Test date**: the timestamp in the file (NXT-R), otherwise the modification date of the file, otherwise the upload date.
+- **Test date**: the timestamp in the file (NXT-R), otherwise the modification date of the file (inside a ZIP: of the entry), otherwise the upload date.
+- **Customer & date** in a result changes its customer and test date afterwards (file date, today or another day).
 
 ## Finding results
 
@@ -63,6 +67,7 @@ The rating is based on the spread of all components of a holder, not on each com
 - **Coefficients**: tolerance and expected components per head type, plus the DX tools. Every change is saved as a new version; existing results keep their version.
 - **Rating**: thresholds of the four rating levels.
 - **Languages**: export a language file, translate it and import it again. Missing texts appear in English.
+- **E-mail**: mail server (SMTP) for sending invitations, with a test e-mail. Settings made here win over the environment variables `SMTP_*`; the password is never shown again.
 - **Security & data**: default number of devices per member (a company can set its own limit under Team).
 - **Version**: installed version and changes.
 
