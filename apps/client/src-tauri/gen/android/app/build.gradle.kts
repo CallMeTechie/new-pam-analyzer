@@ -101,6 +101,8 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     // QR code scanner of Google Play services: own camera screen, no camera permission needed.
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    // ModuleInstall: downloads the scanner module on demand if Play has not installed it yet.
+    implementation("com.google.android.gms:play-services-base:18.5.0")
     // In-app updates of the Google Play version (check and start the update by hand).
     implementation("com.google.android.play:app-update:2.1.0")
     testImplementation("junit:junit:4.13.2")

@@ -59,15 +59,21 @@ function ConnectForm() {
   }
   const complete = Object.values(form).every((v) => v.trim());
   const [scanError, setScanError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
   /** The web shows the new key as QR code: JSON with server and key, or the key alone. */
   async function scanKey() {
     setScanError(null);
     let text: string | null = null;
+    setScanning(true);
     try {
       text = (await engine.platform.scanQr?.()) ?? null;
-    } catch {
-      setScanError(t('client.connect.scannerFailed'));
+    } catch (e) {
+      // The reason helps when the scanner of Google Play services is missing or cannot be installed.
+      const reason = e instanceof Error ? e.message : String(e);
+      setScanError(`${t('client.connect.scannerFailed')} (${reason})`);
       return;
+    } finally {
+      setScanning(false);
     }
     if (!text) return;
     const parsed = parseKeyQr(text);
@@ -107,8 +113,18 @@ function ConnectForm() {
                 autoComplete="off"
               />
               {engine.platform.scanQr && (
-                <button type="button" className="btn" onClick={() => void scanKey()}>
-                  <Icon name="camera" size={16} />
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={scanning}
+                  title={scanning ? t('client.connect.scannerLoading') : undefined}
+                  onClick={() => void scanKey()}
+                >
+                  {scanning ? (
+                    <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                  ) : (
+                    <Icon name="camera" size={16} />
+                  )}
                   <span className="sr-only">{t('client.connect.scan')}</span>
                 </button>
               )}
