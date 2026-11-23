@@ -99,7 +99,7 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   await expect(page.getByTestId('week-last')).toContainText('Last week');
 
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.getByText('3 results')).toBeVisible();
+  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
@@ -154,7 +154,7 @@ test('company member sees only the own company and can switch to German', async 
   await expect(page.getByTestId('week-last')).toContainText('Last week');
 
   await page.getByRole('link', { name: 'Results' }).first().click();
-  await expect(page.getByText('3 results')).toBeVisible();
+  await expect(page.locator('.pager').first()).toContainText(/^3 results\b/);
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
