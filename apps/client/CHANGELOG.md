@@ -6,6 +6,9 @@
 - Windows: new design – narrow icon bar instead of the sidebar, indigo header band on every page, DM Sans typeface, light and dark.
 - Windows overview as a dashboard: this week's measurements per day, Ø Cpk and critical heads in the header band, filters by family and "critical", adding files and server state on the right, Cpk trend of the week, best head and critical heads as cards.
 
+### Fixed
+- Android: the camera button next to the API key opens the camera again. The app now asks for the camera permission first; while scanning a frame and "Cancel" are shown. If access was refused, a link leads to the app settings.
+
 ## 0.3.5
 
 ### Changed

@@ -1,6 +1,13 @@
 import { addPluginListener, Channel as IpcChannel, invoke } from '@tauri-apps/api/core';
 import { appConfigDir } from '@tauri-apps/api/path';
-import { Format, scan } from '@tauri-apps/plugin-barcode-scanner';
+import {
+  checkPermissions as cameraPermission,
+  cancel as cancelScan,
+  Format,
+  openAppSettings,
+  requestPermissions as requestCamera,
+  scan,
+} from '@tauri-apps/plugin-barcode-scanner';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import Database from '@tauri-apps/plugin-sql';
@@ -93,13 +100,20 @@ export async function androidPlatform(version: string): Promise<Platform> {
     print: () => pam('printPage'),
     openUrl: (url) => openUrl(url),
     async scanQr() {
+      // The plugin does not ask by itself: without the permission `scan` fails at once.
+      let state = await cameraPermission();
+      if (state !== 'granted') state = await requestCamera();
+      if (state !== 'granted') throw new Error('camera_denied');
       try {
-        const res = await scan({ windowed: false, formats: [Format.QRCode] });
+        // Windowed: the camera runs behind the transparent WebView, which shows the frame and "Cancel".
+        const res = await scan({ windowed: true, formats: [Format.QRCode] });
         return res.content || null;
       } catch {
         return null;
       }
     },
+    cancelScan: () => cancelScan(),
+    openAppSettings: () => openAppSettings(),
     onPosture(listener) {
       void pam<Posture>('posture').then(listener);
       const l = addPluginListener<Posture>('pam', 'posture', listener);
