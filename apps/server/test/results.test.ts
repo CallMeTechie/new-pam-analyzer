@@ -217,6 +217,21 @@ describe('Ergebnisse', () => {
     expect(history.body.items.map((r: any) => r.testDate)).toEqual(['2026-01-01 01:00:00', '2026-02-01 01:00:00']);
   });
 
+  it('die Service-Firma sieht alle Prüfungen eines Kopfes, egal welcher Firma sie gehören', async () => {
+    const { admin, workerA, workerB } = await world();
+    // Derselbe Kopf (P1/P2) bei Kunde A, bei Kunde B und einmal nicht zugeordnet.
+    const a = await workerA.upload([{ ...fixture('aimex', 2), lastModified: Date.UTC(2026, 0, 1) }]);
+    await workerB.upload([{ ...fixture('aimex', 10), lastModified: Date.UTC(2026, 1, 1) }]);
+    await admin.upload([{ ...fixture('aimex', 2), lastModified: Date.UTC(2026, 2, 1) }]);
+    const id = a.body.results[0].resultId;
+    const service = await admin.json('GET', `/api/results/${id}/history`);
+    expect(service.body.items.map((r: any) => r.companyName)).toEqual(['Customer A', 'Customer B', null]);
+    // Kunden sehen nur ihre eigenen Prüfungen.
+    expect((await workerA.json('GET', `/api/results/${id}/history`)).body.items).toHaveLength(1);
+    expect((await admin.json('GET', '/api/results')).body.total).toBe(3);
+    expect((await workerB.json('GET', '/api/results')).body.total).toBe(1);
+  });
+
   it('nur Firmen-Admins und Administratoren löschen Ergebnisse', async () => {
     const { workerA, bossA } = await seeded();
     const id = (await workerA.json('GET', '/api/results')).body.items[0].id;

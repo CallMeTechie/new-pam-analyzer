@@ -4,6 +4,7 @@
 
 ### Fixed
 - Apps connected with an account of the service company showed no results under "Server": they only saw the service company's own results. They now see all companies, like the same account on the web. Apps of customer companies still see only their own company.
+- The service company sees every result, whoever it belongs to: the head history now shows the tests of a head across all companies and unassigned uploads (customers still see only their own).
 
 ## 0.12.1 – 2026-11-24
 
