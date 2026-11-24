@@ -16,9 +16,11 @@ export interface LanguageCatalog {
 
 const KEY = 'languages';
 const text = z.string().max(4000);
-const plural = z.record(z.enum(['zero', 'one', 'two', 'few', 'many', 'other']), text).refine((p) => 'other' in p, {
-  message: 'Plural texts need at least "other".',
-});
+const plural = z
+  .partialRecord(z.enum(['zero', 'one', 'two', 'few', 'many', 'other']), text)
+  .refine((p) => 'other' in p, {
+    message: 'Plural texts need at least "other".',
+  });
 
 export const localeCode = z
   .string()

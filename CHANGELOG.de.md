@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.12.3 – 24.11.2026
+
+### Sicherheit
+- Abhängigkeiten aktualisiert; `pnpm audit` meldet keine bekannten Lücken mehr (vorher 29, davon 2 kritisch und 6 hoch): nodemailer 10.6, drizzle-orm 0.45, zod 4.6, @hono/node-server 2.1, hono 4.13.21; für die Entwicklung Vitest 4.1 (tinypool) und esbuild 0.25 für drizzle-kit.
+
 ## 0.12.2 – 24.11.2026
 
 ### Behoben
