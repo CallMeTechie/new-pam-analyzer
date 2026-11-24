@@ -4,7 +4,11 @@
 
 ### Geändert
 - Drag & Drop: Sobald Dateien ins Browserfenster gezogen werden, ist der Upload-Bereich als Ablagefläche markiert (gestrichelter Rahmen in Akzentfarbe, „Dateien hier ablegen“). Er nimmt Dateien, ZIP-Archive und Ordner an, auch Dateien in Unterordnern; eine daneben abgelegte Datei öffnet der Browser nicht mehr.
-- Die Liste vor dem Hochladen zeigt den Pfad jeder Datei im Ordner und wie viele PAM-Dateien jedes ZIP-Archiv enthält (alle Unterordner), dazu die Gesamtzahl; Größen in KB oder MB.
+- **Upload-Dialog statt Kasten „Dateien bereit“:** Direkt nach dem Auswählen oder Ablegen fragt ein Dialog nach
+  - **Firma / Kunde** in einem Feld: Beim Tippen werden die Firmen im System und die schon verwendeten Kunden gesucht; eine Firma im System bekommt die Ergebnisse (ihre Mitarbeiter sehen sie), jeder andere Name wird als Kunde gespeichert. Die Firmenauswahl über der Ablagefläche entfällt.
+  - **Prüfdatum:** bei einer Datei Datum und Uhrzeit der Messung aus der Datei, vorausgefüllt und änderbar; bei mehreren behält jede ihr eigenes Datum (Zeitraum wird angezeigt) oder ein Datum für alle (die Uhrzeit bleibt die aus der Datei).
+  - Nichts ist Pflicht: **Überspringen** lädt ohne Angaben hoch. „Liste anzeigen“ zeigt die Dateien mit Pfad und die PAM-Dateien je ZIP-Archiv.
+- Uploads nehmen `testDay` je Datei an (`YYYY-MM-DD`: nur der Tag wird gesetzt, die Uhrzeit bleibt die aus der Datei).
 
 ## 0.11.0 – 23.11.2026
 

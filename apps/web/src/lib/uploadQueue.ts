@@ -22,6 +22,15 @@ export interface SkippedItem {
   reason: 'unsupported_type' | 'invalid_archive' | 'file_too_large';
 }
 
+/** What the upload dialog set for all files; each part is optional. */
+export interface UploadMeta {
+  customer?: string;
+  /** Whole test date and time `YYYY-MM-DD HH:mm:ss` (one file whose date was changed). */
+  testDate?: string;
+  /** Only the day `YYYY-MM-DD`; each file keeps its time of day ("one date for all"). */
+  testDay?: string;
+}
+
 export interface UploadLimits {
   maxFileBytes: number;
   maxUploadBytes: number;
@@ -152,6 +161,7 @@ export async function uploadItems(
   options: {
     limits: UploadLimits;
     companyId: number | null;
+    meta?: UploadMeta;
     signal: AbortSignal;
     merged: UploadResponse;
     onProgress(p: UploadProgress): void;
@@ -179,6 +189,9 @@ export async function uploadItems(
       form.append('files', blobs[i] as Blob, item.name);
       form.append('lastModified', item.lastModified ? String(item.lastModified) : '');
       form.append('modifiedLocal', item.modifiedLocal ?? '');
+      form.append('customer', options.meta?.customer ?? '');
+      form.append('testDate', options.meta?.testDate ?? '');
+      form.append('testDay', options.meta?.testDay ?? '');
     });
     if (options.companyId) form.append('companyId', String(options.companyId));
     const size = batch.reduce((s, i) => s + i.size, 0);

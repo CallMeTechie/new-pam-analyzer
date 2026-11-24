@@ -161,6 +161,9 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
   });
   const { row, shafts } = metricColumns(parsed, analysis, ctx.config.version);
   const h = parsed.header;
+  // Date set by the user: a whole date and time, or only the day (the time stays the file's).
+  const manualDate =
+    file.testDate ?? (file.testDay ? `${file.testDay} ${h.testDate?.slice(11, 19) || '12:00:00'}` : undefined);
 
   const resultId = db.transaction((tx) => {
     let machine = tx
@@ -193,8 +196,8 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
         machineFamily: h.machineFamily,
         headType: h.headType,
         headSerial: h.headSerial,
-        testDate: file.testDate ?? h.testDate ?? '',
-        dateSource: file.testDate ? 'manual' : h.dateSource,
+        testDate: manualDate ?? h.testDate ?? '',
+        dateSource: manualDate ? 'manual' : h.dateSource,
         customer: file.customer ?? null,
         companyId: ctx.companyId,
         machineId: machine.id,
@@ -221,8 +224,8 @@ export function ingestFile(db: Db, file: UploadFile, ctx: IngestContext): Ingest
     headSerial: h.headSerial,
     cpkXY: analysis.head.cpkXY,
     rating: analysis.head.rating,
-    testDate: file.testDate ?? h.testDate,
-    dateSource: file.testDate ? 'manual' : h.dateSource,
+    testDate: manualDate ?? h.testDate,
+    dateSource: manualDate ? 'manual' : h.dateSource,
     failed: analysis.failedMeasurements,
     warnings: parsed.warnings.map((w) => w.code),
   };

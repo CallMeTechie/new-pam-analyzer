@@ -59,6 +59,20 @@ describe('Kunde und Prüfdatum', () => {
     expect((await tech.json('PATCH', `/api/results/${id}`, { testDate: 'gestern' })).status).toBe(400);
   });
 
+  it('übernimmt Kunde und nur den Prüftag beim Upload, die Uhrzeit bleibt die aus der Datei', async () => {
+    const nxtr = fixture('nxtr');
+    // Time of day from the file: the same file on a second server without a test day.
+    const plain = await (await world()).tech.upload([nxtr]);
+    const fileTime = plain.body.results[0].testDate.slice(11);
+    expect(plain.body.results[0].dateSource).toBe('header');
+    const { tech } = await world();
+    const res = await tech.upload([nxtr], { customer: 'Muster Metall', testDay: '2026-03-14' });
+    expect(res.body.results[0]).toMatchObject({ testDate: `2026-03-14 ${fileTime}`, dateSource: 'manual' });
+    expect((await tech.upload([fixture('nxt', 3)], { testDay: '14.03.2026' })).body.results[0].dateSource).not.toBe(
+      'manual',
+    );
+  });
+
   it('prüft das Datumsformat', () => {
     expect(cleanTestDate('2026-02-30 10:00')).toBeUndefined();
     expect(cleanTestDate('2026-02-28T23:59:59')).toBe('2026-02-28 23:59:59');

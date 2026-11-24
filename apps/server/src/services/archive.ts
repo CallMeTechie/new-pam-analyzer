@@ -9,6 +9,8 @@ export interface UploadFile {
   customer?: string;
   /** Test date set by the user (`YYYY-MM-DD HH:mm:ss`); replaces the date from the file. */
   testDate?: string;
+  /** Test day set by the user (`YYYY-MM-DD`); the time of day stays the one from the file. */
+  testDay?: string;
 }
 
 export interface SkippedFile {

@@ -1,153 +1,90 @@
 import { type DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
-import type { Company } from '../lib/api';
-import { startUpload, useBackgroundUpload } from '../lib/backgroundUpload';
+import { accepted, filesFromDrop, hasFiles, type Picked, picked } from '../lib/pickedFiles';
 import { useScope } from '../lib/scope';
-import { useApi } from '../lib/useApi';
-import { listZip } from '../lib/zip';
 import { Icon } from './Icon';
-import { InfoTip } from './ui';
-
-const accepted = (name: string) => /\.(dat|zip)$/i.test(name);
-
-interface FileSystemEntryLike {
-  isFile: boolean;
-  isDirectory: boolean;
-  name: string;
-  file?(cb: (f: File) => void, err?: (e: unknown) => void): void;
-  createReader?(): { readEntries(cb: (entries: FileSystemEntryLike[]) => void, err?: (e: unknown) => void): void };
-}
-
-/** A chosen file and where it lies in the dropped or chosen folder. */
-interface Picked {
-  file: File;
-  path: string;
-  key: string;
-}
-
-const picked = (file: File, path = file.webkitRelativePath || file.name): Picked => ({
-  file,
-  path,
-  key: `${path}|${file.size}|${file.lastModified}`,
-});
-
-/** All files of a dropped file or folder, also in subfolders, with their path. */
-async function filesFromEntry(entry: FileSystemEntryLike, dir = ''): Promise<Picked[]> {
-  const path = dir ? `${dir}/${entry.name}` : entry.name;
-  if (entry.isFile && entry.file) {
-    return new Promise((resolve) =>
-      entry.file?.(
-        (f) => resolve([picked(f, path)]),
-        () => resolve([]),
-      ),
-    );
-  }
-  if (entry.isDirectory && entry.createReader) {
-    const reader = entry.createReader();
-    const all: FileSystemEntryLike[] = [];
-    // readEntries returns the entries in portions (about 100 in Chrome) until an empty one.
-    for (;;) {
-      const batch = await new Promise<FileSystemEntryLike[]>((resolve) =>
-        reader.readEntries(resolve, () => resolve([])),
-      );
-      if (!batch.length) break;
-      all.push(...batch);
-    }
-    return (await Promise.all(all.map((e) => filesFromEntry(e, path)))).flat();
-  }
-  return [];
-}
-
-/** Files of a drop: folders (with subfolders), ZIP archives and single files. */
-async function filesFromDrop(data: DataTransfer): Promise<Picked[]> {
-  // The entries must be taken before the first await: the browser empties the list afterwards.
-  const entries = [...data.items]
-    .filter((i) => i.kind === 'file')
-    .map((i) => i.webkitGetAsEntry?.() as unknown as FileSystemEntryLike | null | undefined)
-    .filter((x): x is FileSystemEntryLike => Boolean(x));
-  const plain = [...data.files];
-  if (!entries.length) return plain.map((f) => picked(f));
-  return (await Promise.all(entries.map((e) => filesFromEntry(e)))).flat();
-}
-
-/** PAM files in a ZIP archive (all subfolders) and archives inside it. */
-type ZipInfo = { dat: number; zips: number } | 'invalid';
-
-async function zipInfo(file: File): Promise<ZipInfo> {
-  try {
-    const entries = (await listZip(file)).filter((e) => !e.path.endsWith('/') && !e.path.startsWith('__MACOSX/'));
-    return {
-      dat: entries.filter((e) => /\.dat$/i.test(e.path)).length,
-      zips: entries.filter((e) => /\.zip$/i.test(e.path)).length,
-    };
-  } catch {
-    return 'invalid';
-  }
-}
-
-const hasFiles = (e: DragEvent) => Boolean(e.dataTransfer?.types.includes('Files'));
+import { UploadDialog } from './UploadDialog';
+import { Notice } from './ui';
 
 /**
  * Upload area of the dashboard: drop files, ZIP archives and folders (also subfolders) on the drop
- * zone or choose them, choose the company (service staff) and start; the upload then runs in the
- * background (see `UploadToast`). While files are dragged into the window, the drop zone is marked.
+ * zone or choose them. A dialog then asks for company or customer and the test date (both optional);
+ * the upload runs in the background (see `UploadToast`). While files are dragged into the window, the
+ * drop zone is marked.
  */
 export function UploadPanel() {
-  const { t, num } = useI18n();
+  const { t } = useI18n();
   const scope = useScope();
-  const staffAll = scope.companyId === null;
-  const companies = useApi<{ items: Company[] }>(staffAll ? '/companies' : null);
-  const [companyId, setCompanyId] = useState('');
-  const [files, setFiles] = useState<Picked[]>([]);
-  const [zips, setZips] = useState<Record<string, ZipInfo>>({});
+  /** Files waiting in the dialog; `null`: no dialog. */
+  const [files, setFiles] = useState<Picked[] | null>(null);
   const [ignored, setIgnored] = useState(0);
+  const [nothing, setNothing] = useState(0);
   /** Files are dragged somewhere over the window: the drop zone is marked. */
   const [dragging, setDragging] = useState(false);
   /** …and right over the drop zone. */
   const [over, setOver] = useState(false);
-  const upload = useBackgroundUpload();
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
 
   function add(list: Picked[]) {
     const ok = list.filter((p) => accepted(p.file.name));
-    setIgnored((n) => n + list.length - ok.length);
+    if (!ok.length) {
+      setNothing(list.length);
+      return;
+    }
+    setNothing(0);
+    setIgnored((n) => (files ? n : 0) + list.length - ok.length);
     setFiles((prev) => {
-      const seen = new Set(prev.map((p) => p.key));
-      return [...prev, ...ok.filter((p) => !seen.has(p.key) && seen.add(p.key))];
+      const seen = new Set((prev ?? []).map((p) => p.key));
+      return [...(prev ?? []), ...ok.filter((p) => !seen.has(p.key) && seen.add(p.key))];
     });
   }
+
   // Marks the drop zone while files are dragged into the window; a file dropped next to it is not
   // opened by the browser (which would leave the page).
   useEffect(() => {
     let depth = 0;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const end = () => {
+      depth = 0;
+      clearTimeout(idle);
+      setDragging(false);
+      setOver(false);
+    };
+    // Browsers send `dragover` every few hundred milliseconds while files are over the window; when
+    // none comes (drag cancelled, or ended where no `drop` or `dragleave` reaches the page), unmark.
+    const watch = () => {
+      clearTimeout(idle);
+      idle = setTimeout(end, 1000);
+    };
     const enter = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       depth++;
       setDragging(true);
+      watch();
     };
     const leave = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       depth = Math.max(0, depth - 1);
-      if (depth === 0) setDragging(false);
+      if (depth === 0) end();
     };
     const over = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      watch();
     };
     const drop = (e: DragEvent) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
-      depth = 0;
-      setDragging(false);
-      setOver(false);
+      end();
     };
     window.addEventListener('dragenter', enter);
     window.addEventListener('dragleave', leave);
     window.addEventListener('dragover', over);
     window.addEventListener('drop', drop);
     return () => {
+      clearTimeout(idle);
       window.removeEventListener('dragenter', enter);
       window.removeEventListener('dragleave', leave);
       window.removeEventListener('dragover', over);
@@ -155,78 +92,14 @@ export function UploadPanel() {
     };
   }, []);
 
-  // How many PAM files each ZIP archive holds (all subfolders); only its directory is read.
-  useEffect(() => {
-    for (const p of files) {
-      if (!/\.zip$/i.test(p.file.name) || p.key in zips) continue;
-      setZips((z) => ({ ...z, [p.key]: { dat: -1, zips: 0 } }));
-      void zipInfo(p.file).then((info) => setZips((z) => ({ ...z, [p.key]: info })));
-    }
-  }, [files, zips]);
-
   function onDrop(e: ReactDragEvent) {
     e.preventDefault();
     setOver(false);
     void filesFromDrop(e.dataTransfer).then(add);
   }
 
-  function start() {
-    startUpload(
-      files.map((p) => p.file),
-      scope.companyId ?? (companyId ? Number(companyId) : null),
-    );
-    setFiles([]);
-    setIgnored(0);
-  }
-
-  const busy = upload.status === 'running';
-  const size = files.reduce((s, p) => s + p.file.size, 0);
-  const sizeText = size < 1024 * 1024 ? `${num(Math.max(size / 1024, 0.1), 1)} KB` : `${num(size / 1024 / 1024, 1)} MB`;
-  const isZip = (p: Picked) => /\.zip$/i.test(p.file.name);
-  const known = (info: ZipInfo | undefined) => info === 'invalid' || (info !== undefined && info.dat >= 0);
-  // All ZIP archives are counted (their directories are read right after adding them).
-  const counted = files.every((p) => !isZip(p) || known(zips[p.key]));
-  const total = files.reduce((n, p) => {
-    if (!/\.zip$/i.test(p.file.name)) return n + 1;
-    const info = zips[p.key];
-    return n + (info && info !== 'invalid' && info.dat > 0 ? info.dat : 0);
-  }, 0);
-  const hasZip = files.some(isZip);
-
-  function zipLabel(p: Picked) {
-    const info = zips[p.key];
-    if (!known(info)) return ' · …';
-    if (info === 'invalid') return ` · ${t('skip.invalid_archive')}`;
-    if (info === undefined) return '';
-    return ` · ${t('upload.zipContents', { n: info.dat })}${info.zips ? ` ${t('upload.zipNested', { n: info.zips })}` : ''}`;
-  }
-
   return (
     <div className="upload-panel stack" style={{ gap: 12 }}>
-      {staffAll && (
-        <div className="field">
-          <span className="title-with-info">
-            <label htmlFor="upload-company">{t('upload.company')}</label>
-            <InfoTip text={companyId ? t('upload.companyHint') : t('upload.unassignedHint')} />
-          </span>
-          <select
-            id="upload-company"
-            className="select"
-            value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
-            disabled={busy}
-          >
-            <option value="">{t('upload.unassigned')}</option>
-            {companies.data?.items
-              .filter((c) => !c.isService && !c.disabled)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-          </select>
-        </div>
-      )}
       {scope.viewing && (
         <p className="muted" style={{ margin: 0, fontSize: 13 }}>
           {t('upload.forCompany', { company: scope.companyName ?? '' })}
@@ -287,49 +160,17 @@ export function UploadPanel() {
         />
       </section>
 
-      {files.length > 0 && (
-        <section className="card stack" style={{ gap: 10 }} data-testid="upload-ready">
-          <div className="stack" style={{ gap: 8 }}>
-            <div>
-              <b>{t('upload.ready', { n: files.length })}</b>
-              <div className="muted" style={{ fontSize: 13 }}>
-                {hasZip && counted && `${t('upload.total', { n: total })} · `}
-                {sizeText}
-                {ignored > 0 && ` · ${t('upload.ignored', { n: ignored })}`}
-              </div>
-            </div>
-            <div className="form-row">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setFiles([]);
-                  setIgnored(0);
-                }}
-              >
-                {t('common.clear')}
-              </button>
-              <button type="button" className="btn primary" onClick={start} disabled={busy || files.length === 0}>
-                <Icon name="upload" size={16} />
-                {busy ? t('upload.busy') : t('upload.start')}
-              </button>
-            </div>
-            {busy && (
-              <span className="muted" style={{ fontSize: 13 }}>
-                {t('upload.waitHint')}
-              </span>
-            )}
-          </div>
-          <ul className="upload-list muted mono">
-            {files.slice(0, 50).map((p) => (
-              <li key={p.key}>
-                {p.path}
-                {isZip(p) && <span className="zip-info">{zipLabel(p)}</span>}
-              </li>
-            ))}
-            {files.length > 50 && <li>{t('upload.more', { n: files.length - 50 })}</li>}
-          </ul>
-        </section>
+      {nothing > 0 && <Notice kind="warning" title={t('upload.nothing', { n: nothing })} />}
+
+      {files && (
+        <UploadDialog
+          files={files}
+          ignored={ignored}
+          onClose={() => {
+            setFiles(null);
+            setIgnored(0);
+          }}
+        />
       )}
     </div>
   );

@@ -19,6 +19,8 @@ export const uploadRoutes = new Hono<AppEnv>();
  *   machines' time zone (date of a ZIP entry the web UI unpacked); wins over `lastModified`,
  * - `customer`, `testDate`: optional, per file in the same order (app: customer where the head
  *   was measured, test date chosen by the technician as `YYYY-MM-DD HH:mm:ss`),
+ * - `testDay`: optional, per file in the same order, `YYYY-MM-DD`: only the day is set, the time of
+ *   day stays the one from the file (web: "one date for all"),
  * - `companyId`: only for service staff; without it the result stays unassigned.
  */
 uploadRoutes.post(
@@ -53,6 +55,9 @@ uploadRoutes.post(
     });
     const customers = list(form.customer).map(cleanCustomer);
     const testDates = list(form.testDate).map(cleanTestDate);
+    const testDays = list(form.testDay).map((v) =>
+      cleanTestDate(typeof v === 'string' ? `${v} 00:00` : v)?.slice(0, 10),
+    );
 
     const requested = typeof form.companyId === 'string' && form.companyId ? Number(form.companyId) : null;
     const companyId = readScope(auth, requested);
@@ -77,11 +82,13 @@ uploadRoutes.post(
       // Customer and test date of an upload apply to every file in it (also inside a ZIP archive).
       const customer = customers[i];
       const testDate = testDates[i];
+      const testDay = testDays[i];
       expanded.push(
         ...result.files.map((f) => ({
           ...f,
           ...(customer ? { customer } : {}),
           ...(testDate ? { testDate } : {}),
+          ...(testDay && !testDate ? { testDay } : {}),
         })),
       );
       skipped.push(...result.skipped);

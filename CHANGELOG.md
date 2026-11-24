@@ -4,7 +4,11 @@
 
 ### Changed
 - Drag & drop: as soon as files are dragged into the browser window, the upload area is marked as drop zone (dashed accent border, "Drop the files here"). Files, ZIP archives and folders are taken, including files in subfolders; a file dropped next to the area is no longer opened by the browser.
-- The list before uploading shows the path of each file in its folder and how many PAM files each ZIP archive holds (all subfolders), with the total; sizes in KB or MB.
+- **Upload dialog instead of the "files ready" box:** right after choosing or dropping files a dialog asks for
+  - **Company / customer** in one field: typing searches the companies in the system and the customers used so far; a company in the system gets the results (its members see them), any other name is stored as customer. The company selection above the drop zone is gone.
+  - **Test date:** for one file the date and time of the measurement from the file, filled in and changeable; for several files each keeps its own date (range shown) or one date for all (each file keeps its time of day).
+  - Nothing is required: **Skip** uploads as they are. "Show list" lists the files with their path and the PAM files per ZIP archive.
+- Uploads accept `testDay` per file (`YYYY-MM-DD`: only the day is set, the time stays the file's).
 
 ## 0.11.0 – 2026-11-23
 

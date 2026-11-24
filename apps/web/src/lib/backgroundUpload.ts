@@ -1,6 +1,13 @@
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, notifyDataChanged, type UploadResponse } from './api';
-import { emptyResponse, expandFiles, type UploadLimits, type UploadProgress, uploadItems } from './uploadQueue';
+import {
+  emptyResponse,
+  expandFiles,
+  type UploadLimits,
+  type UploadMeta,
+  type UploadProgress,
+  uploadItems,
+} from './uploadQueue';
 
 /**
  * The upload runs in the background, independent of the page: one can keep working while it runs;
@@ -57,7 +64,7 @@ export function isUploading(): boolean {
 }
 
 /** Starts an upload; returns at once. */
-export function startUpload(files: File[], companyId: number | null): void {
+export function startUpload(files: File[], companyId: number | null, meta: UploadMeta = {}): void {
   if (state.status === 'running') return;
   const own = new AbortController();
   controller = own;
@@ -73,6 +80,7 @@ export function startUpload(files: File[], companyId: number | null): void {
       await uploadItems(items, {
         limits: max,
         companyId,
+        meta,
         signal: own.signal,
         merged,
         onProgress: (progress) => set({ progress }),
