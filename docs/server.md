@@ -118,7 +118,7 @@ Eintrag im ZIP-Archiv oder von der App. Gibt der Techniker das Prüfdatum selbst
 
 `POST /api/uploads` als `multipart/form-data` mit `files` (eine oder mehrere `.dat`- oder
 ZIP-Dateien, auch verschachtelt), optional je Datei `lastModified`, `modifiedLocal` (`YYYY-MM-DD HH:mm:ss`, Ortszeit der Maschinen; Datum eines ZIP-Eintrags, den die Web-Oberfläche entpackt hat; gilt vor `lastModified`), `customer` (Kunde, höchstens
-120 Zeichen) und `testDate` (`YYYY-MM-DD HH:mm[:ss]`, Ortszeit der Maschinen) und – nur für FUJI
+120 Zeichen) und `testDate` (`YYYY-MM-DD HH:mm[:ss]`, Ortszeit der Maschinen) oder `testDay` (`YYYY-MM-DD`: nur der Tag, die Uhrzeit bleibt die aus der Datei) und – nur für FUJI
 Service – `companyId`. Kunde und Prüfdatum gelten für alle Dateien eines ZIP-Archivs. Jede Datei wird ausgewertet und mit Originaldatei (gzip) und Kennzahlen gespeichert.
 Antwort je Datei: `created`, `duplicate` (gleicher Inhalt in derselben Firma) oder `rejected` mit
 Grund; nicht unterstützte Dateien stehen unter `skipped`.

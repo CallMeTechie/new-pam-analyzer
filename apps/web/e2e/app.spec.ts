@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { zipSync } from 'fflate';
@@ -99,10 +100,9 @@ test('default credentials no longer work after the first sign-in', async ({ page
 
 test('upload, results, search, detail and head history', async ({ page }) => {
   await signIn(page, ADMIN.email, ADMIN.password);
-  // No upload page: the drop zone of the dashboard uploads, service staff choose the company there.
+  // No upload page: the drop zone of the dashboard uploads; a dialog asks for company and date.
   await expect(page.getByRole('link', { name: 'Upload' })).toHaveCount(0);
   await page.getByTestId('dropzone').scrollIntoViewIfNeeded();
-  await page.getByLabel('Company').selectOption({ label: 'Customer A' });
   // P1/P2 of the same AIMEX head plus one NXT file inside a ZIP archive (unpacked in the browser).
   const nxt = fixture('nxt', 0);
   const zip = zipSync({ [`M1/${basename(nxt)}`]: new Uint8Array(readFileSync(nxt)), 'notes.txt': new Uint8Array(3) });
@@ -113,8 +113,18 @@ test('upload, results, search, detail and head history', async ({ page }) => {
       asUpload(fixture('aimex', 10)),
       { name: 'line1.zip', mimeType: 'application/zip', buffer: Buffer.from(zip) },
     ]);
-  await expect(page.getByText('3 files ready')).toBeVisible();
-  await page.getByRole('button', { name: 'Upload and evaluate' }).click();
+  const dialog = page.getByTestId('upload-dialog');
+  await expect(page.getByRole('dialog', { name: 'Upload 3 files' })).toBeVisible();
+  await expect(dialog).toContainText('3 PAM files in total (1 ZIP archive)');
+  await expect(dialog).toContainText('Optional – leave empty if unknown.');
+  // Typing searches the companies: choosing one gives it the results.
+  await dialog.getByLabel('Company / customer').fill('Cust');
+  await dialog.getByRole('option', { name: /Customer A.*Company in the system/ }).click();
+  await expect(dialog.getByLabel('Company / customer')).toHaveValue('Customer A');
+  await expect(dialog).toContainText('Company in the system: its members see the results.');
+  await expect(dialog.getByRole('radio', { name: /From the files/ })).toBeChecked();
+  await dialog.getByRole('button', { name: 'Upload', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   // The upload runs in the background; a toast reports it on every page.
   const toast = page.getByTestId('upload-toast');
   await expect(toast).toContainText('Upload finished');
@@ -137,7 +147,7 @@ test('upload, results, search, detail and head history', async ({ page }) => {
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
-  await expect(page.getByTestId('groups-customer').locator('.group-h')).toContainText(['No customer']);
+  await expect(page.getByTestId('groups-customer').locator('.group-h')).toContainText(['Customer A']);
   await page.getByRole('radio', { name: 'List' }).click();
   await expect(page.locator('.groups')).toHaveCount(0);
   await expect(page.locator('a.result-row')).toHaveCount(3);
@@ -216,7 +226,7 @@ test('company member sees only the own company and can switch to German', async 
   // Grouped by test day by default; by customer and as a plain list on request.
   await expect(page.getByTestId('groups-date')).toBeVisible();
   await page.getByRole('radio', { name: 'By customer' }).click();
-  await expect(page.getByTestId('groups-customer').locator('.group-h')).toContainText(['No customer']);
+  await expect(page.getByTestId('groups-customer')).toContainText('Customer A');
   await page.getByRole('radio', { name: 'List' }).click();
   await expect(page.locator('.groups')).toHaveCount(0);
   await expect(page.locator('a.result-row')).toHaveCount(3);
@@ -261,4 +271,72 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await expect(page.getByRole('heading', { name: 'Manual' })).toBeVisible();
   await page.goto('/settings#version');
   await expect(page.getByText('0.2.0').first()).toBeVisible();
+});
+
+test('drag and drop: the drop zone is marked, takes folders and ZIP archives with subfolders', async ({ page }) => {
+  // A folder with subfolders and a ZIP archive with subfolders, as the operating system drags them.
+  const dir = mkdtempSync(join(tmpdir(), 'pam-drop-'));
+  const folder = join(dir, 'Plant');
+  mkdirSync(join(folder, 'Line1', 'M3', 'old'), { recursive: true });
+  copyFileSync(fixture('nxt', 3), join(folder, 'Line1', basename(fixture('nxt', 3))));
+  copyFileSync(fixture('nxt', 4), join(folder, 'Line1', 'M3', basename(fixture('nxt', 4))));
+  copyFileSync(fixture('aimex', 20), join(folder, 'Line1', 'M3', 'old', basename(fixture('aimex', 20))));
+  writeFileSync(join(folder, 'Line1', 'notes.txt'), 'not a PAM file');
+  const zipPath = join(dir, 'archive.zip');
+  writeFileSync(
+    zipPath,
+    zipSync({
+      [`A/${basename(fixture('aimex', 21))}`]: new Uint8Array(readFileSync(fixture('aimex', 21))),
+      [`A/B/C/${basename(fixture('aimex', 22))}`]: new Uint8Array(readFileSync(fixture('aimex', 22))),
+    }),
+  );
+
+  await signIn(page, ADMIN.email, ADMIN.password);
+  const cdp = await page.context().newCDPSession(page);
+  const zone = page.getByTestId('dropzone');
+  await expect(zone).toBeVisible();
+  const drag = async (type: 'dragEnter' | 'dragOver' | 'drop', x: number, y: number, files: string[]) =>
+    cdp.send('Input.dispatchDragEvent', { type, x, y, data: { items: [], files, dragOperationsMask: 1 } });
+  // Files dragged into the window mark the existing drop zone.
+  await drag('dragEnter', 300, 450, [zipPath]);
+  await drag('dragOver', 300, 450, [zipPath]);
+  await expect(zone).toHaveClass(/armed/);
+  await expect(zone).toContainText('Drop the files here');
+  // Dropped next to the zone: nothing is taken, and the browser does not open the file.
+  const url = page.url();
+  await drag('drop', 300, 450, [zipPath]);
+  await expect(zone).not.toHaveClass(/armed/);
+  await expect(page.getByTestId('upload-dialog')).toHaveCount(0);
+  expect(page.url()).toBe(url);
+  // Dropped on the zone: folder and archive with all subfolders.
+  const box = await zone.boundingBox();
+  if (!box) throw new Error('The drop zone is not visible.');
+  for (const type of ['dragEnter', 'dragOver', 'drop'] as const)
+    await drag(type, box.x + box.width / 2, box.y + 40, [folder, zipPath]);
+  // The dialog opens with all files, also those in subfolders.
+  const dialog = page.getByTestId('upload-dialog');
+  await expect(page.getByRole('dialog', { name: 'Upload 4 files' })).toBeVisible();
+  await expect(dialog).toContainText('5 PAM files in total (1 ZIP archive)');
+  await expect(dialog).toContainText('1 other file ignored');
+  await dialog.getByRole('button', { name: 'show list' }).click();
+  await expect(dialog).toContainText(`Plant/Line1/M3/old/${basename(fixture('aimex', 20))}`);
+  await expect(dialog).toContainText('archive.zip · 2 PAM files');
+  // A company typed in full is found without choosing it; one date for all files.
+  await dialog.getByLabel('Company / customer').fill('customer a');
+  await expect(dialog).toContainText('Company in the system');
+  await dialog.locator('input[type=date]').fill('2026-03-14');
+  await expect(dialog.getByRole('radio', { name: /One date for all/ })).toBeChecked();
+  await dialog.getByRole('button', { name: 'Upload', exact: true }).click();
+  const toast = page.getByTestId('upload-toast');
+  await expect(toast).toContainText('5 new results');
+  await toast.getByRole('button', { name: 'Close' }).click();
+
+  // One file: the date of the measurement is filled in from the file; "Skip" uploads without input.
+  await page.locator('input[type=file][accept=".dat,.zip"]').setInputFiles([asUpload(fixture('nxtr', 1))]);
+  await expect(page.getByRole('dialog', { name: 'Upload 1 file' })).toBeVisible();
+  await expect(dialog.getByLabel('Test date')).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+  await expect(dialog.getByLabel('Time')).toHaveValue(/^\d{2}:\d{2}$/);
+  await expect(dialog).toContainText('Taken from the file – can be changed.');
+  await dialog.getByRole('button', { name: 'Skip' }).click();
+  await expect(toast).toContainText('1 new result');
 });
