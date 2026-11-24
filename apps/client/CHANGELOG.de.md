@@ -1,5 +1,11 @@
 # Änderungen der App
 
+## 0.5.0
+
+### Neu
+- **Einstellungen → Diagnose:** Verbunden sendet die App Abstürze, Fehler und Warnungen an den Server (im Web unter Logs & Monitoring), mit Gerät, Version und ihrem Protokoll der letzten Schritte davor; offline warten die Berichte. „Fehlerberichte automatisch senden“ schaltet das ab. **Problem melden** schickt eine eigene Beschreibung mit dem Protokoll. **Protokoll ansehen** zeigt die letzten 200 Einträge. Nie gesendet: PAM-Dateien, Passwörter, Tokens.
+- Die App meldet außerdem, wie viele Dateien noch auf den Upload warten (ab Server 0.12).
+
 ## 0.4.0
 
 ### Neu

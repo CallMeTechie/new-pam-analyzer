@@ -87,6 +87,8 @@ export const devices = sqliteTable(
     tokenHash: text('token_hash').notNull().unique(),
     uploadCount: integer('upload_count').notNull().default(0),
     lastSeenAt: integer('last_seen_at', { mode: 'timestamp_ms' }),
+    /** Files in the app's upload queue, as last reported with its log entries. */
+    queuedFiles: integer('queued_files'),
     disconnectedAt: integer('disconnected_at', { mode: 'timestamp_ms' }),
     createdAt: createdAt(),
   },
@@ -236,29 +238,49 @@ export const settings = sqliteTable('settings', {
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull().default(sql`(unixepoch() * 1000)`),
 });
 
-/** Crash reports of the apps (Android exceptions, Rust panics), sent once the app is connected. */
-export const crashReports = sqliteTable(
-  'crash_reports',
+/**
+ * Logs & Monitoring: one protocol for the server and the connected apps (crashes, errors, warnings,
+ * information and problems reported by users). The same message from the same place within a few
+ * minutes only raises `count`.
+ */
+export const logEntries = sqliteTable(
+  'log_entries',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
+    /** `crash`, `error`, `warning`, `info` or `report` (problem reported by a user). */
+    level: text('level').notNull(),
+    /** `server`, or the platform of the app: `windows`, `android`, `other`. */
+    source: text('source').notNull(),
+    /** Short code of what happened, e.g. `http`, `startup`, `mail`, `login`, `panic`, `upload`. */
+    category: text('category').notNull(),
+    message: text('message').notNull(),
+    /** Stack trace or full report. */
+    details: text('details'),
+    /** The app's log lines before the event (ring buffer). */
+    history: text('history'),
+    /** Further facts as JSON: path, status, free space, queued files … */
+    context: text('context', { mode: 'json' }),
     deviceId: integer('device_id').references(() => devices.id, { onDelete: 'set null' }),
     companyId: integer('company_id').references(() => companies.id, { onDelete: 'set null' }),
-    /** Id the app gave the report, so a resend after a lost answer is not stored twice. */
-    clientId: text('client_id').notNull(),
-    platform: text('platform').notNull(),
+    userId: integer('user_id').references(() => users.id, { onDelete: 'set null' }),
     appVersion: text('app_version'),
     deviceName: text('device_name'),
     /** Model and system version, e.g. "Google Pixel 10 Pro Fold · Android 16". */
     system: text('system'),
-    /** `android` (Java/Kotlin exception) or `panic` (Rust). */
-    kind: text('kind').notNull(),
-    message: text('message').notNull(),
-    report: text('report').notNull(),
+    /** Id the app gave the entry, so a resend after a lost answer is not stored twice. */
+    clientId: text('client_id'),
+    /** Ids of the app's entries counted into this one (`|id|id|`), for the same reason. */
+    mergedIds: text('merged_ids'),
+    /** Same level, source, category and message: equal entries are counted, not repeated. */
+    fingerprint: text('fingerprint').notNull(),
+    count: integer('count').notNull().default(1),
     occurredAt: integer('occurred_at', { mode: 'timestamp_ms' }).notNull(),
+    lastAt: integer('last_at', { mode: 'timestamp_ms' }).notNull(),
     createdAt: createdAt(),
   },
   (t) => [
-    uniqueIndex('crash_reports_client_idx').on(t.deviceId, t.clientId),
-    index('crash_reports_created_idx').on(t.createdAt),
+    uniqueIndex('log_entries_client_idx').on(t.deviceId, t.clientId),
+    index('log_entries_last_idx').on(t.lastAt),
+    index('log_entries_fingerprint_idx').on(t.fingerprint, t.lastAt),
   ],
 );

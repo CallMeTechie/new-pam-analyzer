@@ -12,9 +12,10 @@ import changelogEn from '../../CHANGELOG.md?raw';
 import type { Channel, Theme } from '../lib/types';
 import { useEngine } from '../lib/useEngine';
 import { useUpdates } from '../shell';
+import { Diagnostics } from './Diagnostics';
 import { ServerSettings } from './Server';
 
-const TABS = ['general', 'server', 'coefficients', 'rating', 'manual', 'version'] as const;
+const TABS = ['general', 'server', 'diagnostics', 'coefficients', 'rating', 'manual', 'version'] as const;
 type Tab = (typeof TABS)[number];
 
 function General() {
@@ -233,6 +234,7 @@ export function Settings() {
       </div>
       {tab === 'general' && <General />}
       {tab === 'server' && <ServerSettings />}
+      {tab === 'diagnostics' && <Diagnostics />}
       {tab === 'coefficients' && <Coefficients />}
       {tab === 'rating' && <RatingTab />}
       {tab === 'manual' && (

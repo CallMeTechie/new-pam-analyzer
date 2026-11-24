@@ -12,6 +12,7 @@ apps/client
 │  ├─ shell.tsx         Seitenleiste, Drag & Drop, Update-Dialog
 │  ├─ pages/            Auswertungen, Server, Einstellungen (eigene Seiten der App)
 │  ├─ lib/engine.ts     Import, lokale Historie, Verbindung, Upload-Warteschlange, Updates
+│  ├─ lib/diag.ts       Logs & Monitoring: Protokoll der App (200 Zeilen), wartende Berichte, „Problem melden“
 │  ├─ lib/evaluate.ts   Auswertung wie auf dem Server (gleicher Parser, gleiche Optionen)
 │  ├─ lib/store.ts      Lokale Daten: SQLite (Tauri) oder Speicher (Vorschau, Tests)
 │  ├─ lib/transport.ts  Beantwortet die API-Aufrufe der übernommenen Web-Seiten lokal

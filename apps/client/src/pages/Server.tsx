@@ -3,6 +3,7 @@ import { Field, Notice } from '@web/components/ui';
 import { useI18n } from '@web/i18n';
 import { useEffect, useState } from 'react';
 import { reasonText, UploadChip } from '../components';
+import { diag } from '../lib/diag';
 import { ServerError } from '../lib/engine';
 import { useEngine } from '../lib/useEngine';
 
@@ -77,6 +78,7 @@ function ConnectForm() {
     } catch (e) {
       // The reason helps when the scanner of Google Play services is missing or cannot be installed.
       const reason = e instanceof Error ? e.message : String(e);
+      diag.error('qr', e);
       setScanError(`${t('client.connect.scannerFailed')} (${reason})`);
       return;
     } finally {

@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import { currentUser, requireAdmin, requireAuth } from '../auth/middleware.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
+import { serverLog } from '../services/logs.js';
 import { getMailSettings, mailConfig, mailSettingsSchema, sendTestMail, setMailSettings } from '../services/mail.js';
 import {
   coefficientConfigSchema,
@@ -74,7 +75,9 @@ settingsRoutes.post('/mail/test', async (c) => {
   try {
     await sendTestMail(smtp, body.to ?? me.email);
   } catch (error) {
-    throw new HttpError(502, 'mail_failed', error instanceof Error ? error.message : String(error));
+    const message = error instanceof Error ? error.message : String(error);
+    serverLog(c.get('db'), 'warning', 'mail', `Test e-mail not delivered: ${message}`, { userId: me.id });
+    throw new HttpError(502, 'mail_failed', message);
   }
   return c.json({ sent: true, to: body.to ?? me.email });
 });

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.12.0 – 2026-11-24
+
+### Changed
+- **Logs & Monitoring instead of crash reports** (Settings): for debugging the server and the apps.
+  - **Monitoring:** server and uptime, database size and free space, uploads and errors of the last 24 hours, connected apps and their versions, mail server, files still waiting in the apps; refreshes every 30 seconds.
+  - **Protocol** of the server and the connected apps: filters by source, level, period, company and text, live updates. Each entry opens with stack trace, the app's log before the event and how often the same message came; copy, download, all entries of the device, delete. Export as JSON Lines.
+  - **The server logs** unexpected errors (status 500, with stack trace), start and migrations, e-mails not delivered, locked accounts, little free space, changed settings and unreadable uploaded files.
+  - Equal messages are counted, not repeated; at most 100 entries per device and hour; entries are kept 30 days (Settings → Security & data). The crash reports so far are taken over.
+
+### Added
+- `POST /api/app/logs` (apps: errors, warnings, problem reports, upload queue), `GET/DELETE /api/logs`, `GET /api/logs/:id`, `GET /api/logs/export`, `GET /api/monitoring`; `logRetentionDays` in the general settings.
+
+### Removed
+- `GET/DELETE /api/crash-reports` (now `/api/logs?level=crash`); `POST /api/app/crash-reports` stays for older apps.
+
 ## 0.11.1 – 2026-11-24
 
 ### Changed

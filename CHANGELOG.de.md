@@ -1,5 +1,20 @@
 # Änderungen
 
+## 0.12.0 – 24.11.2026
+
+### Geändert
+- **Logs & Monitoring statt Absturzberichte** (Einstellungen): zum Debuggen des Servers und der Apps.
+  - **Monitoring:** Server und Laufzeit, Größe der Datenbank und freier Speicher, Uploads und Fehler der letzten 24 Stunden, verbundene Apps und ihre Versionen, Mailserver, Dateien, die in den Apps noch warten; aktualisiert sich alle 30 Sekunden.
+  - **Protokoll** des Servers und der verbundenen Apps: Filter nach Quelle, Stufe, Zeitraum, Firma und Text, Live-Aktualisierung. Jeder Eintrag öffnet sich mit Stacktrace, dem Protokoll der App vor dem Ereignis und wie oft dieselbe Meldung kam; kopieren, herunterladen, alle Einträge des Geräts, löschen. Export als JSON Lines.
+  - **Der Server protokolliert** unerwartete Fehler (Status 500, mit Stacktrace), Start und Migrationen, nicht zugestellte E-Mails, gesperrte Konten, wenig freien Speicher, geänderte Einstellungen und unlesbare hochgeladene Dateien.
+  - Gleiche Meldungen werden gezählt statt wiederholt; höchstens 100 Einträge je Gerät und Stunde; Einträge bleiben 30 Tage (Einstellungen → Sicherheit & Daten). Die bisherigen Absturzberichte werden übernommen.
+
+### Neu
+- `POST /api/app/logs` (Apps: Fehler, Warnungen, gemeldete Probleme, Upload-Warteschlange), `GET/DELETE /api/logs`, `GET /api/logs/:id`, `GET /api/logs/export`, `GET /api/monitoring`; `logRetentionDays` in den allgemeinen Einstellungen.
+
+### Entfernt
+- `GET/DELETE /api/crash-reports` (jetzt `/api/logs?level=crash`); `POST /api/app/crash-reports` bleibt für ältere Apps.
+
 ## 0.11.1 – 24.11.2026
 
 ### Geändert

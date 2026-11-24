@@ -10,6 +10,7 @@ import './app.css';
 import '@web/skin-d.css';
 import './skin-d.css';
 import { App } from './App';
+import { captureGlobalErrors } from './lib/diag';
 import { Engine } from './lib/engine';
 import { localTransport } from './lib/transport';
 import { EngineContext, useEngine } from './lib/useEngine';
@@ -46,6 +47,7 @@ function Gate() {
 }
 
 async function start() {
+  captureGlobalErrors();
   const platform = await createPlatform();
   const engine = new Engine(platform);
   if (platform.formFactor === 'mobile') document.documentElement.dataset.mobile = '';

@@ -3,6 +3,7 @@ import type { ServerConfig } from '../config.js';
 import type { Db } from '../db/index.js';
 import { companies, users } from '../db/schema.js';
 import { HttpError } from '../http.js';
+import { serverLog } from '../services/logs.js';
 import { verifyPassword } from './crypto.js';
 
 /** Hash of a random password, so unknown e-mail addresses take as long as wrong passwords. */
@@ -50,6 +51,17 @@ export async function checkCredentials(db: Db, config: ServerConfig, email: stri
       })
       .where(eq(users.id, row.id))
       .run();
+    if (lock)
+      serverLog(
+        db,
+        'warning',
+        'login',
+        `Account locked for ${config.loginLockMinutes} minutes after ${failed} failed sign-ins`,
+        {
+          userId: row.id,
+          context: { lockedMinutes: config.loginLockMinutes },
+        },
+      );
     throw invalid();
   }
   if (row.disabledAt || row.companyDisabledAt) throw invalid();

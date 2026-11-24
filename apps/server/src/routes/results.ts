@@ -52,7 +52,7 @@ export function scopeFilter(companyId: number | null): SQL | undefined {
   return companyId === null ? undefined : eq(results.companyId, companyId);
 }
 
-const escapeLike = (term: string) => term.replace(/[\\%_]/g, (ch) => `\\${ch}`);
+export const escapeLike = (term: string) => term.replace(/[\\%_]/g, (ch) => `\\${ch}`);
 
 /** Every search term must match one of the identifying fields. */
 function searchFilter(q: string): SQL | undefined {

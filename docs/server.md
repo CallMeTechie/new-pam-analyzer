@@ -147,6 +147,11 @@ Zustandsändernde Anfragen mit Sitzungs-Cookie müssen vom eigenen Ursprung komm
 | `GET /api/devices`, `POST /api/devices/connect-code`, `DELETE /api/devices/:id` | Eigene Geräte (oder `?companyId=` die der Firma), Code für ein weiteres Gerät, Gerät trennen |
 | `PUT /api/companies/:id/device-limit` | Geräte je Benutzer einer Firma (`null`: Standard) |
 | `POST /api/app/connect`, `GET /api/app/config`, `DELETE /api/app/connection` | Für die Apps: Verbinden, Koeffizienten, Bewertungsgrenzen und Zeitzone der Maschinen, Trennen ([App](app.md)) |
+| `POST /api/app/logs` | Für die Apps: Abstürze, Fehler, Warnungen und „Problem melden“ (`entries`, je mit eigener `id`) und die Zahl wartender Dateien (`state.queued`); Antwort `accepted` = löschbare ids. Höchstens 100 Einträge je Gerät und Stunde werden gespeichert. `POST /api/app/crash-reports` (ältere Apps) landet im selben Protokoll |
+| `GET /api/logs` | Logs & Monitoring (Administratoren): Filter `source` (`server`, `windows`, `android`, `other`, `apps`), `level` (`crash`, `error`, `warning`, `info`, `report`), `from`, `to`, `companyId`, `deviceId`, `q`; dazu Zahl je Stufe und Aufbewahrung |
+| `GET /api/logs/:id`, `DELETE /api/logs/:id`, `DELETE /api/logs` | Ein Eintrag mit Stacktrace, Verlauf der App, Kontext und Häufigkeit; löschen; Protokoll leeren (`?deviceId=` nur ein Gerät) |
+| `GET /api/logs/export` | Alles, was dem Filter entspricht, als JSON Lines (`.jsonl`) |
+| `GET /api/monitoring` | Laufzeit und Version, Größe der Datenbank und freier Speicher, Uploads und Probleme der letzten 24 Stunden, verbundene Apps und Versionen, Mailserver, Warteschlangen der Apps |
 | `POST /api/uploads` | Dateien hochladen |
 | `GET /api/results` | Liste mit Suche `q` (auch Kunde), Filtern `family`, `rating`, `from`, `to`, `machineNo`, `companyId`, Sortierung und Seiten |
 | `GET /api/results/customers` | Bisher verwendete Kunden (Suche `q`, `companyId`), zuletzt geprüfte zuerst |
@@ -172,3 +177,22 @@ Werkzeug-Seriennummer, Dateiname, Linie oder Firmenname vorkommen.
 Jede Änderung der Koeffizienten wird als neue Version gespeichert. Ergebnisse merken sich die
 Version, mit der sie ausgewertet wurden, und werden in der Detailansicht mit genau dieser Version
 neu berechnet. Neue Uploads verwenden die aktuelle Version.
+
+## Logs & Monitoring
+
+Ein Protokoll (`log_entries`) für Server und Apps; ersetzt die früheren Absturzberichte (werden
+bei der Migration übernommen). Der Server schreibt:
+
+| Stufe | Kategorie | Wann |
+|---|---|---|
+| Fehler | `http`, `process` | unerwarteter Fehler einer Anfrage (Status 500, mit Pfad, Benutzer, Stacktrace); nicht abgefangene Fehler des Prozesses |
+| Warnung | `mail` | Einladung oder Test-E-Mail nicht zugestellt |
+| Warnung | `login` | Konto nach zu vielen falschen Anmeldungen gesperrt |
+| Warnung | `disk` | weniger als 1 GB frei im Datenordner (höchstens einmal am Tag) |
+| Warnung | `upload` | Dateien eines Uploads nicht lesbar (Namen und Gründe) |
+| Info | `startup`, `settings` | Start mit Version und ausgeführten Migrationen, Stopp; Einstellung geändert (nur der Name, nie der Wert) |
+
+Gleiche Meldungen (Zahlen und Ids zählen nicht) vom selben Gerät innerhalb von 10 Minuten erhöhen
+nur den Zähler. Einträge werden nach `logRetentionDays` (Einstellungen → Sicherheit & Daten,
+Standard 30 Tage) stündlich gelöscht. Inhalte von PAM-Dateien, Passwörter und Tokens landen nie
+im Protokoll.

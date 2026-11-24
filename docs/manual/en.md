@@ -68,7 +68,8 @@ The rating is based on the spread of all components of a holder, not on each com
 - **Rating**: thresholds of the four rating levels.
 - **Languages**: export a language file, translate it and import it again. Missing texts appear in English.
 - **E-mail**: mail server (SMTP) for sending invitations, with a test e-mail. Settings made here win over the environment variables `SMTP_*`; the password is never shown again.
-- **Security & data**: default number of devices per member (a company can set its own limit under Team).
+- **Security & data**: default number of devices per member (a company can set its own limit under Team), how many days log entries are kept (default 30).
+- **Logs & Monitoring**: for debugging the server and the apps. Above, the state: server and uptime, storage, uploads and errors of the last 24 hours, connected apps and their versions, mail server, files still waiting in the apps. Below, the protocol of the server (unexpected errors, start, mail not delivered, locked accounts, little space, changed settings, unreadable files) and of the connected apps (crashes, errors, warnings, problems reported in the app) – filter by source, level, period, company and text. An entry opens with stack trace, the app's log before it and how often the same message came; copy, download, show all of the device, delete. Export as `.jsonl`.
 - **Version**: installed version and changes.
 
 ## Operation

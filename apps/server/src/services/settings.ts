@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Db } from '../db/index.js';
 import { resultShafts, results, settings } from '../db/schema.js';
+import { serverLog } from './logs.js';
 
 export interface VersionedConfig {
   /** `default` for the built-in values, otherwise the ISO time of the change. */
@@ -46,6 +47,8 @@ function write(db: Db, key: string, value: unknown, userId: number | null): void
     .values({ key, value, updatedBy: userId, updatedAt })
     .onConflictDoUpdate({ target: settings.key, set: { value, updatedBy: userId, updatedAt } })
     .run();
+  // Who changed what (only the name: values may hold secrets such as the mail password).
+  if (userId !== null) serverLog(db, 'info', 'settings', `Setting "${key}" changed`, { userId, context: { key } });
 }
 
 export function getCoefficientConfig(db: Db): VersionedConfig {
@@ -68,18 +71,22 @@ export function setCoefficientConfig(db: Db, config: CoefficientConfig, userId: 
 }
 
 export const generalSettingsSchema = z.object({
-  /** Proposed maximum number of devices for a new API key. */
   /** Devices (apps) per user, unless the company sets its own limit. */
   maxDevicesPerUser: z.number().int().min(1).max(100),
+  /** Days the entries of Logs & Monitoring are kept. */
+  logRetentionDays: z.number().int().min(1).max(365).default(30),
 });
 export type GeneralSettings = z.infer<typeof generalSettingsSchema>;
 
 const GENERAL = 'general';
-export const DEFAULT_GENERAL: GeneralSettings = { maxDevicesPerUser: 3 };
+export const DEFAULT_GENERAL: GeneralSettings = { maxDevicesPerUser: 3, logRetentionDays: 30 };
 
 export function getGeneralSettings(db: Db): GeneralSettings {
   const stored = read<Partial<GeneralSettings> & { defaultMaxConnections?: number }>(db, GENERAL) ?? {};
-  return { maxDevicesPerUser: stored.maxDevicesPerUser ?? DEFAULT_GENERAL.maxDevicesPerUser };
+  return {
+    maxDevicesPerUser: stored.maxDevicesPerUser ?? DEFAULT_GENERAL.maxDevicesPerUser,
+    logRetentionDays: stored.logRetentionDays ?? DEFAULT_GENERAL.logRetentionDays,
+  };
 }
 
 export function setGeneralSettings(db: Db, value: GeneralSettings, userId: number): GeneralSettings {

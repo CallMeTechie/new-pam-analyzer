@@ -1,5 +1,11 @@
 # Changelog of the app
 
+## 0.5.0
+
+### Added
+- **Settings → Diagnostics:** when connected, the app sends crashes, errors and warnings to the server (Logs & Monitoring on the web), with device, version and its log of the last steps before; offline the reports wait. "Send error reports automatically" switches this off. **Report a problem** sends your own description with the log. **View log** shows the last 200 entries. Never sent: PAM files, passwords, tokens.
+- The app also reports how many files still wait for the upload (server 0.12 or later).
+
 ## 0.4.0
 
 ### Added

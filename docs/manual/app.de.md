@@ -57,6 +57,7 @@ Jedes Ergebnis zeigt seinen Stand: **Hochgeladen**, **Warteschlange**, **Nur auf
 
 - **Allgemein**: Sprache, Darstellung (Hell, Dunkel oder wie im System), Update-Kanal, Speicherort der Daten.
 - **Server**: verbinden, Warteschlange, trennen.
+- **Diagnose**: Verbunden sendet die App Abstürze, Fehler und Warnungen an den Server (im Web unter Logs & Monitoring), mit Gerät, Version und den letzten Schritten davor. „Fehlerberichte automatisch senden“ schaltet das ab. **Problem melden** schickt eine eigene Beschreibung mit dem Protokoll der App – auch später, wenn die App gerade offline ist. **Protokoll ansehen** zeigt die letzten 200 Einträge. Nie gesendet: PAM-Dateien, Passwörter, Tokens.
 - **Koeffizienten** und **Bewertung**: nur zum Ansehen. Verbunden kommen sie vom Server, sonst gelten die Standardwerte.
 - **Handbuch** und **Version** (Änderungsliste der App).
 

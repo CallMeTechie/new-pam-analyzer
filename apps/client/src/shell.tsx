@@ -6,6 +6,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useR
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { AssignDialog } from './assign';
 import { ConnectionCard, reasonText } from './components';
+import { diag } from './lib/diag';
 import type { ImportProgress } from './lib/engine';
 import type { InputFile } from './lib/evaluate';
 import { useLayout, usePosture, useTheme } from './lib/layout';
@@ -157,8 +158,11 @@ function UpdateProvider({ children }: { children: ReactNode }) {
       try {
         const update = await engine.checkUpdate();
         if (update) setDialog(true);
-      } catch {
-        if (manual) setError(true);
+      } catch (e) {
+        if (manual) {
+          diag.warn('update', `Update check failed: ${e instanceof Error ? e.message : String(e)}`);
+          setError(true);
+        }
       } finally {
         setChecking(false);
       }
@@ -183,6 +187,7 @@ function UpdateProvider({ children }: { children: ReactNode }) {
       setInstalling(false);
       if (e instanceof Error && e.message === 'install_permission') setNeedsPermission(true);
       else {
+        diag.error('update', e);
         setError(true);
         setDialog(false);
       }

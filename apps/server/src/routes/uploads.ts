@@ -7,6 +7,7 @@ import { companies } from '../db/schema.js';
 import { type AppEnv, HttpError, notFound } from '../http.js';
 import { expandUpload, MAX_FILES, type SkippedFile, type UploadFile, zonedTime } from '../services/archive.js';
 import { cleanCustomer, cleanTestDate, type IngestOutcome, ingestFile } from '../services/ingest.js';
+import { serverLog } from '../services/logs.js';
 import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 export const uploadRoutes = new Hono<AppEnv>();
@@ -111,6 +112,23 @@ uploadRoutes.post(
     };
     const results: IngestOutcome[] = expanded.map((file) => ingestFile(db, file, ctx));
     const created = results.filter((r) => r.status === 'created').length;
+    const rejected = results.filter((r) => r.status === 'rejected');
+    if (rejected.length) {
+      const names = rejected.slice(0, 5).map((r) => `${r.fileName} (${r.reason ?? 'unreadable'})`);
+      serverLog(
+        db,
+        'warning',
+        'upload',
+        `${rejected.length} file(s) not readable: ${names.join(', ')}${rejected.length > 5 ? ', …' : ''}`,
+        {
+          userId: auth.user.id,
+          companyId,
+          deviceId: auth.kind === 'device' ? auth.device.id : null,
+          context: { rejected: rejected.length, files: rejected.slice(0, 50).map((r) => [r.fileName, r.reason]) },
+          mergeWithinMs: 0,
+        },
+      );
+    }
     if (auth.kind === 'device') countDeviceUploads(db, auth.device.id, created);
 
     return c.json({
