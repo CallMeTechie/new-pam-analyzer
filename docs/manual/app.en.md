@@ -57,6 +57,7 @@ Every result shows its state: **Uploaded**, **Waiting for upload**, **Only on th
 
 - **General**: language, appearance (light, dark or like the system), update channel, location of the data.
 - **Server**: connect, upload queue, disconnect.
+- **Diagnostics**: when connected, the app sends crashes, errors and warnings to the server (Logs & Monitoring on the web), with device, version and the last steps before. "Send error reports automatically" switches this off. **Report a problem** sends your own description with the app's log – also later, if the app is offline now. **View log** shows the last 200 entries. Never sent: PAM files, passwords, tokens.
 - **Coefficients** and **Rating**: read only. Connected they come from the server, otherwise the defaults apply.
 - **Manual** and **Version** (changelog of the app).
 

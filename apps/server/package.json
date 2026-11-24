@@ -1,6 +1,6 @@
 {
   "name": "@pam/server",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "PAM Analyzer server: API, storage and web delivery",
   "private": true,
   "type": "module",

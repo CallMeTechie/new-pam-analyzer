@@ -267,6 +267,23 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await expect(page.getByRole('link', { name: 'Résultats' })).toBeVisible();
   await page.locator('.footer .lang-switch select').selectOption('en');
 
+  // Logs & Monitoring (old links to the crash reports lead there).
+  await page.goto('/settings#crashes');
+  await expect(page.getByRole('tab', { name: 'Logs & Monitoring' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('monitoring')).toContainText('running');
+  await expect(page.getByTestId('monitoring')).toContainText('Connected apps');
+  await page.getByRole('button', { name: /^Info \d/ }).click();
+  const table = page.getByTestId('log-table');
+  await expect(table).toContainText('Setting "rating" changed');
+  await table
+    .getByRole('button', { name: /Setting "rating" changed/ })
+    .first()
+    .click();
+  await expect(page.getByTestId('log-detail')).toContainText('settings');
+  await page.getByLabel('Period').selectOption('day');
+  await page.getByRole('searchbox', { name: 'Search: message, device, user …' }).fill('no such message');
+  await expect(page.getByText('No entries for this filter.')).toBeVisible();
+
   await page.goto('/settings#manual');
   await expect(page.getByRole('heading', { name: 'Manual' })).toBeVisible();
   await page.goto('/settings#version');

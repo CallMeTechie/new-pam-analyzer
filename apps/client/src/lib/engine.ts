@@ -1,5 +1,6 @@
 import { type CoefficientConfig, CPK_THRESHOLDS, type CpkThresholds, DEFAULT_CONFIG } from '@pam/core';
 import type { Platform, UpdateInfo } from '../platform/types';
+import { diag } from './diag';
 import {
   analyze,
   evaluate,
@@ -124,7 +125,16 @@ export class Engine {
   private timer: ReturnType<typeof setTimeout> | null = null;
   private syncRunning: Promise<void> | null = null;
 
-  constructor(readonly platform: Platform) {}
+  private logTimer: ReturnType<typeof setTimeout> | null = null;
+
+  constructor(readonly platform: Platform) {
+    diag.appVersion = platform.version;
+    // A new report goes out a few seconds later when connected (several errors in one go).
+    diag.onQueued = () => {
+      if (this.logTimer) clearTimeout(this.logTimer);
+      this.logTimer = setTimeout(() => void this.sendLogs(), 3000);
+    };
+  }
 
   get snapshot(): EngineState {
     return this.state;
@@ -142,6 +152,7 @@ export class Engine {
   }
 
   async init(): Promise<void> {
+    diag.info('app', `Started ${this.platform.version} (${this.platform.os})`);
     const [rows, config, connection, channel, locale, theme] = await Promise.all([
       this.store.all(),
       this.store.setting<EvalConfig>('config'),
@@ -208,6 +219,7 @@ export class Engine {
       const result = evaluate(file, this.state.config, importedAt);
       if (!result.ok) {
         summary.rejected.push({ name: file.name, reason: result.reason });
+        diag.warn('file', `File not readable: ${file.name} (${result.reason})`);
         continue;
       }
       const row: Omit<LocalResult, 'id'> = {
@@ -228,6 +240,10 @@ export class Engine {
       summary.created.push(await this.store.insert(row, file.bytes));
     }
     onProgress?.({ done: files.length, total: files.length, name: '' });
+    diag.info(
+      'import',
+      `${files.length} file(s): ${summary.created.length} new, ${summary.duplicates.length} known, ${summary.rejected.length} not readable`,
+    );
     this.set({ rows: await this.store.all() });
     if (queued && summary.created.length) void this.sync();
     return summary;
@@ -360,6 +376,7 @@ export class Engine {
       thresholds: res.cpkThresholds,
       ...(res.timeZone ? { timeZone: res.timeZone } : {}),
     });
+    diag.info('connection', `Connected to ${server} as ${res.userName} (${res.companyName})`);
     void this.sync();
   }
 
@@ -374,6 +391,7 @@ export class Engine {
     await this.store.setSetting('connection', null);
     for (const r of this.state.rows) if (r.upload === 'queued') await this.store.update(r.id, { upload: 'local' });
     if (this.timer) clearTimeout(this.timer);
+    diag.info('connection', 'Disconnected');
     this.set({ connection: null, server: 'off', rows: await this.store.all() });
   }
 
@@ -455,6 +473,7 @@ export class Engine {
             });
           } else {
             await this.store.update(r.id, { upload: 'rejected', uploadError: outcome?.reason ?? 'unreadable' });
+            diag.warn('upload', `File not accepted by the server: ${r.fileName} (${outcome?.reason ?? 'unreadable'})`);
           }
         }
         this.set({ rows: await this.store.all() });
@@ -475,6 +494,7 @@ export class Engine {
       }
       this.set({ rows: await this.store.all() });
       await this.sendCrashReports();
+      await this.sendLogs();
       const updated = { ...connection, lastSyncAt: Date.now() };
       await this.store.setSetting('connection', updated);
       this.set({ connection: updated, server: 'online' });
@@ -482,8 +502,15 @@ export class Engine {
     } catch (error) {
       if (error instanceof ServerError && error.status === 401) {
         // Token revoked or device removed by the administrator.
+        diag.warn('connection', 'The server disconnected this device');
         this.set({ server: 'revoked' });
       } else {
+        if (this.state.server !== 'offline') {
+          const waiting = this.state.rows.filter((r) => r.upload === 'queued').length;
+          diag.warn('connection', `Server not reachable – ${waiting} file(s) waiting`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
         this.set({ server: 'offline' });
         this.schedule(RETRY_MS);
       }
@@ -505,6 +532,29 @@ export class Engine {
       }
     } catch {
       // Not important enough to mark the connection as offline.
+    }
+  }
+
+  /**
+   * Reports of Logs & Monitoring go to the server when connected, with the number of files still
+   * waiting for upload; a failure keeps them for the next try.
+   */
+  async sendLogs(): Promise<void> {
+    if (!this.state.connection || this.state.server === 'revoked') return;
+    const queued = this.state.rows.filter((r) => r.upload === 'queued').length;
+    try {
+      let entries = diag.take(50);
+      do {
+        const { accepted } = await this.call<{ accepted: string[] }>('/app/logs', {
+          method: 'POST',
+          json: { entries, state: { queued } },
+        });
+        diag.ack(accepted);
+        if (!accepted.length) break;
+        entries = diag.take(50);
+      } while (entries.length);
+    } catch {
+      // Offline or the server is older: the reports wait.
     }
   }
 

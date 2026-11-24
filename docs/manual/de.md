@@ -68,7 +68,8 @@ Ein Klick auf **Kopf-Historie** im Ergebnis zeigt alle Prüfungen desselben Kopf
 - **Bewertung**: Grenzen der vier Bewertungsstufen.
 - **Sprachen**: Sprachdatei exportieren, übersetzen und wieder importieren. Fehlende Texte erscheinen auf Englisch.
 - **E-Mail**: Mailserver (SMTP) für den Versand der Einladungen, mit Test-E-Mail. Was hier eingetragen ist, gilt vor den Umgebungsvariablen `SMTP_*`; das Passwort wird nie wieder angezeigt.
-- **Sicherheit & Daten**: Standard für die Zahl der Geräte je Mitglied (eine Firma kann im Team eine eigene Grenze setzen).
+- **Sicherheit & Daten**: Standard für die Zahl der Geräte je Mitglied (eine Firma kann im Team eine eigene Grenze setzen), wie viele Tage Protokolleinträge aufbewahrt werden (Standard 30).
+- **Logs & Monitoring**: zum Debuggen des Servers und der Apps. Oben der Zustand: Server und Laufzeit, Speicher, Uploads und Fehler der letzten 24 Stunden, verbundene Apps und ihre Versionen, Mailserver, Dateien, die in den Apps noch warten. Darunter das Protokoll des Servers (unerwartete Fehler, Start, nicht zugestellte E-Mails, gesperrte Konten, wenig Speicher, geänderte Einstellungen, unlesbare Dateien) und der verbundenen Apps (Abstürze, Fehler, Warnungen, in der App gemeldete Probleme) – filterbar nach Quelle, Stufe, Zeitraum, Firma und Text. Ein Eintrag öffnet sich mit Stacktrace, dem Protokoll der App davor und wie oft dieselbe Meldung kam; kopieren, herunterladen, alle des Geräts zeigen, löschen. Export als `.jsonl`.
 - **Version**: installierte Version und Änderungen.
 
 ## Betrieb

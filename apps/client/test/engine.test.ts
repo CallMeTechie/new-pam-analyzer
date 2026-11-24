@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 // The real server, in-process: the app talks to it exactly like over the network.
 import { ADMIN, PASSWORD, setup } from '../../server/test/helpers';
+import { diag } from '../src/lib/diag';
 import { Engine, normalizeServer } from '../src/lib/engine';
 import { localTransport } from '../src/lib/transport';
 import type { HttpRequest } from '../src/platform/types';
@@ -123,13 +124,39 @@ describe('Engine', () => {
     await connect();
     await engine.sync();
     expect(stored).toEqual([]);
-    const list = (await admin.json('GET', '/api/crash-reports')).body;
+    const list = (await admin.json('GET', '/api/logs?level=crash')).body;
     expect(list.items).toHaveLength(1);
     expect(list.items[0]).toMatchObject({
-      kind: 'android',
+      level: 'crash',
+      category: 'android',
       deviceName: 'PC 1',
       message: 'java.lang.IllegalStateException: boom',
     });
+  });
+
+  it('keeps reports while offline and sends them with the log before them once connected', async () => {
+    const { engine, admin, connect, setOnline } = await world();
+    await connect();
+    setOnline(false);
+    await engine.importFiles([fixture('nxtr', 1)]);
+    await engine.sync();
+    diag.report('Upload stops at 80 %', { history: true, device: true, context: { results: 1 } });
+    expect(diag.snapshot().pending).toBeGreaterThanOrEqual(2);
+    await engine.sendLogs();
+    expect(diag.snapshot().pending).toBeGreaterThanOrEqual(2);
+    setOnline(true);
+    await engine.sync();
+    expect(diag.snapshot().pending).toBe(0);
+    const list = (await admin.json('GET', '/api/logs?source=apps&level=warning,report')).body;
+    const warning = list.items.find((i: { category: string }) => i.category === 'connection');
+    expect(warning.message).toBe('Server not reachable – 1 file(s) waiting');
+    const report = list.items.find((i: { level: string }) => i.level === 'report');
+    expect(report).toMatchObject({ message: 'Upload stops at 80 %', hasHistory: true });
+    const detail = (await admin.json('GET', `/api/logs/${report.id}`)).body.entry;
+    expect(detail.history).toMatch(/Server not reachable/);
+    expect(detail.context).toEqual({ results: 1 });
+    // The app also told the server how many files wait (none now).
+    expect((await admin.json('GET', '/api/monitoring')).body.queues).toEqual({ files: 0, devices: 0 });
   });
 
   it('keeps files in the queue while the server cannot be reached', async () => {

@@ -14,6 +14,8 @@ export const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.m
 export interface Database_ {
   db: Db;
   sqlite: Database.Database;
+  /** Migrations applied while opening (0: the database was up to date). */
+  migrated: number;
   close(): void;
 }
 
@@ -28,11 +30,20 @@ export function openDatabase(file: string, migrationsFolder = MIGRATIONS_FOLDER)
   // Migrations that rebuild a table (drop + rename) must not cascade into the tables that point
   // at it; the migrator runs in a transaction, where PRAGMA foreign_keys has no effect.
   sqlite.pragma('foreign_keys = OFF');
+  const applied = () => {
+    try {
+      return (sqlite.prepare('select count(*) as n from __drizzle_migrations').get() as { n: number }).n;
+    } catch {
+      return 0;
+    }
+  };
+  const before = applied();
   migrate(db, { migrationsFolder });
+  const migrated = applied() - before;
   const broken = sqlite.pragma('foreign_key_check') as unknown[];
   if (broken.length > 0) throw new Error(`Database migration left ${broken.length} broken references.`);
   sqlite.pragma('foreign_keys = ON');
-  return { db, sqlite, close: () => sqlite.close() };
+  return { db, sqlite, migrated, close: () => sqlite.close() };
 }
 
 export { schema };

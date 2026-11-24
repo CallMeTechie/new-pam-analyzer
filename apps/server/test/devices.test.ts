@@ -1,6 +1,7 @@
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { sql } from 'drizzle-orm';
 import { describe, expect, it } from 'vitest';
 import { MIGRATIONS_FOLDER, openDatabase } from '../src/db/index.js';
 import { ADMIN, fixture, PASSWORD, setup } from './helpers.js';
@@ -169,7 +170,7 @@ describe('Geräteverbindungen', () => {
   });
 });
 
-describe('Absturzberichte', () => {
+describe('Logs & Monitoring', () => {
   const report = (id: string) => ({
     id,
     kind: 'android',
@@ -179,28 +180,146 @@ describe('Absturzberichte', () => {
     message: 'java.lang.IllegalStateException: boom',
     report: 'java.lang.IllegalStateException: boom\n\tat app.Main.run(Main.kt:1)',
   });
+  const entry = (id: string, extra: Record<string, unknown> = {}) => ({
+    id,
+    level: 'error',
+    category: 'js',
+    message: 'TypeError: x is undefined',
+    details: 'at render (app.js:10)',
+    history: '09:41:02 INFO QR scanner started',
+    occurredAt: Date.now(),
+    appVersion: '0.5.0',
+    system: 'Windows 11',
+    ...extra,
+  });
 
-  it('verbundene Apps senden Berichte; Doppelte zählen einmal; nur Administratoren sehen sie', async () => {
-    const { t, admin, bossA, deviceCode } = await world();
-    const app = t.client();
-    expect((await app.json('POST', '/api/app/crash-reports', { reports: [report('r1')] })).status).toBe(401);
-    app.setToken((await app.json('POST', '/api/app/connect', device(await deviceCode()))).body.token);
+  async function connected() {
+    const w = await world();
+    const app = w.t.client();
+    app.setToken((await app.json('POST', '/api/app/connect', device(await w.deviceCode()))).body.token);
+    return { ...w, app };
+  }
+
+  it('Absturzberichte älterer App-Versionen landen im Protokoll; Doppelte zählen einmal', async () => {
+    const { t, admin, bossA, app } = await connected();
+    expect((await t.client().json('POST', '/api/app/crash-reports', { reports: [report('r1')] })).status).toBe(401);
     const sent = await app.json('POST', '/api/app/crash-reports', { reports: [report('r1'), report('r2')] });
     expect(sent.body.accepted).toEqual(['r1', 'r2']);
     await app.json('POST', '/api/app/crash-reports', { reports: [report('r1')] });
 
-    expect((await bossA.json('GET', '/api/crash-reports')).status).toBe(403);
-    const list = await admin.json('GET', '/api/crash-reports');
+    expect((await bossA.json('GET', '/api/logs')).status).toBe(403);
+    const list = await admin.json('GET', '/api/logs?level=crash');
     expect(list.body.total).toBe(2);
     expect(list.body.items[0]).toMatchObject({
-      platform: 'android',
+      level: 'crash',
+      source: 'android',
+      category: 'android',
       deviceName: 'Tablet line 3',
       companyName: 'Customer A',
-      kind: 'android',
+      userName: 'worker',
       appVersion: '0.4.0-beta.2',
+      hasDetails: true,
     });
-    expect((await admin.req('DELETE', `/api/crash-reports/${list.body.items[0].id}`)).status).toBe(204);
-    expect((await admin.json('GET', '/api/crash-reports')).body.total).toBe(1);
+    expect((await admin.req('DELETE', `/api/logs/${list.body.items[0].id}`)).status).toBe(204);
+    expect((await admin.json('GET', '/api/logs?level=crash')).body.total).toBe(1);
+  });
+
+  it('Apps senden Fehler, Warnungen und Berichte mit Verlauf; gleiche Meldungen werden gezählt', async () => {
+    const { admin, app, a } = await connected();
+    const sent = await app.json('POST', '/api/app/logs', {
+      entries: [
+        entry('e1'),
+        entry('e2', { message: 'TypeError: x is undefined' }),
+        entry('e3', { level: 'warning', category: 'connection', message: 'Server not reachable – 4 files queued' }),
+        entry('e4', { level: 'report', category: 'user', message: 'Upload stops at 80 %' }),
+      ],
+      state: { queued: 4 },
+    });
+    expect(sent.body.accepted).toEqual(['e1', 'e2', 'e3', 'e4']);
+    // A resend after a lost answer changes nothing.
+    await app.json('POST', '/api/app/logs', { entries: [entry('e1')] });
+
+    const all = await admin.json('GET', '/api/logs?source=apps');
+    expect(all.body.total).toBe(3);
+    expect(all.body.levels).toEqual({ error: 1, warning: 1, report: 1 });
+    const error = all.body.items.find((i: { level: string }) => i.level === 'error');
+    expect(error).toMatchObject({ count: 2, source: 'android', companyName: 'Customer A', system: 'Windows 11' });
+    const detail = await admin.json('GET', `/api/logs/${error.id}`);
+    expect(detail.body.entry).toMatchObject({
+      details: 'at render (app.js:10)',
+      history: '09:41:02 INFO QR scanner started',
+      same: { count: 2, devices: 1 },
+    });
+    // Filters: level, company, search, server only.
+    expect((await admin.json('GET', '/api/logs?level=warning,report')).body.total).toBe(2);
+    expect((await admin.json(`GET`, `/api/logs?companyId=${a}&q=80 %`)).body.items[0].message).toBe(
+      'Upload stops at 80 %',
+    );
+    expect((await admin.json('GET', '/api/logs?source=server&q=TypeError')).body.total).toBe(0);
+    // Export: one JSON object per line.
+    const exported = await admin.req('GET', '/api/logs/export?source=apps');
+    expect(exported.headers.get('content-type')).toContain('ndjson');
+    const lines = (await exported.text())
+      .trim()
+      .split('\n')
+      .map((l) => JSON.parse(l));
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toHaveProperty('history');
+    // Monitoring: queued files reported by the app.
+    const monitoring = await admin.json('GET', '/api/monitoring');
+    expect(monitoring.body).toMatchObject({
+      queues: { files: 4, devices: 1 },
+      devices: { connected: 1, active: 1, versions: [{ version: '1.0.0', n: 1 }] },
+      problems: { errors: 2, warnings: 1, reports: 1, apps: 2 },
+      retentionDays: 30,
+    });
+    expect((await admin.json('DELETE', '/api/logs')).body.deleted).toBeGreaterThan(0);
+    expect((await admin.json('GET', '/api/logs?source=apps')).body.total).toBe(0);
+  });
+
+  it('eine App kann den Server nicht mit Meldungen fluten', async () => {
+    const { admin, app } = await connected();
+    const many = Array.from({ length: 100 }, (_, i) => entry(`m${i}`, { message: `Error ${'x'.repeat(i)}` }));
+    await app.json('POST', '/api/app/logs', { entries: many });
+    const more = await app.json('POST', '/api/app/logs', {
+      entries: [
+        entry('late', { message: 'one more' }),
+        entry('r', { level: 'report', category: 'user', message: 'help' }),
+      ],
+    });
+    expect(more.body.accepted).toEqual(['late', 'r']);
+    const list = await admin.json('GET', '/api/logs?source=apps&pageSize=200');
+    expect(list.body.total).toBe(102);
+    expect(list.body.items.some((i: { message: string }) => i.message === 'one more')).toBe(false);
+    expect(list.body.items.some((i: { category: string }) => i.category === 'limit')).toBe(true);
+  });
+
+  it('der Server protokolliert unerwartete Fehler, Kontosperren, Einstellungen und unlesbare Dateien', async () => {
+    const { t, admin, worker } = await connected();
+    // An unexpected error inside a request (here: the database is read-only for a moment).
+    t.db.run(sql`create trigger boom before insert on machines begin select raise(abort, 'kaputt'); end`);
+    expect((await worker.upload([fixture('nxt', 0)])).status).toBe(500);
+    t.db.run(sql`drop trigger boom`);
+    for (let i = 0; i < t.config.loginMaxAttempts; i++)
+      await t.client().json('POST', '/api/auth/login', { email: 'worker@a.test', password: 'wrong-password' });
+    await admin.json('PUT', '/api/settings/general', { maxDevicesPerUser: 4, logRetentionDays: 14 });
+    await worker.upload([{ name: 'broken.dat', bytes: new TextEncoder().encode('not a pam file') }]);
+
+    const server = (await admin.json('GET', '/api/logs?source=server')).body.items as {
+      level: string;
+      category: string;
+      message: string;
+    }[];
+    expect(server.find((e) => e.category === 'http')).toMatchObject({
+      level: 'error',
+      message: 'POST /api/uploads → 500: kaputt',
+    });
+    expect(server.find((e) => e.category === 'login')?.message).toMatch(/Account locked/);
+    expect(server.find((e) => e.category === 'settings')?.message).toBe('Setting "general" changed');
+    expect(server.find((e) => e.category === 'upload')?.message).toMatch(/1 file\(s\) not readable: broken.dat/);
+    const monitoring = await admin.json('GET', '/api/monitoring');
+    expect(monitoring.body).toMatchObject({ uploads: { rejected: 1 }, retentionDays: 14 });
+    expect(monitoring.body.server.version).toMatch(/^\d+\.\d+\.\d+/);
   });
 });
 
@@ -230,7 +349,13 @@ describe('Migration von API-Keys zu Codes', () => {
     const next = openDatabase(file);
     const device = next.sqlite.prepare('select id, user_id from devices').get();
     expect(device).toEqual({ id: 7, user_id: 1 });
-    expect(next.sqlite.prepare('select device_id from crash_reports').get()).toEqual({ device_id: 7 });
+    // Crash reports moved into Logs & Monitoring.
+    expect(next.sqlite.prepare('select device_id, level, category, client_id from log_entries').get()).toEqual({
+      device_id: 7,
+      level: 'crash',
+      category: 'android',
+      client_id: 'c1',
+    });
     expect(next.sqlite.prepare("select name from sqlite_master where name = 'api_keys'").get()).toBeUndefined();
     next.close();
   });

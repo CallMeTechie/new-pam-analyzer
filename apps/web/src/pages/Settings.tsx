@@ -6,6 +6,7 @@ import manualDe from '../../../../docs/manual/de.md?raw';
 import manualEn from '../../../../docs/manual/en.md?raw';
 import { Icon } from '../components/Icon';
 import { Page } from '../components/Layout';
+import { LogsMonitoring } from '../components/Logs';
 import { Markdown } from '../components/Markdown';
 import { ErrorNotice, InfoTip, Loading, Notice } from '../components/ui';
 import { CATALOGS, type MessageKey, useI18n } from '../i18n';
@@ -14,8 +15,8 @@ import { type ApiError, api } from '../lib/api';
 import { setThresholds } from '../lib/thresholds';
 import { useApi } from '../lib/useApi';
 
-type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'mail' | 'crashes' | 'manual' | 'version';
-const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'mail', 'crashes', 'manual', 'version'];
+type Tab = 'coefficients' | 'rating' | 'languages' | 'security' | 'mail' | 'logs' | 'manual' | 'version';
+const TABS: Tab[] = ['coefficients', 'rating', 'languages', 'security', 'mail', 'logs', 'manual', 'version'];
 
 /* ------------------------------ Coefficients ------------------------------ */
 
@@ -620,14 +621,19 @@ function Languages() {
 
 function Security() {
   const { t } = useI18n();
-  const { data, error, reload } = useApi<{ maxDevicesPerUser: number }>('/settings/general');
+  const { data, error, reload } = useApi<{ maxDevicesPerUser: number; logRetentionDays: number }>('/settings/general');
   const [value, setValue] = useState('');
+  const [days, setDays] = useState('');
   const [saved, setSaved] = useState(false);
   useEffect(() => {
-    if (data) setValue(String(data.maxDevicesPerUser));
+    if (data) {
+      setValue(String(data.maxDevicesPerUser));
+      setDays(String(data.logRetentionDays));
+    }
   }, [data]);
   if (error) return <ErrorNotice error={error} />;
   if (!data) return <Loading />;
+  const changed = Number(value) !== data.maxDevicesPerUser || Number(days) !== data.logRetentionDays;
   return (
     <section className="card stack" style={{ maxWidth: 760 }}>
       <div className="card-h" style={{ marginBottom: 0 }}>
@@ -637,8 +643,8 @@ function Security() {
         </h2>
       </div>
       {saved && <Notice kind="success" title={t('common.saved')} />}
-      <div className="form-row">
-        <label className="field" style={{ flex: '0 1 280px' }}>
+      <div className="form-row" style={{ alignItems: 'flex-end' }}>
+        <label className="field" style={{ flex: '0 1 240px' }}>
           {t('settings.maxDevices')}
           <input
             className="input mono"
@@ -649,12 +655,23 @@ function Security() {
             onChange={(e) => setValue(e.target.value)}
           />
         </label>
+        <label className="field" style={{ flex: '0 1 240px' }}>
+          {t('settings.logRetention')}
+          <input
+            className="input mono"
+            type="number"
+            min={1}
+            max={365}
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+          />
+        </label>
         <button
           type="button"
           className="btn primary"
-          disabled={Number(value) < 1 || Number(value) === data.maxDevicesPerUser}
+          disabled={Number(value) < 1 || Number(days) < 1 || Number(days) > 365 || !changed}
           onClick={async () => {
-            await api.put('/settings/general', { maxDevicesPerUser: Number(value) });
+            await api.put('/settings/general', { maxDevicesPerUser: Number(value), logRetentionDays: Number(days) });
             setSaved(true);
             reload();
           }}
@@ -829,72 +846,6 @@ function Mail() {
   );
 }
 
-/* ------------------------------ Crash reports ------------------------------ */
-
-interface CrashReportRow {
-  id: number;
-  platform: string;
-  appVersion: string | null;
-  deviceName: string | null;
-  system: string | null;
-  kind: string;
-  message: string;
-  report: string;
-  occurredAt: string;
-  companyName: string | null;
-}
-
-/** Crashes of the Windows and Android apps; the apps send them once they are connected. */
-function CrashReports() {
-  const { t, locale, int } = useI18n();
-  const { data, error, reload } = useApi<{ items: CrashReportRow[]; total: number }>('/crash-reports?pageSize=100');
-  if (error) return <ErrorNotice error={error} />;
-  if (!data) return <Loading />;
-  const when = new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'medium' });
-  return (
-    <section className="card stack" style={{ maxWidth: 1000 }}>
-      <div className="card-h" style={{ marginBottom: 0 }}>
-        <h2 className="title-with-info">
-          {t('settings.tab.crashes')}
-          <InfoTip text={t('crashes.info')} />
-        </h2>
-        <span className="muted">{t('crashes.count', { n: data.total, total: int(data.total) })}</span>
-      </div>
-      {data.items.length === 0 && <p className="muted">{t('crashes.none')}</p>}
-      <div className="stack" style={{ gap: 10 }}>
-        {data.items.map((r) => (
-          <details key={r.id} className="crash">
-            <summary>
-              <b className="mono">{r.message}</b>
-              <span className="muted">
-                {when.format(new Date(r.occurredAt))} · {r.platform} {r.appVersion ?? ''} · {r.deviceName ?? '–'}
-                {r.companyName ? ` · ${r.companyName}` : ''}
-              </span>
-            </summary>
-            {r.system && <p className="muted">{r.system}</p>}
-            <pre className="crash-report">{r.report}</pre>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button type="button" className="btn small" onClick={() => void navigator.clipboard?.writeText(r.report)}>
-                {t('crashes.copy')}
-              </button>
-              <button
-                type="button"
-                className="btn small danger"
-                onClick={async () => {
-                  await api.delete(`/crash-reports/${r.id}`);
-                  reload();
-                }}
-              >
-                {t('common.remove')}
-              </button>
-            </div>
-          </details>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 /* ------------------------------ Manual and version ------------------------------ */
 
 function Manual() {
@@ -935,7 +886,9 @@ function Version() {
 export function Settings() {
   const { t } = useI18n();
   const fromHash = () => {
-    const hash = window.location.hash.slice(1) as Tab;
+    const raw = window.location.hash.slice(1);
+    // Old links to the crash reports open Logs & Monitoring.
+    const hash = (raw === 'crashes' ? 'logs' : raw) as Tab;
     return TABS.includes(hash) ? hash : 'coefficients';
   };
   const [tab, setTab] = useState<Tab>(fromHash);
@@ -967,7 +920,7 @@ export function Settings() {
       {tab === 'languages' && <Languages />}
       {tab === 'security' && <Security />}
       {tab === 'mail' && <Mail />}
-      {tab === 'crashes' && <CrashReports />}
+      {tab === 'logs' && <LogsMonitoring />}
       {tab === 'manual' && <Manual />}
       {tab === 'version' && <Version />}
     </Page>

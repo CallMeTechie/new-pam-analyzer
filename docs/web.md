@@ -14,7 +14,7 @@ keine externen Quellen), Akzent Blau, vier Bewertungsfarben.
 | Kopf-Historie | alle | Linie Cpk XY über dem Prüfdatum, gefüllter Punkt = Datum aus der Datei, hohler Punkt = Upload-Datum; Liste aller Prüfungen |
 | Team | Firmen-Admin | Mitglieder einladen (QR-Code, Link, optional E-Mail), Geräte trennen, Geräte je Mitglied, Linien der Maschinen |
 | Firmen | FUJI Service | Firmen anlegen und bearbeiten, Keys, Benutzer, Maschinen; **Firmenansicht öffnen** |
-| Benutzer, Einstellungen | Administrator | Alle Konten; Koeffizienten (versioniert), Bewertung, Sprachen, E-Mail (SMTP mit Test-E-Mail), Standard für max. Geräte |
+| Benutzer, Einstellungen | Administrator | Alle Konten; Koeffizienten (versioniert), Bewertung, Sprachen, E-Mail (SMTP mit Test-E-Mail), Standard für max. Geräte und Aufbewahrung der Logs; **Logs & Monitoring** (Zustand von Server und Apps, Protokoll mit Filtern, Details und Export) |
 
 **Upload im Hintergrund:** Der Browser entpackt ZIP-Archive selbst (`lib/zip.ts`: nur das
 Inhaltsverzeichnis und je ein Eintrag im Speicher, ZIP64, ohne Größengrenze) und schickt die `.dat`-Dateien

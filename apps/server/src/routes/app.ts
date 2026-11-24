@@ -1,11 +1,12 @@
 import { ALGORITHM_VERSION } from '@pam/core';
 import { eq } from 'drizzle-orm';
-import { Hono } from 'hono';
+import { type Context, Hono } from 'hono';
 import { z } from 'zod';
 import { connectDevice, disconnectDevice } from '../auth/devices.js';
 import { requireAuth } from '../auth/middleware.js';
-import { companies, crashReports, devices, users } from '../db/schema.js';
+import { companies, devices, users } from '../db/schema.js';
 import { type AppEnv, HttpError, jsonBody, parse } from '../http.js';
+import { DEVICE_LIMIT_PER_HOUR, LOG_LEVELS, type LogSource, recentDeviceEntries, writeLog } from '../services/logs.js';
 import { getCoefficientConfig, getThresholds } from '../services/settings.js';
 
 /**
@@ -80,37 +81,114 @@ const crashReport = z.object({
   report: z.string().max(200_000),
 });
 
-/**
- * Crash reports the app stored while it was not connected (or crashed). Returns the ids it may delete;
- * a report sent twice is stored once.
- */
-appRoutes.post('/crash-reports', async (c) => {
+const logEntry = z.object({
+  /** Id the app gave the entry; a resend is stored once. */
+  id: z.string().trim().min(1).max(100),
+  level: z.enum(LOG_LEVELS),
+  category: z.string().trim().min(1).max(40),
+  message: z.string().max(1000),
+  details: z.string().max(200_000).optional(),
+  history: z.string().max(50_000).optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+  occurredAt: z.number().int().positive(),
+  appVersion: z.string().trim().max(40).optional(),
+  system: z.string().trim().max(200).optional(),
+});
+
+function deviceOf(c: Context<AppEnv>) {
   const auth = requireAuth(c);
   if (auth.kind !== 'device') throw new HttpError(403, 'forbidden', 'Only for connected devices.');
-  const body = parse(z.object({ reports: z.array(crashReport).max(50) }), await jsonBody(c));
-  const db = c.get('db');
-  const device = db
+  const device = c
+    .get('db')
     .select({ name: devices.name, platform: devices.platform, appVersion: devices.appVersion })
     .from(devices)
     .where(eq(devices.id, auth.device.id))
     .get();
+  const platform = device?.platform;
+  const source: LogSource = platform === 'windows' || platform === 'android' ? platform : 'other';
+  return { auth, device, source };
+}
+
+/**
+ * Logs & Monitoring: crashes, errors, warnings and problem reports of the app, sent once it is
+ * connected; with them the app reports its upload queue. Returns the ids it may delete; an entry sent
+ * twice is stored once. More than 100 entries per hour from one device are accepted but not stored.
+ */
+appRoutes.post('/logs', async (c) => {
+  const { auth, device, source } = deviceOf(c);
+  const body = parse(
+    z.object({
+      entries: z.array(logEntry).max(100),
+      state: z.object({ queued: z.number().int().min(0).max(1_000_000).optional() }).optional(),
+    }),
+    await jsonBody(c),
+  );
+  const db = c.get('db');
+  if (body.state?.queued !== undefined)
+    db.update(devices).set({ queuedFiles: body.state.queued }).where(eq(devices.id, auth.device.id)).run();
+  let room = DEVICE_LIMIT_PER_HOUR - recentDeviceEntries(db, auth.device.id);
+  let dropped = 0;
+  for (const e of body.entries) {
+    if (room <= 0 && e.level !== 'report') {
+      dropped++;
+      continue;
+    }
+    const stored = writeLog(db, {
+      level: e.level,
+      source,
+      category: e.category,
+      message: e.message,
+      details: e.details ?? null,
+      history: e.history ?? null,
+      context: e.context ?? null,
+      deviceId: auth.device.id,
+      companyId: auth.device.companyId,
+      userId: auth.user.id,
+      appVersion: e.appVersion ?? device?.appVersion ?? null,
+      deviceName: device?.name ?? null,
+      system: e.system ?? null,
+      clientId: e.id,
+      occurredAt: new Date(e.occurredAt),
+    });
+    if (stored && !stored.merged) room--;
+  }
+  if (dropped)
+    writeLog(db, {
+      level: 'warning',
+      source,
+      category: 'limit',
+      message: `More than ${DEVICE_LIMIT_PER_HOUR} entries in one hour: ${dropped} not stored`,
+      deviceId: auth.device.id,
+      companyId: auth.device.companyId,
+      userId: auth.user.id,
+      deviceName: device?.name ?? null,
+      mergeWithinMs: 3_600_000,
+    });
+  return c.json({ accepted: body.entries.map((e) => e.id) });
+});
+
+/** Crash reports of app versions before Logs & Monitoring; stored in the same protocol. */
+appRoutes.post('/crash-reports', async (c) => {
+  const { auth, device, source } = deviceOf(c);
+  const body = parse(z.object({ reports: z.array(crashReport).max(50) }), await jsonBody(c));
+  const db = c.get('db');
   for (const r of body.reports) {
-    db.insert(crashReports)
-      .values({
-        deviceId: auth.device.id,
-        companyId: auth.device.companyId,
-        clientId: r.id,
-        platform: device?.platform ?? 'other',
-        appVersion: r.appVersion ?? device?.appVersion ?? null,
-        deviceName: device?.name ?? null,
-        system: r.system ?? null,
-        kind: r.kind,
-        message: r.message.slice(0, 1000) || '–',
-        report: r.report,
-        occurredAt: new Date(r.occurredAt),
-      })
-      .onConflictDoNothing()
-      .run();
+    writeLog(db, {
+      level: 'crash',
+      source,
+      category: r.kind,
+      message: r.message,
+      details: r.report,
+      deviceId: auth.device.id,
+      companyId: auth.device.companyId,
+      userId: auth.user.id,
+      appVersion: r.appVersion ?? device?.appVersion ?? null,
+      deviceName: device?.name ?? null,
+      system: r.system ?? null,
+      clientId: r.id,
+      occurredAt: new Date(r.occurredAt),
+      mergeWithinMs: 0,
+    });
   }
   return c.json({ accepted: body.reports.map((r) => r.id) });
 });

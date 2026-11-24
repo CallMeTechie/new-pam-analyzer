@@ -150,6 +150,19 @@ test('settings: default values, update channel and German', async ({ page }) => 
   await page.getByRole('tab', { name: 'Rating' }).click();
   await expect(page.getByText(/Default values/)).toBeVisible();
   await expect(page.locator('.level')).toHaveCount(4);
+  // Diagnostics: sending reports, "Report a problem", the app's own log.
+  await page.getByRole('tab', { name: 'Diagnostics' }).click();
+  const diagnostics = page.getByTestId('diagnostics');
+  await expect(diagnostics.getByRole('switch', { name: /Send error reports automatically/ })).toBeChecked();
+  await expect(diagnostics).toContainText('Not connected to a server');
+  await diagnostics.getByRole('button', { name: 'View log' }).click();
+  await expect(page.getByTestId('diag-history')).toContainText('INFO  app: Started');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await diagnostics.getByRole('button', { name: 'Report a problem …' }).click();
+  await page.getByLabel('What happened?').fill('The list does not refresh');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await expect(page.getByText('Report saved')).toBeVisible();
+  await expect(diagnostics).toContainText('1 report waiting');
   await page.getByRole('tab', { name: 'Version' }).click();
   await expect(page.getByRole('heading', { name: '0.1.0' })).toBeVisible();
   await page.locator('.footer .lang-switch select').selectOption('de');

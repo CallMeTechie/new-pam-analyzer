@@ -15,6 +15,7 @@ import { deleteUserSessions } from '../auth/sessions.js';
 import type { Db } from '../db/index.js';
 import { companies, connectCodes, devices, users } from '../db/schema.js';
 import { type AppEnv, HttpError, idParam, jsonBody, notFound, parse } from '../http.js';
+import { serverLog } from '../services/logs.js';
 import { mailConfig, sendInvite } from '../services/mail.js';
 import { password } from './auth.js';
 
@@ -75,7 +76,18 @@ export async function inviteUser(
     });
     return { ...issued, emailed: true };
   } catch (error) {
-    return { ...issued, emailed: false, mailError: error instanceof Error ? error.message : String(error) };
+    const mailError = error instanceof Error ? error.message : String(error);
+    serverLog(
+      c.get('db'),
+      'warning',
+      'mail',
+      `Invitation e-mail to …@${user.email.split('@')[1] ?? ''} not delivered: ${mailError}`,
+      {
+        userId: actorId,
+        context: { purpose: 'invite' },
+      },
+    );
+    return { ...issued, emailed: false, mailError };
   }
 }
 

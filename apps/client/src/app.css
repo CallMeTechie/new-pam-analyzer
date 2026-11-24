@@ -995,3 +995,43 @@ html.qr-scanning #root {
   text-overflow: ellipsis;
   max-width: 220px;
 }
+
+/* Settings → Diagnostics */
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  cursor: pointer;
+}
+.toggle-row > span {
+  display: grid;
+  gap: 3px;
+}
+.toggle-row small {
+  font-size: 13px;
+  line-height: 1.4;
+}
+.toggle-row input {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  flex: none;
+}
+.diag-pending {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.diag-pending > span {
+  display: grid;
+  gap: 2px;
+}
+.diag-pending small {
+  font-size: 13px;
+}

@@ -11,14 +11,15 @@ import { appRoutes } from './routes/app.js';
 import { authRoutes } from './routes/auth.js';
 import { companyRoutes } from './routes/companies.js';
 import { connectRoutes, deviceRoutes } from './routes/connect.js';
-import { crashReportRoutes } from './routes/crashReports.js';
 import { dashboardRoutes } from './routes/dashboard.js';
+import { logRoutes, monitoringRoutes } from './routes/logs.js';
 import { machineRoutes } from './routes/machines.js';
 import { metaRoutes } from './routes/meta.js';
 import { resultRoutes } from './routes/results.js';
 import { settingsRoutes } from './routes/settings.js';
 import { uploadRoutes } from './routes/uploads.js';
 import { userRoutes } from './routes/users.js';
+import { serverLog } from './services/logs.js';
 
 export function createApp(db: Db, config: ServerConfig) {
   const app = new Hono<AppEnv>();
@@ -56,7 +57,8 @@ export function createApp(db: Db, config: ServerConfig) {
   api.route('/results', resultRoutes);
   api.route('/dashboard', dashboardRoutes);
   api.route('/settings', settingsRoutes);
-  api.route('/crash-reports', crashReportRoutes);
+  api.route('/logs', logRoutes);
+  api.route('/monitoring', monitoringRoutes);
   api.all('*', () => {
     throw new HttpError(404, 'not_found', 'Unknown API endpoint.');
   });
@@ -69,7 +71,20 @@ export function createApp(db: Db, config: ServerConfig) {
         error.status,
       );
     }
-    console.error(error);
+    const auth = c.get('auth') ?? null;
+    serverLog(
+      db,
+      'error',
+      'http',
+      `${c.req.method} ${c.req.path} → 500: ${error instanceof Error ? error.message : String(error)}`,
+      {
+        details: error instanceof Error ? (error.stack ?? null) : null,
+        context: { method: c.req.method, path: c.req.path },
+        userId: auth?.user.id ?? null,
+        companyId: auth?.user.companyId ?? null,
+        deviceId: auth?.kind === 'device' ? auth.device.id : null,
+      },
+    );
     return c.json({ error: { code: 'internal_error', message: 'An unexpected error occurred.' } }, 500);
   });
 
