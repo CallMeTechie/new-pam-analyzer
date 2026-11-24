@@ -16,7 +16,7 @@ Der PAM Analyzer wertet PAM-Ergebnisse (`.dat`) von FUJI NXT, NXT-R und AIMEX au
 - **Firmen-Admin**: lädt Mitglieder ein, verwaltet ihre Geräte, die Maschinen und das Logo seiner Firma.
 - **Benutzer**: sieht die Ergebnisse seiner Firma und lädt neue hoch.
 
-Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen. Die **Service-Firma** legt der Server beim ersten Start an; ihren Namen vergibt der erste Administrator direkt nach dem Ändern der Standard-Zugangsdaten (Vorschlag: `SERVICE_COMPANY_NAME`, Standard „FUJI Service“). Sie ist unter Firmen mit „Service“ markiert; es gibt genau eine. Jede andere Firma sieht und lädt immer nur ihre eigenen Ergebnisse.
+Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen – jedes Ergebnis, egal wem es gehört, im Web und in ihren Apps. Die **Service-Firma** legt der Server beim ersten Start an; ihren Namen vergibt der erste Administrator direkt nach dem Ändern der Standard-Zugangsdaten (Vorschlag: `SERVICE_COMPANY_NAME`, Standard „FUJI Service“). Sie ist unter Firmen mit „Service“ markiert; es gibt genau eine. Jede andere Firma sieht und lädt immer nur ihre eigenen Ergebnisse.
 
 ## Ergebnisse hochladen
 
@@ -53,7 +53,7 @@ Bewertet wird die Streuung aller Bauteile eines Holders, nicht jedes Bauteil ein
 
 ## Kopf-Historie
 
-Ein Klick auf **Kopf-Historie** im Ergebnis zeigt alle Prüfungen desselben Kopfes in der Firma: Cpk XY als Linie über der Zeit und die Liste aller Prüfungen. Ein gefüllter Punkt bedeutet „Datum aus der Datei“, ein hohler „Datum = Upload“.
+Ein Klick auf **Kopf-Historie** im Ergebnis zeigt alle Prüfungen desselben Kopfes in der Firma (für die Service-Firma: in allen Firmen und nicht zugeordneten Uploads): Cpk XY als Linie über der Zeit und die Liste aller Prüfungen. Ein gefüllter Punkt bedeutet „Datum aus der Datei“, ein hohler „Datum = Upload“.
 
 ## Firmen, Team und Geräte
 

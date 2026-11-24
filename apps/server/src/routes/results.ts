@@ -286,6 +286,8 @@ resultRoutes.get('/:id/file', (c) => {
 resultRoutes.get('/:id/history', (c) => {
   const db = c.get('db');
   const row = loadResult(c, db);
+  // The service company follows a head through all companies; everybody else within their own.
+  const everywhere = requireAuth(c).user.isService;
   const items = db
     .select(listColumns)
     .from(results)
@@ -296,7 +298,11 @@ resultRoutes.get('/:id/history', (c) => {
         isNull(results.deletedAt),
         eq(results.headType, row.headType),
         eq(results.headSerial, row.headSerial),
-        row.companyId === null ? isNull(results.companyId) : eq(results.companyId, row.companyId),
+        everywhere
+          ? undefined
+          : row.companyId === null
+            ? isNull(results.companyId)
+            : eq(results.companyId, row.companyId),
       ),
     )
     .orderBy(asc(results.testDate), asc(results.id))

@@ -1,5 +1,11 @@
 # Änderungen
 
+## 0.12.2 – 24.11.2026
+
+### Behoben
+- Apps, die mit einem Konto der Service-Firma verbunden sind, zeigten unter „Server“ keine Ergebnisse: Sie sahen nur die Ergebnisse der Service-Firma selbst. Jetzt sehen sie alle Firmen, wie dasselbe Konto im Web. Apps von Kundenfirmen sehen weiterhin nur die eigene Firma.
+- Die Service-Firma sieht jedes Ergebnis, egal wem es gehört: Die Kopf-Historie zeigt jetzt die Prüfungen eines Kopfes über alle Firmen und nicht zugeordnete Uploads hinweg (Kunden sehen weiterhin nur ihre eigenen).
+
 ## 0.12.1 – 24.11.2026
 
 ### Behoben

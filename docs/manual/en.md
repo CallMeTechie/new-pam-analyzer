@@ -16,7 +16,7 @@ The PAM Analyzer evaluates PAM results (`.dat`) of FUJI NXT, NXT-R and AIMEX mac
 - **Company admin**: invites members, manages their devices, the machines and the logo of their company.
 - **User**: sees the results of their company and uploads new ones.
 
-Members of the service company see the results of all companies. The **service company** is created by the server on its first start and named by the first administrator right after the default credentials are replaced (suggested name: `SERVICE_COMPANY_NAME`, default "FUJI Service"). It is marked "Service" under Companies; there is exactly one. Every other company only ever sees and uploads its own results.
+Members of the service company see the results of all companies – every result, whoever it belongs to, on the web and in their apps. The **service company** is created by the server on its first start and named by the first administrator right after the default credentials are replaced (suggested name: `SERVICE_COMPANY_NAME`, default "FUJI Service"). It is marked "Service" under Companies; there is exactly one. Every other company only ever sees and uploads its own results.
 
 ## Uploading results
 
@@ -53,7 +53,7 @@ The rating is based on the spread of all components of a holder, not on each com
 
 ## Head history
 
-**Head history** in a result shows all tests of the same head in the company: Cpk XY as a line over time and the list of all tests. A filled dot means "date from the file", a hollow dot "date = upload".
+**Head history** in a result shows all tests of the same head in the company (for the service company: in all companies and unassigned uploads): Cpk XY as a line over time and the list of all tests. A filled dot means "date from the file", a hollow dot "date = upload".
 
 ## Companies, team and devices
 

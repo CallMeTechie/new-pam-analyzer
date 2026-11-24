@@ -58,7 +58,7 @@ function listCompanies(db: Db, onlyId?: number) {
 companyRoutes.get('/', (c) => {
   const auth = requireAuth(c);
   const db = c.get('db');
-  if (auth.kind === 'user' && auth.user.isService) return c.json({ items: listCompanies(db) });
+  if (auth.user.isService) return c.json({ items: listCompanies(db) });
   const own = auth.kind === 'device' ? auth.device.companyId : auth.user.companyId;
   return c.json({ items: listCompanies(db, own) });
 });
