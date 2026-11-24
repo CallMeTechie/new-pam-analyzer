@@ -2894,6 +2894,46 @@ b > .service-pill {
 .toast > svg {
   margin-top: 1px;
 }
+.toast.has-bar {
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 16px;
+}
+.toast-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.toast-bar > i {
+  display: block;
+  height: 100%;
+}
+.toast-bar.progress > i {
+  background: var(--exc);
+  transition: width 0.3s;
+}
+.toast-bar.progress > i.indeterminate {
+  width: 30%;
+  animation: upload-sweep 1.2s ease-in-out infinite;
+}
+.toast-bar.countdown > i {
+  width: 100%;
+  background: var(--crit);
+  animation: toast-countdown 5s linear forwards;
+}
+.toast:hover .toast-bar.countdown > i,
+.toast-bar.countdown.paused > i {
+  animation-play-state: paused;
+}
+@keyframes toast-countdown {
+  to {
+    width: 0;
+  }
+}
 .toast-success > svg {
   color: var(--exc, #1f9d55);
 }
@@ -2925,26 +2965,6 @@ b > .service-pill {
   color: var(--fg);
   background: var(--surface-3);
 }
-.upload-edge {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 121;
-  height: 4px;
-  background: var(--surface-3);
-  overflow: hidden;
-}
-.upload-edge > span {
-  display: block;
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.3s;
-}
-.upload-edge > span.indeterminate {
-  width: 30%;
-  animation: upload-sweep 1.2s ease-in-out infinite;
-}
 @keyframes upload-sweep {
   from {
     transform: translateX(-100%);
@@ -2961,13 +2981,12 @@ b > .service-pill {
 }
 @media (prefers-reduced-motion: reduce) {
   .toast,
-  .upload-edge > span.indeterminate {
+  .toast-bar.progress > i.indeterminate {
     animation: none;
   }
 }
 @media print {
-  .toasts,
-  .upload-edge {
+  .toasts {
     display: none;
   }
 }
@@ -3267,4 +3286,25 @@ button.log-row:hover {
 .log-pre.dark {
   background: #1d2033;
   color: #e6e8f5;
+}
+
+/* Wide dialogs with tables (upload finished) */
+.modal.xl {
+  width: min(1040px, 100%);
+}
+.modal .file-cell {
+  font-size: 13px;
+  max-width: 340px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.modal td.actions {
+  white-space: nowrap;
+}
+.modal .tested-cell {
+  min-width: 150px;
+}
+.modal .tested-cell > div {
+  white-space: normal;
 }

@@ -24,7 +24,7 @@ export function UploadResultDialog({ response, onClose }: { response: UploadResp
   const hidden = rows.length + response.skipped.length - shown.length - skipped.length;
 
   return (
-    <Modal title={t('upload.done')} onClose={onClose} wide>
+    <Modal title={t('upload.done')} onClose={onClose} wide="xl">
       <div className="section-h">
         <div className="summary-pills">
           <span className="pill r-excellent">{t('upload.created', { n: response.summary.created })}</span>
@@ -52,7 +52,7 @@ export function UploadResultDialog({ response, onClose }: { response: UploadResp
           <tbody>
             {shown.map((r, i) => (
               <tr key={`${r.fileName}-${i}`}>
-                <td className="mono" style={{ fontSize: 13, overflowWrap: 'anywhere' }}>
+                <td className="mono file-cell" title={r.fileName}>
                   {r.fileName}
                 </td>
                 <td>
@@ -63,7 +63,7 @@ export function UploadResultDialog({ response, onClose }: { response: UploadResp
                   </span>
                 </td>
                 <td className="nowrap">{r.headType ? `${r.headType} · ${r.headSerial}` : '–'}</td>
-                <td className="nowrap">
+                <td className="tested-cell">
                   {r.testDate ? dateTime(r.testDate) : '–'}
                   {r.dateSource && r.dateSource !== 'header' && (
                     <div className="muted" style={{ fontSize: 12 }}>
@@ -89,7 +89,7 @@ export function UploadResultDialog({ response, onClose }: { response: UploadResp
             ))}
             {skipped.map((s, i) => (
               <tr key={`skip-${s.name}-${i}`}>
-                <td className="mono" style={{ fontSize: 13 }}>
+                <td className="mono file-cell" title={s.name}>
                   {s.name}
                 </td>
                 <td>
@@ -148,12 +148,14 @@ export function UploadToast() {
     setDetails(false);
     dismissUpload();
   };
+  // A finished or cancelled upload closes by itself after 5 seconds; a failure stays until closed.
+  const countdown = upload.status === 'done' || upload.status === 'cancelled';
 
   return (
     <>
       <div className="toasts" aria-live="polite">
         {upload.status === 'running' && (
-          <div className="toast toast-progress" role="status" data-testid="upload-toast">
+          <div className="toast toast-progress has-bar" role="status" data-testid="upload-toast">
             <Icon name="upload" size={18} />
             <span className="toast-text">
               <b>{t('upload.background')}</b>
@@ -174,11 +176,22 @@ export function UploadToast() {
             <button type="button" className="toast-close" title={t('upload.cancel')} onClick={cancelUpload}>
               <Icon name="close" size={16} />
             </button>
+            {/* Upload and processing on the server, in green. */}
+            <div
+              className="toast-bar progress"
+              role="progressbar"
+              aria-label={t('upload.background')}
+              aria-valuenow={Math.round(fraction * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <i className={p ? '' : 'indeterminate'} style={p ? { width: `${fraction * 100}%` } : undefined} />
+            </div>
           </div>
         )}
         {upload.status !== 'running' && (
           <div
-            className={`toast ${upload.status === 'done' ? 'toast-success' : 'toast-error'}`}
+            className={`toast ${upload.status === 'done' ? 'toast-success' : 'toast-error'}${countdown ? ' has-bar' : ''}`}
             role="status"
             data-testid="upload-toast"
           >
@@ -208,21 +221,19 @@ export function UploadToast() {
             <button type="button" className="toast-close" title={t('common.close')} onClick={close}>
               <Icon name="close" size={16} />
             </button>
+            {/* Finished: in red, the 5 seconds until the message closes (paused while pointed at). */}
+            {countdown && (
+              <div
+                className={`toast-bar countdown${details ? ' paused' : ''}`}
+                aria-hidden="true"
+                data-testid="upload-countdown"
+              >
+                <i onAnimationEnd={close} />
+              </div>
+            )}
           </div>
         )}
       </div>
-      {upload.status === 'running' && (
-        <div
-          className="upload-edge"
-          role="progressbar"
-          aria-label={t('upload.background')}
-          aria-valuenow={Math.round(fraction * 100)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        >
-          <span className={p ? '' : 'indeterminate'} style={p ? { width: `${fraction * 100}%` } : undefined} />
-        </div>
-      )}
       {details && upload.response && <UploadResultDialog response={upload.response} onClose={close} />}
     </>
   );

@@ -177,7 +177,8 @@ export async function uploadItems(
       phase: 'upload',
       doneFiles,
       totalFiles: items.length,
-      doneBytes: doneBytes + fraction * size,
+      // The server evaluates a portion after receiving it: the last 15 % of it stand for that.
+      doneBytes: doneBytes + fraction * size * 0.85,
       totalBytes,
     });
   report();

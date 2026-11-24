@@ -1,5 +1,12 @@
 # Änderungen
 
+## 0.12.1 – 24.11.2026
+
+### Behoben
+- Die Upload-Meldung schließt sich selbst: Ein grüner Balken am unteren Rand zeigt Upload und Verarbeitung; ist alles fertig, zählt ein roter Balken 5 Sekunden bis zum Schließen herunter (Zeigen mit der Maus oder geöffnete Details halten ihn an). Ein fehlgeschlagener Upload bleibt stehen, bis er geschlossen wird. Der Balken am unteren Rand der Seite entfällt.
+- Dialoge werden nicht mehr von den Wochen-Überschriften der Tabellen auf dem Dashboard überdeckt.
+- „Upload abgeschlossen“: breiter, Dateinamen in einer Zeile (gekürzt mit „…“, voller Name als Tooltip), die Spalte „Öffnen“ wird nicht mehr abgeschnitten.
+
 ## 0.12.0 – 24.11.2026
 
 ### Geändert
