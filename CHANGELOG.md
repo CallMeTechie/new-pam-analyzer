@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.12.3 – 2026-11-24
+
+### Security
+- Dependencies updated; `pnpm audit` reports no known vulnerabilities (before: 29, among them 2 critical and 6 high): nodemailer 10.6, drizzle-orm 0.45, zod 4.6, @hono/node-server 2.1, hono 4.13.21; for development Vitest 4.1 (tinypool) and esbuild 0.25 for drizzle-kit.
+
 ## 0.12.2 – 2026-11-24
 
 ### Fixed

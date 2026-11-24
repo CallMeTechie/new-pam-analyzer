@@ -1,6 +1,6 @@
 {
   "name": "@pam/core",
-  "version": "0.12.2",
+  "version": "0.12.3",
   "description": "Parser und Cpk-Berechnung für PAM-Ergebnisdateien (NXT, NXT-R, AIMEX)",
   "private": true,
   "type": "module",
