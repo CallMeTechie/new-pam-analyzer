@@ -61,7 +61,8 @@ uploadRoutes.post(
     );
 
     const requested = typeof form.companyId === 'string' && form.companyId ? Number(form.companyId) : null;
-    const companyId = readScope(auth, requested);
+    // Apps upload for the company of their device, as before (also those of service staff).
+    const companyId = auth.kind === 'device' && !requested ? auth.device.companyId : readScope(auth, requested);
     if (
       companyId !== null &&
       !db.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId)).get()

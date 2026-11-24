@@ -88,17 +88,18 @@ export function requireAdmin(c: AuthContext): SessionUser {
  * Others are limited to their own company; asking for another one is forbidden.
  */
 export function readScope(auth: Auth, requested?: number | null): number | null {
+  // Service staff see all companies, on the web and in their apps alike.
+  if (auth.user.isService) return requested ?? null;
   if (auth.kind === 'device') {
     if (requested && requested !== auth.device.companyId) throw forbidden();
     return auth.device.companyId;
   }
-  if (auth.user.isService) return requested ?? null;
   if (requested && requested !== auth.user.companyId) throw forbidden();
   return auth.user.companyId;
 }
 
 export function canReadCompany(auth: Auth, companyId: number | null): boolean {
-  if (auth.kind === 'user' && auth.user.isService) return true;
+  if (auth.user.isService) return true;
   const own = auth.kind === 'device' ? auth.device.companyId : auth.user.companyId;
   return companyId === own;
 }

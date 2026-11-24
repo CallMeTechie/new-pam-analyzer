@@ -168,6 +168,32 @@ describe('Geräteverbindungen', () => {
     expect((await app.upload([fixture('nxt', 1)], { companyId: '999' })).status).toBe(403);
     expect((await worker.json('GET', '/api/devices')).body.items[0].uploadCount).toBe(1);
   });
+
+  it('die App eines Service-Mitglieds zeigt die Ergebnisse aller Firmen, eine Kunden-App nur die eigenen', async () => {
+    const { t, admin, worker, deviceCode } = await world();
+    // One result of customer A, one unassigned (uploaded by service staff on the web).
+    await worker.upload([fixture('nxt', 0)]);
+    await admin.upload([fixture('nxt', 1)]);
+    const customerApp = t.client();
+    customerApp.setToken((await customerApp.json('POST', '/api/app/connect', device(await deviceCode()))).body.token);
+    expect((await customerApp.json('GET', '/api/results')).body.total).toBe(1);
+
+    const code = (await admin.json('POST', '/api/devices/connect-code')).body.code as string;
+    const serviceApp = t.client();
+    serviceApp.setToken((await serviceApp.json('POST', '/api/app/connect', device(code, 'install-svc'))).body.token);
+    const all = await serviceApp.json('GET', '/api/results');
+    expect(all.body.total).toBe(2);
+    const id = all.body.items.find((r: { companyId: number | null }) => r.companyId !== null).id;
+    expect((await serviceApp.json('GET', `/api/results/${id}`)).status).toBe(200);
+    expect(
+      (
+        await customerApp.json(
+          'GET',
+          `/api/results/${all.body.items.find((r: { companyId: number | null }) => r.companyId === null).id}`,
+        )
+      ).status,
+    ).toBe(404);
+  });
 });
 
 describe('Logs & Monitoring', () => {
