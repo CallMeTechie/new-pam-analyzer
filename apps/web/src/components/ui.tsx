@@ -1,5 +1,6 @@
 import { machineLabel } from '@pam/core';
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router';
 import { type MessageKey, useI18n } from '../i18n';
 import type { ApiError, Family, Rating, ResultRow } from '../lib/api';
@@ -188,8 +189,8 @@ export function Modal({
   title: string;
   onClose(): void;
   children: ReactNode;
-  /** Room for a QR code next to text. */
-  wide?: boolean;
+  /** Room for a QR code next to text; `xl` for tables. */
+  wide?: boolean | 'xl';
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -204,7 +205,8 @@ export function Modal({
       prev?.focus();
     };
   }, [onClose]);
-  return (
+  // In the body, so no stacking context of the page (side panels, sticky headers) lies above it.
+  return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions: clicking the backdrop is a shortcut; Escape and the buttons close the dialog too
     <div
       className="modal-scrim"
@@ -212,11 +214,18 @@ export function Modal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className={`modal${wide ? ' wide' : ''}`} role="dialog" aria-modal="true" aria-label={title} ref={ref}>
+      <div
+        className={`modal${wide ? ' wide' : ''}${wide === 'xl' ? ' xl' : ''}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        ref={ref}
+      >
         <h2>{title}</h2>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

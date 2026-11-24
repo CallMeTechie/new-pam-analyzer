@@ -21,7 +21,7 @@ Members of the service company see the results of all companies. The **service c
 ## Uploading results
 
 - In the upload area of the **Dashboard**, choose files, ZIP archives or whole folders, or drag them onto it: as soon as files are dragged into the browser window, the area is marked as drop zone. Files in subfolders, of folders and of ZIP archives alike, are included; the list shows the path of each file and how many PAM files each ZIP archive holds. There is no limit on the size of a ZIP archive or the number of files: archives are unpacked in the browser and the files go to the server in portions.
-- The upload runs **in the background**: you can keep working and switch pages. A message at the bottom right shows files, MB and percent, a bar runs along the bottom edge; ✕ cancels (what was uploaded until then is kept). Do not close or reload the browser tab while it runs.
+- The upload runs **in the background**: you can keep working and switch pages. A message at the bottom right shows files, MB and percent, with a green bar at its bottom edge; ✕ cancels (what was uploaded until then is kept). Do not close or reload the browser tab while it runs.
 - When it is finished, **Details** shows every file: new, already stored, not readable or skipped.
 - A dialog then opens: **Company / customer** (typing suggests the companies in the system and customers used before; a company in the system gets the results, its members see them) and **Test date** (filled in from the file, changeable; for several files optionally one date for all). Nothing is required: **Skip** uploads without it.
 - Files already stored in the company are recognized and skipped.

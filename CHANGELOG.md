@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.12.1 – 2026-11-24
+
+### Fixed
+- The upload message closes by itself: a green bar at its bottom edge shows upload and processing; once finished, a red bar counts down 5 seconds until it closes (pointing at it, or open details, pause it). A failed upload stays until closed. The bar along the bottom edge of the page is gone.
+- Dialogs are no longer covered by the week headers of the dashboard's tables.
+- "Upload finished": wider, file names on one line (shortened with "…", full name as tooltip), the "Open" column no longer cut off.
+
 ## 0.12.0 – 2026-11-24
 
 ### Changed

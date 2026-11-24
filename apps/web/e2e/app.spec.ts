@@ -346,7 +346,9 @@ test('drag and drop: the drop zone is marked, takes folders and ZIP archives wit
   await dialog.getByRole('button', { name: 'Upload', exact: true }).click();
   const toast = page.getByTestId('upload-toast');
   await expect(toast).toContainText('5 new results');
-  await toast.getByRole('button', { name: 'Close' }).click();
+  // Finished: a red bar counts down 5 seconds, then the message closes by itself.
+  await expect(page.getByTestId('upload-countdown')).toBeVisible();
+  await expect(toast).toHaveCount(0, { timeout: 8000 });
 
   // One file: the date of the measurement is filled in from the file; "Skip" uploads without input.
   await page.locator('input[type=file][accept=".dat,.zip"]').setInputFiles([asUpload(fixture('nxtr', 1))]);
