@@ -20,7 +20,7 @@ Mitglieder der Service-Firma sehen die Ergebnisse aller Firmen. Die **Service-Fi
 
 ## Ergebnisse hochladen
 
-- Im Upload-Bereich des **Dashboards** Dateien, ZIP-Archive oder ganze Ordner auswählen oder in die Fläche ziehen. Größe der ZIP-Archive und Zahl der Dateien sind nicht begrenzt: Archive werden im Browser entpackt, die Dateien gehen in Portionen zum Server.
+- Im Upload-Bereich des **Dashboards** Dateien, ZIP-Archive oder ganze Ordner auswählen oder irgendwo auf das Dashboard ziehen. Dateien in Unterordnern – von Ordnern wie von ZIP-Archiven – werden mitgenommen; die Liste zeigt den Pfad jeder Datei und wie viele PAM-Dateien jedes ZIP-Archiv enthält. Größe der ZIP-Archive und Zahl der Dateien sind nicht begrenzt: Archive werden im Browser entpackt, die Dateien gehen in Portionen zum Server.
 - Der Upload läuft **im Hintergrund**: Sie können weiterarbeiten und die Seite wechseln. Eine Meldung unten rechts zeigt Dateien, MB und Prozent, am unteren Rand läuft ein Fortschrittsbalken; ✕ bricht ab (bis dahin Hochgeladenes bleibt gespeichert). Den Browser-Tab währenddessen nicht schließen oder neu laden.
 - Ist er fertig, zeigt **Details** jede Datei: neu, schon gespeichert, nicht lesbar oder übersprungen.
 - Die Service-Firma wählt vorher die Firma, zu der die Ergebnisse gehören.

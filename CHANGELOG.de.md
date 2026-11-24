@@ -1,5 +1,11 @@
 # Änderungen
 
+## 0.11.1 – 24.11.2026
+
+### Geändert
+- Drag & Drop auf das ganze Dashboard: Dateien, ZIP-Archive und Ordner lassen sich irgendwo auf der Seite ablegen (eine Einblendung zeigt es), nicht nur auf der gestrichelten Fläche; eine daneben abgelegte Datei öffnet der Browser nicht mehr. Dateien in Unterordnern werden mitgenommen.
+- Die Liste vor dem Hochladen zeigt den Pfad jeder Datei im Ordner und wie viele PAM-Dateien jedes ZIP-Archiv enthält (alle Unterordner), dazu die Gesamtzahl; Größen in KB oder MB.
+
 ## 0.11.0 – 23.11.2026
 
 ### Geändert

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.11.1 – 2026-11-24
+
+### Changed
+- Drag & drop onto the whole dashboard: files, ZIP archives and folders can be dropped anywhere on the page (an overlay shows it), not only on the dashed area; a file dropped next to it is no longer opened by the browser. Files in subfolders are included.
+- The list before uploading shows the path of each file in its folder and how many PAM files each ZIP archive holds (all subfolders), with the total; sizes in KB or MB.
+
 ## 0.11.0 – 2026-11-23
 
 ### Changed

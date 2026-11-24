@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { basename } from 'node:path';
+import { copyFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, type Page, test } from '@playwright/test';
 import { zipSync } from 'fflate';
@@ -261,4 +262,42 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await expect(page.getByRole('heading', { name: 'Manual' })).toBeVisible();
   await page.goto('/settings#version');
   await expect(page.getByText('0.2.0').first()).toBeVisible();
+});
+
+test('drag and drop: folders and ZIP archives with subfolders, dropped anywhere on the dashboard', async ({ page }) => {
+  // A folder with subfolders and a ZIP archive with subfolders, as the operating system drags them.
+  const dir = mkdtempSync(join(tmpdir(), 'pam-drop-'));
+  const folder = join(dir, 'Plant');
+  mkdirSync(join(folder, 'Line1', 'M3', 'old'), { recursive: true });
+  copyFileSync(fixture('nxt', 3), join(folder, 'Line1', basename(fixture('nxt', 3))));
+  copyFileSync(fixture('nxt', 4), join(folder, 'Line1', 'M3', basename(fixture('nxt', 4))));
+  copyFileSync(fixture('aimex', 20), join(folder, 'Line1', 'M3', 'old', basename(fixture('aimex', 20))));
+  writeFileSync(join(folder, 'Line1', 'notes.txt'), 'not a PAM file');
+  const zipPath = join(dir, 'archive.zip');
+  writeFileSync(
+    zipPath,
+    zipSync({
+      [`A/${basename(fixture('aimex', 21))}`]: new Uint8Array(readFileSync(fixture('aimex', 21))),
+      [`A/B/C/${basename(fixture('aimex', 22))}`]: new Uint8Array(readFileSync(fixture('aimex', 22))),
+    }),
+  );
+
+  await signIn(page, ADMIN.email, ADMIN.password);
+  await page.getByLabel('Company').selectOption({ label: 'Customer A' });
+  const cdp = await page.context().newCDPSession(page);
+  const drop = async (files: string[]) => {
+    const data = { items: [], files, dragOperationsMask: 1 };
+    // Next to the drop zone, on the left of the page: the whole dashboard takes files.
+    for (const type of ['dragEnter', 'dragOver', 'drop'] as const)
+      await cdp.send('Input.dispatchDragEvent', { type, x: 300, y: 450, data });
+  };
+  await drop([folder, zipPath]);
+  const ready = page.getByTestId('upload-ready');
+  await expect(ready).toContainText('4 files ready');
+  await expect(ready).toContainText('5 PAM files in total');
+  await expect(ready).toContainText('1 other file ignored');
+  await expect(ready).toContainText(`Plant/Line1/M3/old/${basename(fixture('aimex', 20))}`);
+  await expect(ready).toContainText('archive.zip · 2 PAM files');
+  await page.getByRole('button', { name: 'Upload and evaluate' }).click();
+  await expect(page.getByTestId('upload-toast')).toContainText('5 new results');
 });
