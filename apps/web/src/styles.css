@@ -2999,41 +2999,20 @@ b > .service-pill {
   }
 }
 
-/* Files dragged over the dashboard: the whole page takes them */
-.drop-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 130;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  backdrop-filter: blur(2px);
-  pointer-events: none;
-  animation: toast-in 0.12s ease-out;
+/* Files dragged into the window: the drop zone is marked, stronger right over it */
+.dropzone {
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
-.drop-overlay > div {
-  display: grid;
-  justify-items: center;
-  gap: 8px;
-  padding: 36px 48px;
-  max-width: 520px;
-  text-align: center;
-  border: 2px dashed var(--accent);
-  border-radius: 18px;
-  background: var(--surface);
-  color: var(--fg);
-  box-shadow: 0 18px 50px rgb(0 0 0 / 0.18);
+.dropzone.armed {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 60%, var(--surface));
 }
-.drop-overlay > div > svg {
-  color: var(--accent);
-}
-.drop-overlay b {
-  font-size: 20px;
-}
-.drop-overlay span {
-  color: var(--muted);
-  font-size: 14px;
+.dropzone.armed.over {
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
 }
 .upload-list {
   margin: 0;

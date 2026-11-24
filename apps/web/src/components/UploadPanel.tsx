@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { type DragEvent as ReactDragEvent, useEffect, useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import type { Company } from '../lib/api';
 import { startUpload, useBackgroundUpload } from '../lib/backgroundUpload';
@@ -89,9 +88,9 @@ async function zipInfo(file: File): Promise<ZipInfo> {
 const hasFiles = (e: DragEvent) => Boolean(e.dataTransfer?.types.includes('Files'));
 
 /**
- * Upload area of the dashboard: drop files, ZIP archives and folders anywhere on the page (also
- * subfolders) or choose them, choose the company (service staff) and start; the upload then runs in
- * the background (see `UploadToast`).
+ * Upload area of the dashboard: drop files, ZIP archives and folders (also subfolders) on the drop
+ * zone or choose them, choose the company (service staff) and start; the upload then runs in the
+ * background (see `UploadToast`). While files are dragged into the window, the drop zone is marked.
  */
 export function UploadPanel() {
   const { t, num } = useI18n();
@@ -102,7 +101,10 @@ export function UploadPanel() {
   const [files, setFiles] = useState<Picked[]>([]);
   const [zips, setZips] = useState<Record<string, ZipInfo>>({});
   const [ignored, setIgnored] = useState(0);
+  /** Files are dragged somewhere over the window: the drop zone is marked. */
   const [dragging, setDragging] = useState(false);
+  /** …and right over the drop zone. */
+  const [over, setOver] = useState(false);
   const upload = useBackgroundUpload();
   const fileInput = useRef<HTMLInputElement>(null);
   const folderInput = useRef<HTMLInputElement>(null);
@@ -115,11 +117,8 @@ export function UploadPanel() {
       return [...prev, ...ok.filter((p) => !seen.has(p.key) && seen.add(p.key))];
     });
   }
-  const addRef = useRef(add);
-  addRef.current = add;
-
-  // The whole page takes dropped files while the upload area is shown; a file dropped next to it
-  // is never opened by the browser instead.
+  // Marks the drop zone while files are dragged into the window; a file dropped next to it is not
+  // opened by the browser (which would leave the page).
   useEffect(() => {
     let depth = 0;
     const enter = (e: DragEvent) => {
@@ -138,11 +137,11 @@ export function UploadPanel() {
       if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
     };
     const drop = (e: DragEvent) => {
-      if (!hasFiles(e) || !e.dataTransfer) return;
+      if (!hasFiles(e)) return;
       e.preventDefault();
       depth = 0;
       setDragging(false);
-      void filesFromDrop(e.dataTransfer).then((list) => addRef.current(list));
+      setOver(false);
     };
     window.addEventListener('dragenter', enter);
     window.addEventListener('dragleave', leave);
@@ -164,6 +163,12 @@ export function UploadPanel() {
       void zipInfo(p.file).then((info) => setZips((z) => ({ ...z, [p.key]: info })));
     }
   }, [files, zips]);
+
+  function onDrop(e: ReactDragEvent) {
+    e.preventDefault();
+    setOver(false);
+    void filesFromDrop(e.dataTransfer).then(add);
+  }
 
   function start() {
     startUpload(
@@ -228,12 +233,25 @@ export function UploadPanel() {
         </p>
       )}
 
-      <section className={`dropzone compact${dragging ? ' over' : ''}`} data-testid="dropzone">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: dropping is a shortcut; the buttons inside choose files and folders */}
+      <section
+        className={`dropzone compact${dragging ? ' armed' : ''}${over ? ' over' : ''}`}
+        data-testid="dropzone"
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          setOver(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOver(false);
+        }}
+        onDrop={onDrop}
+      >
         <span className="icon-circle">
           <Icon name="upload" size={22} />
         </span>
         <span className="dz-text">
-          <b>{t('dash.uploadTitle')}</b>
+          <b>{dragging ? t('upload.dropHere') : t('dash.uploadTitle')}</b>
           <span className="muted">{t('dash.uploadText')}</span>
         </span>
         <div className="form-row" style={{ justifyContent: 'center' }}>
@@ -313,18 +331,6 @@ export function UploadPanel() {
           </ul>
         </section>
       )}
-
-      {dragging &&
-        createPortal(
-          <div className="drop-overlay" aria-hidden="true">
-            <div>
-              <Icon name="upload" size={34} />
-              <b>{t('upload.dropHere')}</b>
-              <span>{t('upload.dropHint')}</span>
-            </div>
-          </div>,
-          document.body,
-        )}
     </div>
   );
 }

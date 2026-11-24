@@ -264,7 +264,7 @@ test('settings: rating thresholds, language import and manual', async ({ page })
   await expect(page.getByText('0.2.0').first()).toBeVisible();
 });
 
-test('drag and drop: folders and ZIP archives with subfolders, dropped anywhere on the dashboard', async ({ page }) => {
+test('drag and drop: the drop zone is marked, takes folders and ZIP archives with subfolders', async ({ page }) => {
   // A folder with subfolders and a ZIP archive with subfolders, as the operating system drags them.
   const dir = mkdtempSync(join(tmpdir(), 'pam-drop-'));
   const folder = join(dir, 'Plant');
@@ -285,13 +285,25 @@ test('drag and drop: folders and ZIP archives with subfolders, dropped anywhere 
   await signIn(page, ADMIN.email, ADMIN.password);
   await page.getByLabel('Company').selectOption({ label: 'Customer A' });
   const cdp = await page.context().newCDPSession(page);
-  const drop = async (files: string[]) => {
-    const data = { items: [], files, dragOperationsMask: 1 };
-    // Next to the drop zone, on the left of the page: the whole dashboard takes files.
-    for (const type of ['dragEnter', 'dragOver', 'drop'] as const)
-      await cdp.send('Input.dispatchDragEvent', { type, x: 300, y: 450, data });
-  };
-  await drop([folder, zipPath]);
+  const zone = page.getByTestId('dropzone');
+  const drag = async (type: 'dragEnter' | 'dragOver' | 'drop', x: number, y: number, files: string[]) =>
+    cdp.send('Input.dispatchDragEvent', { type, x, y, data: { items: [], files, dragOperationsMask: 1 } });
+  // Files dragged into the window mark the existing drop zone.
+  await drag('dragEnter', 300, 450, [zipPath]);
+  await drag('dragOver', 300, 450, [zipPath]);
+  await expect(zone).toHaveClass(/armed/);
+  await expect(zone).toContainText('Drop the files here');
+  // Dropped next to the zone: nothing is taken, and the browser does not open the file.
+  const url = page.url();
+  await drag('drop', 300, 450, [zipPath]);
+  await expect(zone).not.toHaveClass(/armed/);
+  await expect(page.getByTestId('upload-ready')).toHaveCount(0);
+  expect(page.url()).toBe(url);
+  // Dropped on the zone: folder and archive with all subfolders.
+  const box = await zone.boundingBox();
+  if (!box) throw new Error('The drop zone is not visible.');
+  for (const type of ['dragEnter', 'dragOver', 'drop'] as const)
+    await drag(type, box.x + box.width / 2, box.y + 40, [folder, zipPath]);
   const ready = page.getByTestId('upload-ready');
   await expect(ready).toContainText('4 files ready');
   await expect(ready).toContainText('5 PAM files in total');
